@@ -45,7 +45,7 @@
 6. **[Member-3]** Admins can monitor reports, handle disputes, and take actions such as refunds or bans.  
 7. **Optional: [Member-3]** Gamification of the entire system, rewards and milestones.
 
-8. ## Team Members
+## Team Members
 
 | Name | Role / Contribution |
 |------|------------------|
