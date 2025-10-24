@@ -10,6 +10,7 @@
    - [Module 1: Core Access & Entities](#module-1-core-access--entities)
    - [Module 2: Profiles & Applications](#module-2-profiles--applications)
    - [Module 3: Execution, Payments & Oversight](#module-3-execution-payments--oversight)
+4. [Team Members](#team-members)
 
 
 ## Tech Stack
