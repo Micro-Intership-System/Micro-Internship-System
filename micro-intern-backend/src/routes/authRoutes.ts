@@ -6,9 +6,14 @@ import User from "../models/user";
 const router = express.Router();
 
 // POST /api/auth/register
-router.post("/register", async (req, res) => {
+router.post("/signup", async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
+
+    const exists = await User.findOne({ email });
+    if (exists) {
+      return res.status(400).json({ success: false, message: "Email already exists" });
+    }
 
     const hashed = await bcrypt.hash(password, 10);
 
@@ -16,38 +21,87 @@ router.post("/register", async (req, res) => {
       name,
       email,
       password: hashed,
-      role,
+      role: role || "student"
     });
 
-    res.status(201).json({ message: "User registered", user });
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET!,
+      { expiresIn: "7d" }
+    );
+
+    res.status(201).json({
+      success: true,
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
   } catch (err) {
-    res.status(400).json({ error: (err as Error).message });
+    console.error(err);
+    res.status(500).json({ success: false, message: "Signup failed" });
   }
 });
 
 // POST /api/auth/login
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
 
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) {
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
+    }
 
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) return res.status(401).json({ message: "Invalid credentials" });
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
+    }
+
+    if (role && user.role !== role) {
+      return res.status(403).json({ success: false, message: "Role mismatch" });
+    }
 
     const token = jwt.sign(
-      { id: user._id, role: user.role },
+      { userId: user._id, role: user.role },
       process.env.JWT_SECRET!,
-      { expiresIn: "1d" }
+      { expiresIn: "7d" }
     );
 
-    res
-      .cookie("token", token, { httpOnly: true, sameSite: "lax" })
-      .json({ message: "Login successful", role: user.role });
+    res.json({
+      success: true,
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    console.error(err);
+    res.status(500).json({ success: false, message: "Login failed" });
   }
 });
+
+router.get("/me", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(401).json({ success: false });
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!);
+    if (!decoded) return res.status(401).json({ success: false });
+
+    const user = await User.findById((decoded as any).userId).select("-password");
+    res.json({ success: true, user });
+  } catch {
+    res.status(401).json({ success: false });
+  }
+});
+
 
 export default router;
