@@ -1,101 +1,106 @@
-import { Outlet, NavLink } from "react-router-dom";
+import React from "react";
+import { Outlet, Link } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 
-const StudentLayout = () => {
+const StudentLayout: React.FC = () => {
   const { user, logout } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-white text-slate-900 flex flex-col">
+      {/* Top nav – same for all student pages */}
+      <header className="border-b border-slate-200">
+        <div className="max-w-5xl mx-auto flex items-center justify-between py-4 px-4">
+          <Link to="/" className="text-sm font-semibold tracking-tight">
+            Micro Internship
+          </Link>
 
-      {/* Temporary header, replace with global header later */}
-      <header className="border-b bg-white">
-        <div className="max-w-6xl mx-auto flex items-center justify-between py-4 px-4">
-          <span className="font-semibold text-lg">Micro Internship</span>
-          <div className="flex items-center gap-4 text-sm">
-            <span className="text-gray-600">
-              {user?.name} ({user?.role})
-            </span>
-            <button
-              onClick={logout}
-              className="px-3 py-1 rounded-full border border-gray-300 text-sm"
+          <nav className="flex items-center gap-6 text-xs md:text-sm text-slate-600">
+            <Link to="/dashboard/student" className="hover:text-black">
+              Home
+            </Link>
+            <Link to="/dashboard/student/browse" className="hover:text-black">
+              Browse Jobs
+            </Link>
+            <Link to="/dashboard/student/saved" className="hover:text-black">
+              Saved
+            </Link>
+            <Link
+              to="/dashboard/student/applications"
+              className="hover:text-black"
             >
-              Log out
-            </button>
-          </div>
+              Applications
+            </Link>
+
+            {user ? (
+              <>
+                <span className="hidden md:inline text-xs text-slate-500">
+                  {user.name}
+                </span>
+                <button
+                  onClick={logout}
+                  className="text-xs rounded-full border border-slate-300 px-3 py-1 hover:bg-slate-100"
+                >
+                  Log out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="text-xs rounded-full border border-slate-300 px-3 py-1 hover:bg-slate-100"
+                >
+                  Log In
+                </Link>
+                <Link
+                  to="/signup"
+                  className="text-xs rounded-full bg-black text-white px-3 py-1 hover:bg-slate-800"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
+          </nav>
         </div>
       </header>
 
-      {/* Body with sidebar + page content */}
-      <div className="flex flex-1 max-w-6xl mx-auto w-full py-6 px-4 gap-6">
-        
-        {/* Sidebar */}
-        <aside className="w-56 bg-white rounded-2xl shadow-sm p-4 flex flex-col gap-1 text-sm">
-          <h2 className="font-semibold text-gray-800 mb-2">Student Menu</h2>
-
-          <NavLink 
-            to="" 
-            end
-            className={({ isActive }) =>
-              `px-3 py-2 rounded-lg ${isActive ? "bg-black text-white" : "hover:bg-gray-100"}`
-            }
-          >
-            Overview
-          </NavLink>
-
-          <NavLink 
-            to="browse"
-            className={({ isActive }) =>
-              `px-3 py-2 rounded-lg ${isActive ? "bg-black text-white" : "hover:bg-gray-100"}`
-            }
-          >
-            Browse Jobs
-          </NavLink>
-
-          <NavLink 
-            to="saved"
-            className={({ isActive }) =>
-              `px-3 py-2 rounded-lg ${isActive ? "bg-black text-white" : "hover:bg-gray-100"}`
-            }
-          >
-            Saved Jobs
-          </NavLink>
-
-          <NavLink 
-            to="applications"
-            className={({ isActive }) =>
-              `px-3 py-2 rounded-lg ${isActive ? "bg-black text-white" : "hover:bg-gray-100"}`
-            }
-          >
-            Applications
-          </NavLink>
-
-          <NavLink 
-            to="profile"
-            className={({ isActive }) =>
-              `px-3 py-2 rounded-lg ${isActive ? "bg-black text-white" : "hover:bg-gray-100"}`
-            }
-          >
-            Profile
-          </NavLink>
-
-          <NavLink 
-            to="messages"
-            className={({ isActive }) =>
-              `px-3 py-2 rounded-lg ${isActive ? "bg-black text-white" : "hover:bg-gray-100"}`
-            }
-          >
-            Messages
-          </NavLink>
-
-        </aside>
-
-        {/* Nested routed pages render here */}
-        <main className="flex-1">
+      {/* Page content */}
+      <main className="flex-1">
+        <div className="max-w-5xl mx-auto px-4 py-10">
           <Outlet />
-        </main>
+        </div>
+      </main>
 
-      </div>
+      {/* Footer – matches other pages */}
+      <footer className="border-t border-slate-200">
+        <div className="max-w-5xl mx-auto px-4 py-6 text-xs text-slate-500 flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+          <div>
+            <p className="font-semibold text-slate-700 mb-1">Micro Internship</p>
+            <p>
+              Helping students gain real-world experience through small, paid
+              projects.
+            </p>
+          </div>
 
+          <div className="flex gap-8">
+            <div>
+              <p className="font-semibold text-slate-700 mb-1">Quick Links</p>
+              <ul className="space-y-1">
+                <li>Home</li>
+                <li>Browse Jobs</li>
+                <li>Post Jobs</li>
+              </ul>
+            </div>
+            <div>
+              <p className="font-semibold text-slate-700 mb-1">Contact Us</p>
+              <ul className="space-y-1">
+                <li>Email: support@microinternship.com</li>
+                <li>Phone: +880 999</li>
+                <li>Address: Banana Lane, Merul Badda</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
