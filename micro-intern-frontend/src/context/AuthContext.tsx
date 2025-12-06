@@ -1,39 +1,51 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 
-type User = {
+type Role = "student" | "employer" | "admin";
+
+export interface AuthUser {
   id: string;
   name: string;
   email: string;
-  role: string;
-};
+  role: Role;
+}
 
-type AuthContextValue = {
-  user: User | null;
+interface AuthContextType {
+  user: AuthUser | null;
   token: string | null;
-  login: (token: string, user: User) => void;
+  loading: boolean;
+  login: (token: string, user: AuthUser) => void;
   logout: () => void;
-};
+}
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  // hydrate from localStorage on first render
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    const stored = localStorage.getItem("mi_user");
+    return stored ? (JSON.parse(stored) as AuthUser) : null;
+  });
+
+  const [token, setToken] = useState<string | null>(() => {
+    return localStorage.getItem("mi_token");
+  });
+
+  const [loading, setLoading] = useState(false);
+
+  // keep localStorage in sync if state changes
+  useEffect(() => {
+    if (user) localStorage.setItem("mi_user", JSON.stringify(user));
+    else localStorage.removeItem("mi_user");
+  }, [user]);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem("mi_token");
-    const storedUser = localStorage.getItem("mi_user");
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
+    if (token) localStorage.setItem("mi_token", token);
+    else localStorage.removeItem("mi_token");
+  }, [token]);
 
-  const login = (t: string, u: User) => {
-    setToken(t);
-    setUser(u);
-    localStorage.setItem("mi_token", t);
-    localStorage.setItem("mi_user", JSON.stringify(u));
+  const login = (newToken: string, newUser: AuthUser) => {
+    setToken(newToken);
+    setUser(newUser);
   };
 
   const logout = () => {
@@ -44,14 +56,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export function useAuth() {
+export const useAuth = () => {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
-}
+};

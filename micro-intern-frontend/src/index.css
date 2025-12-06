@@ -1,44 +1,206 @@
-/* Reset Vite defaults to avoid forced dark backgrounds */
+/* ===== Login page layout (plain CSS, Figma-style) ===== */
 
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color: #213547;
-  background-color: #ffffff;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* Remove dark-mode defaults */
-html, body {
-  margin: 0;
-  padding: 0;
-  background-color: #ffffff !important;
-  color: #213547;
-  min-height: 100%;
-}
-
-/* Remove Vite's center-flex behavior */
 body {
-  display: block !important;
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  background-color: #ffffff;
+  color: #111827; /* dark grey, almost black */
 }
 
-/* Remove global button + link styling, Tailwind will handle UI */
-a, button {
-  all: unset;
-  font-family: inherit;
+.login-page {
+  min-height: 100vh;
+  background-color: #ffffff;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px 16px;
+  box-sizing: border-box;
 }
 
-/* Allow Tailwind classes to style elements normally */
-a {
+.login-shell {
+  width: 100%;
+  max-width: 960px;
+}
+
+/* top branding + hero text */
+
+.login-brand {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.login-tagline {
+  font-size: 13px;
+  color: #4b5563;
+  margin-bottom: 24px;
+}
+
+.login-hero-title {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+
+.login-hero-text {
+  font-size: 14px;
+  color: #4b5563;
+  max-width: 640px;
+  margin-bottom: 12px;
+}
+
+.login-hero-list {
+  font-size: 14px;
+  color: #111827;
+  margin: 0 0 24px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.login-hero-list li::before {
+  content: "✓ ";
+}
+
+/* layout: hero left, form right */
+
+.login-main {
+  display: grid;
+  grid-template-columns: 2fr 1.4fr;
+  gap: 48px;
+}
+
+@media (max-width: 800px) {
+  .login-main {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}
+
+/* form card */
+
+.login-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px 24px 24px;
+  box-sizing: border-box;
+}
+
+.login-card h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.login-card-subtitle {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 16px;
+}
+
+/* labels & inputs */
+
+.login-field {
+  margin-bottom: 12px;
+}
+
+.login-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+.login-input {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.login-input:focus {
+  outline: 2px solid #111827;
+  outline-offset: 1px;
+}
+
+/* role toggle */
+
+.login-role-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.login-role-toggle {
+  display: inline-flex;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  overflow: hidden;
+}
+
+.login-role-button {
+  padding: 6px 14px;
+  font-size: 12px;
+  border: none;
+  background-color: #ffffff;
+  color: #4b5563;
   cursor: pointer;
 }
 
-button {
+.login-role-button + .login-role-button {
+  border-left: 1px solid #d1d5db;
+}
+
+.login-role-button--active {
+  background-color: #111827;
+  color: #ffffff;
+}
+
+/* submit + error */
+
+.login-error {
+  font-size: 12px;
+  color: #b91c1c;
+  background-color: #fee2e2;
+  border-radius: 8px;
+  padding: 6px 8px;
+  margin-bottom: 8px;
+}
+
+.login-submit {
+  width: 100%;
+  margin-top: 6px;
+  border-radius: 999px;
+  border: none;
+  padding: 9px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  background-color: #111827;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.login-submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.login-footer-text {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.login-footer-link {
+  color: #111827;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
   cursor: pointer;
 }
