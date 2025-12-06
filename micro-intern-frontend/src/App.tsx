@@ -16,6 +16,10 @@ import MessagesPage from "./pages/dashboard/student/MessagesPage";
 
 import InternshipDetailsPage from "./pages/InternshipDetailsPage";
 
+import EmployerLayout from "./pages/dashboard/employer/EmployerLayout.tsx";
+import PostInternshipPage from "./pages/dashboard/employer/PostInternshipPage.tsx";
+import EmployerDashboard from "./pages/dashboard/employer/EmployerDashboard.tsx";
+
 const App: React.FC = () => {
   return (
     <AuthProvider>
@@ -51,6 +55,21 @@ const App: React.FC = () => {
               </ProtectedRoute>
             }
           />
+          {/* Employer dashboard (nested routes) */}
+          <Route
+            path="/dashboard/employer"
+            element={
+              <ProtectedRoute>
+                <EmployerLayout />
+              </ProtectedRoute>
+            }
+          >
+            {/* DEFAULT Employer page (NOT the post form anymore) */}
+            <Route index element={<EmployerDashboard />} />
+
+            {/* Post Internship page */}
+            <Route path="post" element={<PostInternshipPage />} />
+          </Route>
 
           {/* Default: send unknown routes to login */}
           <Route path="*" element={<Navigate to="/login" replace />} />

@@ -18,6 +18,34 @@ router.post("/", async (req, res) => {
     res.status(400).json({ success: false, message: "Invalid internship data" });
   }
 });
+/**
+ * F2-2: Get Related Internships
+ * GET /api/internships/:id/related
+ * Used in the "Related job posts" section at the bottom of the page.
+ */
+router.get("/:id/related", async (req, res) => {
+  try {
+    const base = await Internship.findById(req.params.id);
+    if (!base) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Internship not found" });
+    }
+
+    const related = await Internship.find({
+      _id: { $ne: base._id },
+      tags: { $in: base.tags }
+    }).limit(3);
+
+    res.json({ success: true, data: related });
+  } catch (err) {
+    console.error(err);
+    res
+      .status(400)
+      .json({ success: false, message: "Invalid internship ID format" });
+  }
+});
+
 
 /**
  * F2-1: Get Internship Details
@@ -57,33 +85,6 @@ router.get("/", async (req, res) => {
   }
 });
 
-/**
- * F2-2: Get Related Internships
- * GET /api/internships/:id/related
- * Used in the "Related job posts" section at the bottom of the page.
- */
-router.get("/:id/related", async (req, res) => {
-  try {
-    const base = await Internship.findById(req.params.id);
-    if (!base) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Internship not found" });
-    }
-
-    const related = await Internship.find({
-      _id: { $ne: base._id },
-      tags: { $in: base.tags }
-    }).limit(3);
-
-    res.json({ success: true, data: related });
-  } catch (err) {
-    console.error(err);
-    res
-      .status(400)
-      .json({ success: false, message: "Invalid internship ID format" });
-  }
-});
 
 /**
  * F2-3: Apply for Internship
