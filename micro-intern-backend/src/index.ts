@@ -6,6 +6,11 @@ import mongoose from "mongoose";
 import authRoutes from "./routes/authRoutes";
 import landingRoutes from "./routes/landingRoutes";
 import internshipRoutes from "./routes/internshipRoutes";
+import employerRoutes from "./routes/employerRoutes";
+import studentRoutes from "./routes/studentRoutes";
+import contactRoutes from "./routes/contactRoutes";
+import messageRoutes from "./routes/messageRoutes";
+
 
 
 dotenv.config();
@@ -33,6 +38,10 @@ app.use("/api/auth", authRoutes);
 app.use("/api/public", landingRoutes);
 // Internship routes (Feature-02)
 app.use("/api/internships", internshipRoutes);
+app.use("/api/employer", employerRoutes);
+app.use("/api/student", studentRoutes);
+app.use("/api/contact", contactRoutes);
+app.use("/api/messages", messageRoutes);
 
 
 const PORT = process.env.PORT || 1547;
