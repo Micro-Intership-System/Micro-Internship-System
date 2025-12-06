@@ -16,9 +16,10 @@ import MessagesPage from "./pages/dashboard/student/MessagesPage";
 
 import InternshipDetailsPage from "./pages/InternshipDetailsPage";
 
-import EmployerLayout from "./pages/dashboard/employer/EmployerLayout.tsx";
-import PostInternshipPage from "./pages/dashboard/employer/PostInternshipPage.tsx";
-import EmployerDashboard from "./pages/dashboard/employer/EmployerDashboard.tsx";
+import EmployerLayout from "./pages/dashboard/employer/EmployerLayout";
+import PostInternshipPage from "./pages/dashboard/employer/PostInternshipPage";
+import EmployerDashboard from "./pages/dashboard/employer/EmployerDashboard";
+import EmployerProfile from "./pages/dashboard/employer/EmployerProfile";
 
 const App: React.FC = () => {
   return (
@@ -55,6 +56,7 @@ const App: React.FC = () => {
               </ProtectedRoute>
             }
           />
+
           {/* Employer dashboard (nested routes) */}
           <Route
             path="/dashboard/employer"
@@ -64,11 +66,9 @@ const App: React.FC = () => {
               </ProtectedRoute>
             }
           >
-            {/* DEFAULT Employer page (NOT the post form anymore) */}
             <Route index element={<EmployerDashboard />} />
-
-            {/* Post Internship page */}
             <Route path="post" element={<PostInternshipPage />} />
+            <Route path="profile" element={<EmployerProfile />} />
           </Route>
 
           {/* Default: send unknown routes to login */}
