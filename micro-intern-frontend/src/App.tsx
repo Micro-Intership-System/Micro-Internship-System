@@ -2,8 +2,10 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
+
 import StudentLayout from "./pages/dashboard/student/StudentLayout";
 import OverviewPage from "./pages/dashboard/student/OverviewPage";
 import BrowsePage from "./pages/dashboard/student/BrowsePage";
@@ -12,31 +14,45 @@ import ApplicationsPage from "./pages/dashboard/student/ApplicationsPage";
 import ProfilePage from "./pages/dashboard/student/ProfilePage";
 import MessagesPage from "./pages/dashboard/student/MessagesPage";
 
+import InternshipDetailsPage from "./pages/InternshipDetailsPage";
 
 const App: React.FC = () => {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          {/* Auth routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
-          <Route 
-              path="/dashboard/student" 
-              element={
-                <ProtectedRoute>
-                  <StudentLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<OverviewPage />} />
-              <Route path="browse" element={<BrowsePage />} />
-              <Route path="saved" element={<SavedJobsPage />} />
-              <Route path="applications" element={<ApplicationsPage />} />
-              <Route path="profile" element={<ProfilePage />} />
-              <Route path="messages" element={<MessagesPage />} />
-            </Route>
 
-          {/* default route -> login for now */}
+          {/* Student dashboard (nested routes) */}
+          <Route
+            path="/dashboard/student"
+            element={
+              <ProtectedRoute>
+                <StudentLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<OverviewPage />} />
+            <Route path="browse" element={<BrowsePage />} />
+            <Route path="saved" element={<SavedJobsPage />} />
+            <Route path="applications" element={<ApplicationsPage />} />
+            <Route path="profile" element={<ProfilePage />} />
+            <Route path="messages" element={<MessagesPage />} />
+          </Route>
+
+          {/* Internship details page */}
+          <Route
+            path="/internships/:id"
+            element={
+              <ProtectedRoute>
+                <InternshipDetailsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Default: send unknown routes to login */}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>
