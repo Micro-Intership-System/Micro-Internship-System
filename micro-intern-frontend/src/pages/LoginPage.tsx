@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { apiPost } from "../api/client";
-import { useAuth } from "../context/auth.context";
+import { useAuth } from "../context/AuthContext";
 
 type Role = "student" | "employer" | "admin";
 

@@ -1,6 +1,6 @@
 import React from "react";
 import { Outlet, Link } from "react-router-dom";
-import { useAuth } from "../../../context/auth.context";
+import { useAuth } from "../../../context/AuthContext";
 
 const StudentLayout: React.FC = () => {
   const { user, logout } = useAuth();

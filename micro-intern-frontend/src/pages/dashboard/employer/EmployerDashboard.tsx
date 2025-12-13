@@ -1,10 +1,23 @@
 export default function EmployerDashboard() {
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Employer Dashboard</h1>
-      <p className="text-slate-600">
-        Use the navigation above to manage your company profile and internships.
-      </p>
+    <div style={{ padding: "40px" }}>
+      <h1>Employer Dashboard</h1>
+      <p>This page will display employer profile & organization details.</p>
+
+      <div style={{ marginTop: "20px" }}>
+        <a 
+          href="/dashboard/employer/post" 
+          style={{ 
+            background: "black",
+            color: "white",
+            padding: "10px 16px",
+            borderRadius: "6px",
+            textDecoration: "none"
+          }}
+        >
+          + Post a New Internship
+        </a>
+      </div>
     </div>
   );
 }
