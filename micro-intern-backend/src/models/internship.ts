@@ -4,10 +4,6 @@ export type PriorityLevel = "high" | "medium" | "low";
 
 export interface IInternship extends Document {
   title: string;
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
   location: string;
   duration: string;
   budget: number;
@@ -25,24 +21,23 @@ export interface IInternship extends Document {
 
 const internshipSchema = new Schema<IInternship>(
   {
-    title: { type: String, required: true },
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
-    location: { type: String, required: true },
-    duration: { type: String, required: true },
+    title: { type: String, required: true, trim: true },
+    location: { type: String, required: true, trim: true },
+    duration: { type: String, required: true, trim: true },
     budget: { type: Number, required: true, min: 0 },
-    description: { type: String, required: true },
+    description: { type: String, required: true, trim: true },
 
     priorityLevel: { type: String, enum: ["high", "medium", "low"], default: "medium" },
     skills: [{ type: String, default: [] }],
     tags: [{ type: String, default: [] }],
-    bannerUrl: { type: String },
+    bannerUrl: { type: String, default: "" },
     isFeatured: { type: Boolean, default: false },
 
+    // attach server-side from token + employer profile
     employerId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    companyName: { type: String, required: true },
+    companyName: { type: String, required: true, trim: true },
   },
   { timestamps: true }
 );
+
+export const Internship = model<IInternship>("Internship", internshipSchema);
