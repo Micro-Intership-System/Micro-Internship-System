@@ -1,26 +1,29 @@
-import { Outlet, Link } from "react-router-dom";
-import { useAuth } from "../../../context/AuthContext";
+import { Link, Outlet } from "react-router-dom";
+import { useAuth } from "../../../context/auth.context";
 
-const EmployerLayout = () => {
+export default function EmployerLayout() {
   const { logout } = useAuth();
 
   return (
-    <div className="min-h-screen bg-white text-slate-900">
-      <header className="border-b border-slate-200">
-        <div className="max-w-5xl mx-auto flex justify-between items-center py-4 px-4">
-          <Link to="/dashboard/employer">Micro Internship</Link>
+    <div className="min-h-screen bg-white">
+      <header className="border-b">
+        <div className="max-w-5xl mx-auto flex justify-between items-center px-4 py-4">
+          <Link to="/dashboard/employer" className="font-semibold">
+            Micro Internship
+          </Link>
+
           <nav className="flex gap-4 text-sm">
+            <Link to="/dashboard/employer">Dashboard</Link>
+            <Link to="/dashboard/employer/profile">Company Profile</Link>
             <Link to="/dashboard/employer/post">Post Internship</Link>
-            <button onClick={logout}>Log out</button>
+            <button onClick={logout}>Logout</button>
           </nav>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-10">
+      <main className="max-w-5xl mx-auto px-4 py-8">
         <Outlet />
       </main>
     </div>
   );
-};
-
-export default EmployerLayout;
+}

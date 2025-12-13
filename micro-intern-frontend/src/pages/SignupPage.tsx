@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiPost } from "../api/client";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/auth.context";
 import type { User } from "../types/UserType"; // Adjust the path based on where your User type is defined
 
 const SignupPage = () => {
