@@ -4,6 +4,10 @@ export type PriorityLevel = "high" | "medium" | "low";
 
 export interface IInternship extends Document {
   title: string;
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
   location: string;
   duration: string;
   budget: number;
@@ -22,6 +26,10 @@ export interface IInternship extends Document {
 const internshipSchema = new Schema<IInternship>(
   {
     title: { type: String, required: true },
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
     location: { type: String, required: true },
     duration: { type: String, required: true },
     budget: { type: Number, required: true, min: 0 },
@@ -38,5 +46,3 @@ const internshipSchema = new Schema<IInternship>(
   },
   { timestamps: true }
 );
-
-export const Internship = model<IInternship>("Internship", internshipSchema);
