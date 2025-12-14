@@ -1,9 +1,14 @@
 import { Router } from "express";
 import { Internship } from "../models/internship";
 import { Application } from "../models/application";
+<<<<<<< Updated upstream
 import { User } from "../models/user";
 import { requireAuth } from "../middleware/requireAuth";
 import { requireEmployer } from "../middleware/requireEmployer";
+=======
+import { Request, Response } from "express";
+import { Internship } from "../models/internship";
+>>>>>>> Stashed changes
 
 const router = Router();
 
@@ -139,4 +144,70 @@ router.post("/:id/apply", async (req, res) => {
   }
 });
 
+<<<<<<< Updated upstream
+=======
+/**
+ * F2-4: Save Internship (Save for later)
+ * POST /api/internships/:id/save
+ * For now we just return a success JSON; a Saved model can be added later.
+ */
+router.post("/:id/save", async (req, res) => {
+  res.status(201).json({
+    success: true,
+    saved: true,
+    internshipId: req.params.id,
+    userId: req.body?.userId ?? "demo-user"
+  });
+});
+
+// GET /api/internships/search
+router.get("/internships/search", async (req: Request, res: Response) => {
+  try {
+    const { q, skills, duration, budget, location } = req.query;
+
+    const filter: Record<string, unknown> = {};
+
+    if (typeof q === "string" && q.trim() !== "") {
+      const regex = new RegExp(q.trim(), "i");
+      filter.$or = [{ title: regex }, { employer: regex }, { location: regex }];
+    }
+
+    if (typeof skills === "string" && skills.trim() !== "") {
+      const skillArray = skills
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+      if (skillArray.length > 0) {
+        filter.skills = { $in: skillArray };
+      }
+    }
+
+    if (typeof duration === "string" && duration.trim() !== "") {
+      filter.duration = duration.trim();
+    }
+
+    if (typeof budget === "string" && budget.trim() !== "") {
+      const num = Number(budget);
+      if (!Number.isNaN(num)) {
+        filter.budget = { $lte: num }; // change to $gte if you prefer
+      }
+    }
+
+    if (typeof location === "string" && location.trim() !== "") {
+      filter.location = location.trim();
+    }
+
+    const results = await Internship.find(filter).sort({ createdAt: -1 });
+
+    res.json({ success: true, data: results });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to search internships",
+    });
+  }
+});
+
+>>>>>>> Stashed changes
 export default router;

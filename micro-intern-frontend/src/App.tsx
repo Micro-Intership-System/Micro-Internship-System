@@ -10,6 +10,7 @@ import StudentLayout from "./pages/dashboard/student/StudentLayout";
 import OverviewPage from "./pages/dashboard/student/OverviewPage";
 import BrowsePage from "./pages/dashboard/student/BrowsePage";
 import SavedJobsPage from "./pages/dashboard/student/SavedJobsPage";
+import AdvancedSearchPage from "./pages/dashboard/student/AdvancedSearchPage";
 import ApplicationsPage from "./pages/dashboard/student/ApplicationsPage";
 import ProfilePage from "./pages/dashboard/student/ProfilePage";
 import MessagesPage from "./pages/dashboard/student/MessagesPage";
@@ -41,6 +42,7 @@ const App: React.FC = () => {
             <Route index element={<OverviewPage />} />
             <Route path="browse" element={<BrowsePage />} />
             <Route path="saved" element={<SavedJobsPage />} />
+            <Route path="advanced-search" element={<AdvancedSearchPage />} />
             <Route path="applications" element={<ApplicationsPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="messages" element={<MessagesPage />} />

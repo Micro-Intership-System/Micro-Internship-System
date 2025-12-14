@@ -23,15 +23,12 @@ const BrowsePage: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        // call your real backend
         const res = await apiGet("/internships");
 
-        // expecting: { success: true, data: [...] }
         if (!res || res.success === false || !Array.isArray(res.data)) {
           throw new Error(res?.message || "Failed to load internships");
         }
 
-        // newest first
         const sorted = [...res.data].reverse();
         setInternships(sorted);
       } catch (err: unknown) {
@@ -42,7 +39,7 @@ const BrowsePage: React.FC = () => {
       }
     }
 
-    fetchInternships();
+    void fetchInternships();
   }, []);
 
   return (
@@ -59,7 +56,8 @@ const BrowsePage: React.FC = () => {
 
       {!loading && !error && internships.length === 0 && (
         <p className="text-sm text-slate-500">
-          No internships found yet. Ask an employer to post one from their dashboard.
+          No internships found yet. Ask an employer to post one from their
+          dashboard.
         </p>
       )}
 
@@ -91,7 +89,6 @@ const BrowsePage: React.FC = () => {
               </p>
               <button
                 className="rounded-full bg-black text-white text-xs px-4 py-1.5 hover:bg-slate-800"
-                // later you can navigate to /internships/:id from here
                 onClick={() => {
                   window.location.href = `/internships/${job._id}`;
                 }}
@@ -103,7 +100,6 @@ const BrowsePage: React.FC = () => {
         ))}
       </div>
 
-      {/* remove real pagination for now; show simple info instead */}
       <div className="flex justify-end mt-4 text-xs text-slate-500">
         Showing {internships.length} job{internships.length === 1 ? "" : "s"}
       </div>

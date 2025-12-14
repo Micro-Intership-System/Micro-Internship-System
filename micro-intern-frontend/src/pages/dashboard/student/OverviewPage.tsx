@@ -16,11 +16,21 @@ const OverviewPage: React.FC = () => {
           matter.
         </p>
         <div className="mt-6 flex justify-center gap-3">
-          <button className="rounded-full bg-black text-white text-xs md:text-sm px-5 py-2 hover:bg-slate-800">
+          <button
+            className="rounded-full bg-black text-white text-xs md:text-sm px-5 py-2 hover:bg-slate-800"
+            onClick={() => {
+              window.location.href = "/dashboard/student/browse";
+            }}
+          >
             Browse jobs
           </button>
-          <button className="rounded-full bg-white border border-slate-300 text-xs md:text-sm px-5 py-2 hover:bg-slate-100">
-            View profile
+          <button
+            className="rounded-full bg-white border border-slate-300 text-xs md:text-sm px-5 py-2 hover:bg-slate-100"
+            onClick={() => {
+              window.location.href = "/dashboard/student/advanced-search";
+            }}
+          >
+            Advanced search
           </button>
         </div>
       </section>
