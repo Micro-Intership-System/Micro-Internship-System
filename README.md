@@ -33,8 +33,8 @@
 
 ### Module 2: Profiles & Applications
 1. **[Member-1]** Students can apply for posted tasks by submitting short proposals and receive offers from employers.  
-2. **[Member-2]** Students can search and filter tasks using skill tags, duration, budget range, and remote/on-site options.  
-3. **[Member-3]** Employers can assign priority levels (e.g., high, medium, low) to receive emergency services. Students can create and update their personal profile, skills, and portfolio links for better matching. *(build and attach portfolios)*  
+2. **[Member-2]** Employers can assign priority levels (e.g., high, medium, low) to receive emergency services.
+3. **[Member-3]**  Students can create and update their personal profile, skills, and portfolio links for better matching. *(build and attach portfolios)*  
 
 ### Module 3: Execution, Payments & Oversight
 1. **[Member-1]** Students and employers can chat in real time and share files during an active task.  
