@@ -1,108 +1,68 @@
-import React from "react";
-import { Outlet, Link } from "react-router-dom";
-import { useAuth } from "../../../context/AuthContext";
+import { Link, NavLink, Outlet } from "react-router-dom";
+import { useAuth } from "../../../context/auth.context";
 
-const StudentLayout: React.FC = () => {
+function NavItem({ to, label }: { to: string; label: string }) {
+  return (
+    <NavLink
+      to={to}
+      className={({ isActive }) =>
+        [
+          "px-3 py-2 rounded-xl text-sm font-medium transition",
+          isActive ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-100",
+        ].join(" ")
+      }
+      end
+    >
+      {label}
+    </NavLink>
+  );
+}
+
+export default function StudentLayout() {
   const { user, logout } = useAuth();
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 flex flex-col">
-      {/* Top nav – same for all student pages */}
-      <header className="border-b border-slate-200">
-        <div className="max-w-5xl mx-auto flex items-center justify-between py-4 px-4">
-          <Link to="/" className="text-sm font-semibold tracking-tight">
-            Micro Internship
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-white">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur">
+        <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between gap-4">
+          <Link to="/" className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-slate-900">MI</span>
+            <span className="text-sm text-slate-500">Micro-Internship</span>
           </Link>
 
-          <nav className="flex items-center gap-6 text-xs md:text-sm text-slate-600">
-            <Link to="/dashboard/student" className="hover:text-black">
-              Home
-            </Link>
-            <Link to="/dashboard/student/browse" className="hover:text-black">
-              Browse Jobs
-            </Link>
-            <Link to="/dashboard/student/saved" className="hover:text-black">
-              Saved
-            </Link>
-            <Link
-              to="/dashboard/student/applications"
-              className="hover:text-black"
-            >
-              Applications
-            </Link>
-
-            {user ? (
-              <>
-                <span className="hidden md:inline text-xs text-slate-500">
-                  {user.name}
-                </span>
-                <button
-                  onClick={logout}
-                  className="text-xs rounded-full border border-slate-300 px-3 py-1 hover:bg-slate-100"
-                >
-                  Log out
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="text-xs rounded-full border border-slate-300 px-3 py-1 hover:bg-slate-100"
-                >
-                  Log In
-                </Link>
-                <Link
-                  to="/signup"
-                  className="text-xs rounded-full bg-black text-white px-3 py-1 hover:bg-slate-800"
-                >
-                  Sign Up
-                </Link>
-              </>
-            )}
+          <nav className="flex items-center gap-2 flex-wrap">
+            <NavItem to="/dashboard/student" label="Home" />
+            <NavItem to="/dashboard/student/browse" label="Browse Jobs" />
+            <NavItem to="/dashboard/student/applications" label="Applications" />
+            <NavItem to="/dashboard/student/courses" label="Courses" />
+            <NavItem to="/dashboard/student/leaderboard" label="Leaderboard" />
+            <NavItem to="/dashboard/student/portfolio" label="Portfolio" />
           </nav>
+
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:block text-right">
+              <div className="text-sm font-semibold text-slate-900">{user?.name ?? "Student"}</div>
+              <div className="text-xs text-slate-500">{user?.email ?? ""}</div>
+            </div>
+            <button
+              onClick={logout}
+              className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* Page content */}
-      <main className="flex-1">
-        <div className="max-w-5xl mx-auto px-4 py-10">
-          <Outlet />
-        </div>
+      <main className="mx-auto max-w-6xl px-4 py-8">
+        <Outlet />
       </main>
 
-      {/* Footer – matches other pages */}
       <footer className="border-t border-slate-200">
-        <div className="max-w-5xl mx-auto px-4 py-6 text-xs text-slate-500 flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-          <div>
-            <p className="font-semibold text-slate-700 mb-1">Micro Internship</p>
-            <p>
-              Helping students gain real-world experience through small, paid
-              projects.
-            </p>
-          </div>
-
-          <div className="flex gap-8">
-            <div>
-              <p className="font-semibold text-slate-700 mb-1">Quick Links</p>
-              <ul className="space-y-1">
-                <li>Home</li>
-                <li>Browse Jobs</li>
-                <li>Post Jobs</li>
-              </ul>
-            </div>
-            <div>
-              <p className="font-semibold text-slate-700 mb-1">Contact Us</p>
-              <ul className="space-y-1">
-                <li>Email: support@microinternship.com</li>
-                <li>Phone: +880 999</li>
-                <li>Address: Banana Lane, Merul Badda</li>
-              </ul>
-            </div>
-          </div>
+        <div className="mx-auto max-w-6xl px-4 py-8 text-sm text-slate-600">
+          Helping students build real experience through small, paid projects.
         </div>
       </footer>
     </div>
   );
-};
-
-export default StudentLayout;
+}

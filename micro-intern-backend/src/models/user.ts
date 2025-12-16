@@ -15,11 +15,20 @@ export interface IUser extends Document {
   bio?: string;
   profilePicture?: string;
 
+  // Gamification fields (for students)
+  gold?: number;           // Currency earned from completed tasks
+  xp?: number;             // Experience points
+  starRating?: number;     // 1-5 star rating (average from employer reviews)
+  totalTasksCompleted?: number;
+  averageCompletionTime?: number; // Average days to complete tasks
+  completedCourses?: string[]; // Course IDs that student has completed
+
   // Employer profile fields
   companyName?: string;
   companyWebsite?: string;
   companyDescription?: string;
   companyLogo?: string;
+  isVerified?: boolean;    // Employer verification status
 
   comparePassword: (input: string) => Promise<boolean>;
 }
@@ -44,11 +53,20 @@ const UserSchema = new Schema<IUser>(
     bio: { type: String },
     profilePicture: { type: String },
 
+    // Gamification fields (for students)
+    gold: { type: Number, default: 0 },
+    xp: { type: Number, default: 0 },
+    starRating: { type: Number, min: 1, max: 5, default: 1 },
+    totalTasksCompleted: { type: Number, default: 0 },
+    averageCompletionTime: { type: Number, default: 0 }, // in days
+    completedCourses: [{ type: String }], // Course IDs
+
     // EMPLOYER FIELDS
     companyName: { type: String },
     companyWebsite: { type: String },
     companyDescription: { type: String },
     companyLogo: { type: String },
+    isVerified: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

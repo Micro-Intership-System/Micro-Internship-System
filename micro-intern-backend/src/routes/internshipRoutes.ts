@@ -1,23 +1,60 @@
 import { Router } from "express";
 import { Internship } from "../models/internship";
 import { Application } from "../models/application";
+import { requireAuth } from "../middleware/requireAuth";
+import { User } from "../models/user";
 
 const router = Router();
 
 /**
- * F2-0 (optional for seeding)
- * POST /api/internships
- * Create an internship (useful for inserting sample data via Postman)
+ * Middleware: require employer role
  */
-router.post("/", async (req, res) => {
+async function requireEmployer(req: any, res: any, next: any) {
   try {
-    const internship = await Internship.create(req.body);
-    res.status(201).json({ success: true, data: internship });
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user || user.role !== "employer") {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied — employer account required",
+      });
+    }
+
+    req.employer = user;
+    next();
   } catch (err) {
     console.error(err);
-    res.status(400).json({ success: false, message: "Invalid internship data" });
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+}
+
+/**
+ * F2-1: Get Internship Details
+ * GET /api/internships/:id
+ * Used on the Internship Details Page main content.
+ */
+router.get("/:id", async (req, res) => {
+  try {
+    const internship = await Internship.findById(req.params.id);
+
+    if (!internship) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Internship not found" });
+    }
+
+    res.json({ success: true, data: internship });
+  } catch (err) {
+    console.error(err);
+    res
+      .status(400)
+      .json({ success: false, message: "Invalid internship ID format" });
   }
 });
+
 /**
  * F2-2: Get Related Internships
  * GET /api/internships/:id/related
@@ -46,30 +83,115 @@ router.get("/:id/related", async (req, res) => {
   }
 });
 
-
 /**
- * F2-1: Get Internship Details
- * GET /api/internships/:id
- * Used on the Internship Details Page main content.
+ * POST /api/internships
+ * ✅ STEP 5: must be employer + must have company profile + attach employerId + companyName
  */
-router.get("/:id", async (req, res) => {
+router.post("/", requireAuth, requireEmployer, async (req, res) => {
   try {
-    const internship = await Internship.findById(req.params.id);
-
-    if (!internship) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Internship not found" });
+    // 1. Get employer from token
+    const employer = await User.findById(req.user!.id);
+    if (!employer || !employer.companyName) {
+      return res.status(400).json({
+        success: false,
+        message: "Employer company profile required",
+      });
     }
 
-    res.json({ success: true, data: internship });
+    // 2. Whitelist allowed fields ONLY
+    const {
+      title,
+      location,
+      duration,
+      budget,
+      description,
+      skills,
+      tags,
+      bannerUrl,
+      priorityLevel,
+      isFeatured,
+      deadline,
+    } = req.body;
+
+    // 3. Create internship (companyName + employerId injected)
+    const internship = await Internship.create({
+      title,
+      location,
+      duration,
+      budget,
+      description,
+      skills,
+      tags,
+      bannerUrl,
+      priorityLevel,
+      isFeatured,
+      deadline,
+
+      employerId: employer._id,
+      companyName: employer.companyName,
+    });
+
+    return res.status(201).json({ success: true, data: internship });
   } catch (err) {
     console.error(err);
-    res
-      .status(400)
-      .json({ success: false, message: "Invalid internship ID format" });
+    return res.status(400).json({
+      success: false,
+      message: "Failed to create internship",
+    });
   }
 });
+
+/**
+ * PUT /api/internships/:id
+ * employer can edit ONLY their own post
+ */
+router.put("/:id", requireAuth, requireEmployer, async (req, res) => {
+  try {
+    const allowed = [
+      "title",
+      "location",
+      "duration",
+      "budget",
+      "description",
+      "priorityLevel",
+      "skills",
+      "tags",
+      "bannerUrl",
+      "isFeatured",
+      "deadline",
+    ];
+
+    const updates: Record<string, unknown> = {};
+    for (const field of allowed) {
+      if (req.body[field] !== undefined) {
+        updates[field] = req.body[field];
+      }
+    }
+
+    const updated = await Internship.findOneAndUpdate(
+      { _id: req.params.id, employerId: req.user!.id }, // ownership check
+      updates,
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({
+        success: false,
+        message: "Internship not found",
+      });
+    }
+
+    // updatedAt auto-changes here
+    return res.json({ success: true, data: updated });
+  } catch (err) {
+    console.error(err);
+    return res.status(400).json({
+      success: false,
+      message: "Failed to update internship",
+    });
+  }
+});
+
 /**
  * DEBUG / helper: list all internships
  * GET /api/internships
@@ -85,11 +207,12 @@ router.get("/", async (req, res) => {
   }
 });
 
-
 /**
  * F2-3: Apply for Internship
  * POST /api/internships/:id/apply
  * Triggered by "Apply Now" button on details page.
+ * NOTE: This is kept for backward compatibility, but the main application flow
+ * is now handled in /api/applications
  */
 router.post("/:id/apply", async (req, res) => {
   try {

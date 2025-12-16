@@ -10,6 +10,15 @@ import employerRoutes from "./routes/employerRoutes";
 import studentRoutes from "./routes/studentRoutes";
 import contactRoutes from "./routes/contactRoutes";
 import messageRoutes from "./routes/messageRoutes";
+import applicationRoutes from "./routes/applicationRoutes";
+import courseShopRoutes from "./routes/courseShopRoutes";
+import notificationRoutes from "./routes/notificationRoutes";
+import paymentRoutes from "./routes/paymentRoutes";
+import taskChatRoutes from "./routes/taskChatRoutes";
+import leaderboardRoutes from "./routes/leaderboardRoutes";
+import anomalyRoutes from "./routes/anomalyRoutes";
+import reviewRoutes from "./routes/reviewRoutes";
+import certificateRoutes from "./routes/certificateRoutes";
 
 
 
@@ -42,6 +51,15 @@ app.use("/api/employer", employerRoutes);
 app.use("/api/student", studentRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/applications", applicationRoutes);
+app.use("/api/shop", courseShopRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/task-chat", taskChatRoutes);
+app.use("/api/leaderboard", leaderboardRoutes);
+app.use("/api/anomalies", anomalyRoutes);
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/certificates", certificateRoutes);
 
 
 const PORT = process.env.PORT || 1547;

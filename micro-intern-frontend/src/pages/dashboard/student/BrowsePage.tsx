@@ -1,6 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { apiGet } from "../../../api/client";
 
+function timeAgo(iso?: string): string {
+  if (!iso) return "—";
+  const t = new Date(iso).getTime();
+  const diff = Math.floor((Date.now() - t) / 1000);
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
 type Internship = {
   _id: string;
   title: string;
@@ -10,7 +20,9 @@ type Internship = {
   budget: number;
   skills?: string[];
   createdAt?: string;
+  updatedAt?: string; // ← ADD
 };
+
 
 const BrowsePage: React.FC = () => {
   const [internships, setInternships] = useState<Internship[]>([]);
@@ -89,6 +101,10 @@ const BrowsePage: React.FC = () => {
               <p className="text-xs text-slate-600">
                 Budget: {job.budget} BDT
               </p>
+              <p className="text-xs text-slate-500">
+                Updated {timeAgo(job.updatedAt)}
+              </p>
+
               <button
                 className="rounded-full bg-black text-white text-xs px-4 py-1.5 hover:bg-slate-800"
                 // later you can navigate to /internships/:id from here

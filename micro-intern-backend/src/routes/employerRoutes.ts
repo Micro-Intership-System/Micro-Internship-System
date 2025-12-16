@@ -1,5 +1,8 @@
 import { Router } from "express";
 import { User } from "../models/user";
+import { Internship } from "../models/internship";
+import { requireAuth } from "../middleware/requireAuth";
+import { Application } from "../models/application";
 
 const router = Router();
 
@@ -126,5 +129,109 @@ router.post("/me/about", requireEmployer, async (req: any, res) => {
     res.status(400).json({ success: false, message: "Invalid description" });
   }
 });
+
+/**
+ * GET /api/employer/jobs
+ * Get all jobs posted by the employer
+ */
+router.get("/jobs", requireAuth, requireEmployer, async (req: any, res) => {
+  try {
+    const jobs = await Internship.find({ employerId: req.user.id }).lean();
+
+    const jobIds = jobs.map(j => j._id);
+    const counts = await Application.aggregate([
+      { $match: { internshipId: { $in: jobIds } } },
+      { $group: { _id: "$internshipId", count: { $sum: 1 } } },
+    ]);
+
+    const countMap = Object.fromEntries(
+      counts.map(c => [String(c._id), c.count])
+    );
+
+    const enriched = jobs.map(j => ({
+      ...j,
+      applicantsCount: countMap[String(j._id)] || 0,
+    }));
+
+    res.json({ success: true, data: enriched });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Failed to load jobs" });
+  }
+});
+
+/**
+ * GET /api/employer/jobs/:jobId/applications
+ * Employer views applications for a job
+ */
+router.get(
+  "/jobs/:jobId/applications",
+  requireAuth,
+  requireEmployer,
+  async (req: any, res) => {
+    try {
+      const { jobId } = req.params;
+
+      const apps = await Application.find({ internshipId: jobId })
+        .populate(
+          "studentId",
+          "name email institution skills bio profilePicture portfolio"
+        )
+        .sort({ createdAt: -1 });
+
+      res.json({ success: true, data: apps });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({
+        success: false,
+        message: "Failed to load applications",
+      });
+    }
+  }
+);
+
+/**
+ * PATCH /api/employer/applications/:appId/status
+ * Accept or reject an application
+ */
+router.patch(
+  "/applications/:appId/status",
+  requireAuth,
+  requireEmployer,
+  async (req: any, res) => {
+    try {
+      const { appId } = req.params;
+      const { status } = req.body;
+
+      if (!["accepted", "rejected"].includes(status)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid status",
+        });
+      }
+
+      const updated = await Application.findByIdAndUpdate(
+        appId,
+        { status },
+        { new: true }
+      );
+
+      if (!updated) {
+        return res.status(404).json({
+          success: false,
+          message: "Application not found",
+        });
+      }
+
+      res.json({ success: true, data: updated });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({
+        success: false,
+        message: "Failed to update status",
+      });
+    }
+  }
+);
 
 export default router;
