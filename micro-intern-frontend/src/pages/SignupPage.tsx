@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiPost } from "../api/client";
 import { useAuth } from "../context/AuthContext";
-import type { User } from "../types/UserType"; // Adjust the path based on where your User type is defined
+import type { AuthUser } from "../context/AuthContext";
 
 const SignupPage = () => {
   const navigate = useNavigate();
@@ -23,7 +23,7 @@ const SignupPage = () => {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
-      const data = await apiPost("/auth/signup", form) as { token: string; user: User };
+      const data = await apiPost("/auth/signup", form) as { token: string; user: AuthUser };
       login(data.token, data.user);
       navigate("/dashboard/student");
     } catch (err: unknown) {

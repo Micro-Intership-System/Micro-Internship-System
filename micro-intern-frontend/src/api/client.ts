@@ -1,21 +1,57 @@
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:1547/api";
+type ApiErrorBody = { message?: string };
 
-export async function apiGet(path: string) {
-  const res = await fetch(`${BASE_URL}${path}`);
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || "Request failed");
-  return data;
+function getToken(): string | null {
+  return localStorage.getItem("mi_token");
 }
 
-export async function apiPost(path: string, body: Record<string, unknown>) {
-  const res = await fetch(`${BASE_URL}${path}`, {
+function buildHeaders(extra?: HeadersInit): HeadersInit {
+  const token = getToken();
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(extra ?? {}),
+  };
+}
+
+async function parseJsonSafe<T>(res: Response): Promise<T> {
+  const text = await res.text();
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    // If backend returned HTML, show first part to help debugging.
+    throw new Error(text.slice(0, 120));
+  }
+}
+
+const BASE = "/api";
+
+export async function apiGet<T>(path: string): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, { headers: buildHeaders() });
+  const body = await parseJsonSafe<T | ApiErrorBody>(res);
+  if (!res.ok) throw new Error((body as ApiErrorBody).message ?? "Request failed");
+  return body as T;
+}
+
+export async function apiPost<T>(path: string, data: unknown): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || "Request failed");
-  return data;
+  const body = await parseJsonSafe<T | ApiErrorBody>(res);
+  if (!res.ok) throw new Error((body as ApiErrorBody).message ?? "Request failed");
+  return body as T;
+}
+
+export async function apiPut<T>(path: string, data: unknown): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "PUT",
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  });
+  const body = await parseJsonSafe<T | ApiErrorBody>(res);
+  if (!res.ok) throw new Error((body as ApiErrorBody).message ?? "Request failed");
+  return body as T;
 }
 
 export async function apiPatch<T>(path: string, data: unknown): Promise<T> {

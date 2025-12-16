@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
-import { useAuth } from "../../../context/auth.context";
+import { useAuth } from "../../../context/AuthContext";
 
 function NavItem({ to, label }: { to: string; label: string }) {
   return (

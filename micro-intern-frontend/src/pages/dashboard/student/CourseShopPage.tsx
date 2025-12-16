@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiGet, apiPost, apiPatch } from "../../../api/client";
-import { useAuth } from "../../../context/auth.context";
+import { useAuth } from "../../../context/AuthContext";
 
 type Course = {
   _id: string;
