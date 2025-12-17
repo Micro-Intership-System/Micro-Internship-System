@@ -1,17 +1,20 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiGet, apiPut } from "../../../api/client";
+import { useAuth } from "../../../context/AuthContext";
 
 export default function EditJobPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [jobData, setJobData] = useState<any>(null);
   const [form, setForm] = useState({
     title: "",
     location: "",
     duration: "",
-    budget: "",
+    gold: "",
     description: "",
     skills: "",
     tags: "",
@@ -33,12 +36,13 @@ export default function EditJobPage() {
       setError("");
       const res = await apiGet<{ success: boolean; data: any }>(`/internships/${id}`);
       const job = res.data;
+      setJobData(job);
       
       setForm({
         title: job.title || "",
         location: job.location || "",
         duration: job.duration || "",
-        budget: job.budget?.toString() || "",
+        gold: job.gold?.toString() || "",
         description: job.description || "",
         skills: job.skills?.join(", ") || "",
         tags: job.tags?.join(", ") || "",
@@ -66,7 +70,7 @@ export default function EditJobPage() {
         ...form,
         skills: form.skills.split(",").map((s) => s.trim()).filter(Boolean),
         tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
-        budget: Number(form.budget),
+        gold: Number(form.gold),
         deadline: form.deadline ? new Date(form.deadline).toISOString() : undefined,
       };
 
@@ -79,211 +83,214 @@ export default function EditJobPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[50vh] flex items-center justify-center">
-        <div className="text-sm text-slate-600">Loading job details…</div>
+      <div className="flex items-center justify-center py-12">
+        <div className="text-sm text-[#6b7280]">Loading job details…</div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
-          Edit Job Posting
-        </h1>
-        <p className="text-sm text-slate-600 mt-1">
-          Update the details of your internship posting.
-        </p>
+    <div className="space-y-8">
+      {/* Page Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold text-[#111827] mb-2">Edit Job Posting</h1>
+        <p className="text-sm text-[#6b7280]">Update the details of your internship posting</p>
+        {jobData && (
+          <div className="mt-4 p-4 bg-[#f9fafb] border border-[#e5e7eb] rounded-lg">
+            <div className="text-sm text-[#374151] space-y-1">
+              <div><span className="font-medium">Company:</span> {jobData.companyName}</div>
+              <div><span className="font-medium">Posted by:</span> {user?.name || "Employer"}</div>
+              {jobData.updatedAt && (
+                <div><span className="font-medium">Last updated:</span> {new Date(jobData.updatedAt).toLocaleString()}</div>
+              )}
+              {jobData.acceptedStudentId && (
+                <div className="mt-2 p-2 bg-[#fef3c7] border border-[#fde68a] rounded text-xs text-[#92400e]">
+                  ⚠️ A student has been accepted for this job. Any changes will be notified to the student and admin.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Error */}
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="border border-[#fecaca] bg-[#fee2e2] rounded-lg px-4 py-3 text-sm text-[#991b1b]">
           {error}
         </div>
       )}
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
-        <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-4">
-          {/* Title */}
-          <div>
-            <label className="block text-sm font-medium text-slate-900 mb-2">
-              Job Title *
-            </label>
-            <input
-              type="text"
-              value={form.title}
-              onChange={(e) => update("title", e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              required
-            />
-          </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
+          <h2 className="text-lg font-semibold text-[#111827] mb-6">Job Details</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:col-span-2">
+              <label className="block text-xs font-medium text-[#374151] mb-2 uppercase tracking-wide">
+                Job Title *
+              </label>
+              <input
+                type="text"
+                value={form.title}
+                onChange={(e) => update("title", e.target.value)}
+                className="w-full px-4 py-2.5 border border-[#d1d5db] rounded-lg text-sm text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent bg-white"
+                required
+              />
+            </div>
 
-          {/* Location */}
-          <div>
-            <label className="block text-sm font-medium text-slate-900 mb-2">
-              Location *
-            </label>
-            <input
-              type="text"
-              value={form.location}
-              onChange={(e) => update("location", e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              placeholder="e.g., Remote, Dhaka, Bangladesh"
-              required
-            />
-          </div>
+            <div>
+              <label className="block text-xs font-medium text-[#374151] mb-2 uppercase tracking-wide">
+                Location *
+              </label>
+              <input
+                type="text"
+                value={form.location}
+                onChange={(e) => update("location", e.target.value)}
+                className="w-full px-4 py-2.5 border border-[#d1d5db] rounded-lg text-sm text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent bg-white"
+                placeholder="e.g., Remote, Dhaka"
+                required
+              />
+            </div>
 
-          {/* Duration */}
-          <div>
-            <label className="block text-sm font-medium text-slate-900 mb-2">
-              Duration *
-            </label>
-            <input
-              type="text"
-              value={form.duration}
-              onChange={(e) => update("duration", e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              placeholder="e.g., 2 weeks, 1 month"
-              required
-            />
-          </div>
+            <div>
+              <label className="block text-xs font-medium text-[#374151] mb-2 uppercase tracking-wide">
+                Duration *
+              </label>
+              <input
+                type="text"
+                value={form.duration}
+                onChange={(e) => update("duration", e.target.value)}
+                className="w-full px-4 py-2.5 border border-[#d1d5db] rounded-lg text-sm text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent bg-white"
+                placeholder="e.g., 2 weeks, 1 month"
+                required
+              />
+            </div>
 
-          {/* Budget */}
-          <div>
-            <label className="block text-sm font-medium text-slate-900 mb-2">
-              Budget (BDT) *
-            </label>
-            <input
-              type="number"
-              value={form.budget}
-              onChange={(e) => update("budget", e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              min="0"
-              required
-            />
-          </div>
+            <div>
+              <label className="block text-xs font-medium text-[#374151] mb-2 uppercase tracking-wide">
+                Gold Reward *
+              </label>
+              <input
+                type="number"
+                value={form.gold}
+                onChange={(e) => update("gold", e.target.value)}
+                className="w-full px-4 py-2.5 border border-[#d1d5db] rounded-lg text-sm text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent bg-white"
+                min="0"
+                required
+              />
+            </div>
 
-          {/* Deadline */}
-          <div>
-            <label className="block text-sm font-medium text-slate-900 mb-2">
-              Deadline
-            </label>
-            <input
-              type="date"
-              value={form.deadline}
-              onChange={(e) => update("deadline", e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            />
-          </div>
+            <div>
+              <label className="block text-xs font-medium text-[#374151] mb-2 uppercase tracking-wide">
+                Priority Level
+              </label>
+              <select
+                value={form.priorityLevel}
+                onChange={(e) => update("priorityLevel", e.target.value)}
+                className="w-full px-4 py-2.5 border border-[#d1d5db] rounded-lg text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent bg-white"
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
 
-          {/* Priority Level */}
-          <div>
-            <label className="block text-sm font-medium text-slate-900 mb-2">
-              Priority Level
-            </label>
-            <select
-              value={form.priorityLevel}
-              onChange={(e) => update("priorityLevel", e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-          </div>
+            <div>
+              <label className="block text-xs font-medium text-[#374151] mb-2 uppercase tracking-wide">
+                Deadline
+              </label>
+              <input
+                type="date"
+                value={form.deadline}
+                onChange={(e) => update("deadline", e.target.value)}
+                className="w-full px-4 py-2.5 border border-[#d1d5db] rounded-lg text-sm text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent bg-white"
+              />
+            </div>
 
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-slate-900 mb-2">
-              Description *
-            </label>
-            <textarea
-              value={form.description}
-              onChange={(e) => update("description", e.target.value)}
-              rows={6}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              required
-            />
-          </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-medium text-[#374151] mb-2 uppercase tracking-wide">
+                Description *
+              </label>
+              <textarea
+                value={form.description}
+                onChange={(e) => update("description", e.target.value)}
+                rows={6}
+                className="w-full px-4 py-2.5 border border-[#d1d5db] rounded-lg text-sm text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent bg-white resize-none"
+                required
+              />
+            </div>
 
-          {/* Skills */}
-          <div>
-            <label className="block text-sm font-medium text-slate-900 mb-2">
-              Skills (comma-separated)
-            </label>
-            <input
-              type="text"
-              value={form.skills}
-              onChange={(e) => update("skills", e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              placeholder="e.g., React, Node.js, MongoDB"
-            />
-          </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-medium text-[#374151] mb-2 uppercase tracking-wide">
+                Skills (comma-separated)
+              </label>
+              <input
+                type="text"
+                value={form.skills}
+                onChange={(e) => update("skills", e.target.value)}
+                className="w-full px-4 py-2.5 border border-[#d1d5db] rounded-lg text-sm text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent bg-white"
+                placeholder="e.g., React, Node.js, MongoDB"
+              />
+            </div>
 
-          {/* Tags */}
-          <div>
-            <label className="block text-sm font-medium text-slate-900 mb-2">
-              Tags (comma-separated)
-            </label>
-            <input
-              type="text"
-              value={form.tags}
-              onChange={(e) => update("tags", e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              placeholder="e.g., remote, frontend, part-time"
-            />
-          </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-medium text-[#374151] mb-2 uppercase tracking-wide">
+                Tags (comma-separated)
+              </label>
+              <input
+                type="text"
+                value={form.tags}
+                onChange={(e) => update("tags", e.target.value)}
+                className="w-full px-4 py-2.5 border border-[#d1d5db] rounded-lg text-sm text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent bg-white"
+                placeholder="e.g., remote, frontend, part-time"
+              />
+            </div>
 
-          {/* Banner URL */}
-          <div>
-            <label className="block text-sm font-medium text-slate-900 mb-2">
-              Banner Image URL
-            </label>
-            <input
-              type="url"
-              value={form.bannerUrl}
-              onChange={(e) => update("bannerUrl", e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              placeholder="https://example.com/banner.jpg"
-            />
-          </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-medium text-[#374151] mb-2 uppercase tracking-wide">
+                Banner Image URL
+              </label>
+              <input
+                type="url"
+                value={form.bannerUrl}
+                onChange={(e) => update("bannerUrl", e.target.value)}
+                className="w-full px-4 py-2.5 border border-[#d1d5db] rounded-lg text-sm text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent bg-white"
+                placeholder="https://example.com/banner.jpg"
+              />
+            </div>
 
-          {/* Featured */}
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="isFeatured"
-              checked={form.isFeatured}
-              onChange={(e) => update("isFeatured", e.target.checked)}
-              className="rounded border-slate-300"
-            />
-            <label htmlFor="isFeatured" className="text-sm font-medium text-slate-900">
-              Feature this job
-            </label>
+            <div className="md:col-span-2">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.isFeatured}
+                  onChange={(e) => update("isFeatured", e.target.checked)}
+                  className="w-4 h-4 border border-[#d1d5db] rounded text-[#111827] focus:ring-2 focus:ring-[#111827]"
+                />
+                <span className="text-sm text-[#374151]">Feature this job on the homepage</span>
+              </label>
+            </div>
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-3">
-          <button
-            type="submit"
-            className="rounded-xl bg-slate-900 px-6 py-2 text-sm font-semibold text-white hover:bg-black"
-          >
-            Save Changes
-          </button>
+        <div className="flex justify-end gap-3">
           <button
             type="button"
             onClick={() => navigate("/dashboard/employer/jobs")}
-            className="rounded-xl border border-slate-300 px-6 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+            className="px-6 py-2.5 rounded-lg border border-[#d1d5db] text-[#111827] text-sm font-semibold hover:bg-[#f9fafb] transition-colors"
           >
             Cancel
+          </button>
+          <button
+            type="submit"
+            className="px-6 py-2.5 rounded-lg bg-[#111827] text-white text-sm font-semibold hover:bg-[#1f2937] transition-colors"
+          >
+            Save Changes
           </button>
         </div>
       </form>
     </div>
   );
 }
-

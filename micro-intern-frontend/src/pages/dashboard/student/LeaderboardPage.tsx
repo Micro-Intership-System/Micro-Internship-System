@@ -30,7 +30,7 @@ export default function LeaderboardPage() {
       const res = await apiGet<{ success: boolean; data: LeaderboardEntry[] }>(
         `/leaderboard?sortBy=${sortBy === "starRating" ? "stars" : sortBy === "totalTasksCompleted" ? "jobs" : "time"}`
       );
-      setEntries(res.data);
+      setEntries(res.data || []);
     } catch (err) {
       console.error("Failed to load leaderboard:", err);
     } finally {
@@ -42,16 +42,17 @@ export default function LeaderboardPage() {
     return (
       <div className="flex items-center gap-0.5">
         {[1, 2, 3, 4, 5].map((star) => (
-          <span
+          <svg
             key={star}
-            className={`text-lg ${
-              star <= rating ? "text-yellow-400" : "text-slate-300"
+            className={`w-3 h-3 ${
+              star <= rating ? "text-yellow-400 fill-current" : "text-[#e5e7eb] fill-current"
             }`}
+            viewBox="0 0 20 20"
           >
-            ★
-          </span>
+            <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+          </svg>
         ))}
-        <span className="ml-1 text-sm font-medium text-slate-700">
+        <span className="ml-1 text-sm font-medium text-[#374151]">
           {rating.toFixed(1)}
         </span>
       </div>
@@ -60,20 +61,18 @@ export default function LeaderboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[50vh] flex items-center justify-center">
-        <div className="text-sm text-slate-600">Loading leaderboard…</div>
+      <div className="flex items-center justify-center py-12">
+        <div className="text-sm text-[#6b7280]">Loading leaderboard…</div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
-          Leaderboard
-        </h1>
-        <p className="text-sm text-slate-600 mt-1">
+    <div className="space-y-8">
+      {/* Page Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold text-[#111827] mb-2">Leaderboard</h1>
+        <p className="text-sm text-[#6b7280]">
           Top performers ranked by their achievements and performance metrics.
         </p>
       </div>
@@ -84,64 +83,64 @@ export default function LeaderboardPage() {
           onClick={() => setSortBy("starRating")}
           className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
             sortBy === "starRating"
-              ? "bg-slate-900 text-white"
-              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              ? "bg-[#111827] text-white"
+              : "bg-[#f9fafb] text-[#374151] border border-[#e5e7eb] hover:bg-[#f3f4f6]"
           }`}
         >
-          ⭐ Stars
+          Stars
         </button>
         <button
           onClick={() => setSortBy("totalTasksCompleted")}
           className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
             sortBy === "totalTasksCompleted"
-              ? "bg-slate-900 text-white"
-              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              ? "bg-[#111827] text-white"
+              : "bg-[#f9fafb] text-[#374151] border border-[#e5e7eb] hover:bg-[#f3f4f6]"
           }`}
         >
-          📋 Jobs Completed
+          Jobs Completed
         </button>
         <button
           onClick={() => setSortBy("averageCompletionTime")}
           className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
             sortBy === "averageCompletionTime"
-              ? "bg-slate-900 text-white"
-              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              ? "bg-[#111827] text-white"
+              : "bg-[#f9fafb] text-[#374151] border border-[#e5e7eb] hover:bg-[#f3f4f6]"
           }`}
         >
-          ⏱️ Avg. Time
+          Avg. Time
         </button>
       </div>
 
       {/* Leaderboard Table */}
-      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+      <div className="border border-[#e5e7eb] rounded-lg bg-white overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-slate-50 border-b border-slate-200">
+            <thead className="bg-[#f9fafb] border-b border-[#e5e7eb]">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-[#374151] uppercase tracking-wider">
                   Rank
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-[#374151] uppercase tracking-wider">
                   Student
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  ⭐ Rating
+                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">
+                  Rating
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">
                   Jobs
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">
                   Avg. Time
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">
                   XP
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-[#e5e7eb]">
               {entries.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-sm text-slate-600">
+                  <td colSpan={6} className="px-6 py-12 text-center text-sm text-[#6b7280]">
                     No students found.
                   </td>
                 </tr>
@@ -149,25 +148,14 @@ export default function LeaderboardPage() {
                 entries.map((entry) => (
                   <tr
                     key={entry._id}
-                    className={`hover:bg-slate-50 transition-colors ${
-                      entry.position <= 3 ? "bg-yellow-50/50" : ""
+                    className={`hover:bg-[#f9fafb] transition-colors ${
+                      entry.position <= 3 ? "bg-yellow-50" : ""
                     }`}
                   >
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        {entry.position === 1 && (
-                          <span className="text-xl">🥇</span>
-                        )}
-                        {entry.position === 2 && (
-                          <span className="text-xl">🥈</span>
-                        )}
-                        {entry.position === 3 && (
-                          <span className="text-xl">🥉</span>
-                        )}
-                        <span className="text-sm font-semibold text-slate-900">
-                          #{entry.position}
-                        </span>
-                      </div>
+                      <span className="text-sm font-semibold text-[#111827]">
+                        #{entry.position}
+                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -178,16 +166,16 @@ export default function LeaderboardPage() {
                             className="w-10 h-10 rounded-full object-cover"
                           />
                         ) : (
-                          <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-medium">
+                          <div className="w-10 h-10 rounded-full bg-[#111827] flex items-center justify-center text-white font-semibold text-sm">
                             {entry.name.charAt(0).toUpperCase()}
                           </div>
                         )}
                         <div>
-                          <div className="text-sm font-semibold text-slate-900">
+                          <div className="text-sm font-semibold text-[#111827]">
                             {entry.name}
                           </div>
                           {entry.institution && (
-                            <div className="text-xs text-slate-500">
+                            <div className="text-xs text-[#6b7280]">
                               {entry.institution}
                             </div>
                           )}
@@ -198,19 +186,19 @@ export default function LeaderboardPage() {
                       {renderStars(entry.starRating || 1)}
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <span className="text-sm font-semibold text-slate-900">
+                      <span className="text-sm font-semibold text-[#111827]">
                         {entry.totalTasksCompleted || 0}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <span className="text-sm font-semibold text-slate-900">
+                      <span className="text-sm font-semibold text-[#111827]">
                         {entry.averageCompletionTime
                           ? `${entry.averageCompletionTime.toFixed(1)}d`
                           : "—"}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <span className="text-sm font-semibold text-slate-900">
+                      <span className="text-sm font-semibold text-[#111827]">
                         {entry.xp || 0}
                       </span>
                     </td>
@@ -224,4 +212,3 @@ export default function LeaderboardPage() {
     </div>
   );
 }
-

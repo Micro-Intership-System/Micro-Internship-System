@@ -19,6 +19,8 @@ import leaderboardRoutes from "./routes/leaderboardRoutes";
 import anomalyRoutes from "./routes/anomalyRoutes";
 import reviewRoutes from "./routes/reviewRoutes";
 import certificateRoutes from "./routes/certificateRoutes";
+import jobManagementRoutes from "./routes/jobManagementRoutes";
+import adminRoutes from "./routes/adminRoutes";
 
 
 
@@ -60,6 +62,8 @@ app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/anomalies", anomalyRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/certificates", certificateRoutes);
+app.use("/api/jobs", jobManagementRoutes);
+app.use("/api/admin", adminRoutes);
 
 
 const PORT = process.env.PORT || 1547;

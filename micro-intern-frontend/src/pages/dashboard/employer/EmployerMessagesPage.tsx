@@ -29,7 +29,7 @@ type Task = {
   acceptedStudentId?: string;
 };
 
-export default function MessagesPage() {
+export default function EmployerMessagesPage() {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -61,26 +61,29 @@ export default function MessagesPage() {
   async function loadTasks() {
     try {
       setLoading(true);
-      // Load all running jobs (accepted jobs)
-      const res = await apiGet<{ success: boolean; data: any[] }>("/jobs/running");
+      const res = await apiGet<{ success: boolean; data: any[] }>("/employer/jobs");
       if (res.success) {
-        const runningTasks = res.data.map((job: any) => ({
-          _id: job._id,
-          title: job.title,
-          companyName: job.companyName,
-          status: job.status,
-          acceptedStudentId: user?.id,
-        }));
-        setTasks(runningTasks);
+        // Get all tasks with accepted students (including completed for dispute chats)
+        const activeTasks = res.data
+          .filter((task: any) => task.acceptedStudentId && task.status !== "cancelled")
+          .map((task: any) => ({
+            _id: task._id,
+            title: task.title,
+            companyName: task.companyName || "My Company",
+            status: task.status,
+            acceptedStudentId: task.acceptedStudentId,
+            submissionStatus: task.submissionStatus,
+          }));
+        setTasks(activeTasks);
         
         // Check URL for taskId parameter
         const urlParams = new URLSearchParams(window.location.search);
         const taskIdParam = urlParams.get("taskId");
         
-        if (taskIdParam && runningTasks.find((t: any) => t._id === taskIdParam)) {
+        if (taskIdParam && activeTasks.find((t: any) => t._id === taskIdParam)) {
           setSelectedTaskId(taskIdParam);
-        } else if (runningTasks.length > 0 && !selectedTaskId) {
-          setSelectedTaskId(runningTasks[0]._id);
+        } else if (activeTasks.length > 0 && !selectedTaskId) {
+          setSelectedTaskId(activeTasks[0]._id);
         }
       }
     } catch (err) {
@@ -139,14 +142,14 @@ export default function MessagesPage() {
       {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-[#111827] mb-2">Messages</h1>
-        <p className="text-sm text-[#6b7280]">Chat with employers about your active tasks</p>
+        <p className="text-sm text-[#6b7280]">Chat with students about active tasks</p>
       </div>
 
       {tasks.length === 0 ? (
         <div className="border border-[#e5e7eb] rounded-lg bg-white p-16 text-center">
           <h3 className="text-lg font-semibold text-[#111827] mb-2">No Active Tasks</h3>
           <p className="text-sm text-[#6b7280] mb-6">
-            You need to have an accepted application to start chatting.
+            You need to have tasks with accepted students to start chatting.
           </p>
         </div>
       ) : (
@@ -258,3 +261,4 @@ export default function MessagesPage() {
     </div>
   );
 }
+

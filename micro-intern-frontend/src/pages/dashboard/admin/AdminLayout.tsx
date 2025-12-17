@@ -21,17 +21,17 @@ function NavItem({ to, label }: { to: string; label: string }) {
   );
 }
 
-export default function EmployerLayout() {
+export default function AdminLayout() {
   const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
-    { to: "/dashboard/employer", label: "Dashboard" },
-    { to: "/dashboard/employer/jobs", label: "My Jobs" },
-    { to: "/dashboard/employer/submissions", label: "Submissions" },
-    { to: "/dashboard/employer/post", label: "Post Job" },
-    { to: "/dashboard/employer/messages", label: "Messages" },
-    { to: "/dashboard/employer/profile", label: "Profile" },
+    { to: "/dashboard/admin", label: "Dashboard" },
+    { to: "/dashboard/admin/anomalies", label: "Anomalies" },
+    { to: "/dashboard/admin/students", label: "Students" },
+    { to: "/dashboard/admin/employers", label: "Employers" },
+    { to: "/dashboard/admin/chats", label: "All Chats" },
+    { to: "/dashboard/admin/tasks", label: "All Tasks" },
   ];
 
   return (
@@ -41,9 +41,9 @@ export default function EmployerLayout() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link to="/dashboard/employer" className="flex items-center gap-2.5 flex-shrink-0">
+            <Link to="/dashboard/admin" className="flex items-center gap-2.5 flex-shrink-0">
               <span className="text-sm font-semibold text-[#111827]">MI</span>
-              <span className="text-sm text-[#6b7280] hidden sm:inline">Employer Dashboard</span>
+              <span className="text-sm text-[#6b7280] hidden sm:inline">Admin Dashboard</span>
             </Link>
 
             {/* Navigation - Desktop */}
@@ -58,10 +58,10 @@ export default function EmployerLayout() {
               {/* User Info - Desktop */}
               <div className="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-lg hover:bg-[#f9fafb] transition-colors">
                 <div className="w-8 h-8 rounded-full bg-[#111827] flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
-                  {user?.name?.charAt(0).toUpperCase() || "E"}
+                  {user?.name?.charAt(0).toUpperCase() || "A"}
                 </div>
                 <div className="hidden lg:block text-right">
-                  <div className="text-sm font-semibold text-[#111827]">{user?.name ?? "Employer"}</div>
+                  <div className="text-sm font-semibold text-[#111827]">{user?.name ?? "Admin"}</div>
                   <div className="text-xs text-[#6b7280]">{user?.email ?? ""}</div>
                 </div>
               </div>
@@ -125,10 +125,12 @@ export default function EmployerLayout() {
       <footer className="border-t border-[#e5e7eb] bg-white mt-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center text-xs text-[#9ca3af]">
-            © {new Date().getFullYear()} Micro Internship. All rights reserved.
+            © {new Date().getFullYear()} Micro Internship Admin Panel. All rights reserved.
           </div>
         </div>
       </footer>
     </div>
   );
 }
+
+

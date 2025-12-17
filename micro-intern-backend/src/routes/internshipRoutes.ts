@@ -3,6 +3,8 @@ import { Internship } from "../models/internship";
 import { Application } from "../models/application";
 import { requireAuth } from "../middleware/requireAuth";
 import { User } from "../models/user";
+import { createNotification } from "../utils/notifications";
+import { Anomaly } from "../models/anomaly";
 
 const router = Router();
 
@@ -103,7 +105,7 @@ router.post("/", requireAuth, requireEmployer, async (req, res) => {
       title,
       location,
       duration,
-      budget,
+      gold, // Changed from budget to gold
       description,
       skills,
       tags,
@@ -118,7 +120,7 @@ router.post("/", requireAuth, requireEmployer, async (req, res) => {
       title,
       location,
       duration,
-      budget,
+      gold, // Changed from budget to gold
       description,
       skills,
       tags,
@@ -151,7 +153,7 @@ router.put("/:id", requireAuth, requireEmployer, async (req, res) => {
       "title",
       "location",
       "duration",
-      "budget",
+      "gold", // Changed from budget to gold
       "description",
       "priorityLevel",
       "skills",
@@ -168,6 +170,21 @@ router.put("/:id", requireAuth, requireEmployer, async (req, res) => {
       }
     }
 
+    const oldJob = await Internship.findById(req.params.id);
+    if (!oldJob) {
+      return res.status(404).json({
+        success: false,
+        message: "Internship not found",
+      });
+    }
+
+    if (oldJob.employerId.toString() !== req.user!.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Not your job",
+      });
+    }
+
     const updated = await Internship.findOneAndUpdate(
       { _id: req.params.id, employerId: req.user!.id }, // ownership check
       updates,
@@ -179,6 +196,31 @@ router.put("/:id", requireAuth, requireEmployer, async (req, res) => {
         success: false,
         message: "Internship not found",
       });
+    }
+
+    // If student is accepted, notify student and admin about job changes
+    if (updated.acceptedStudentId) {
+      await createNotification(
+        updated.acceptedStudentId.toString(),
+        "task_assigned",
+        "Job Updated",
+        `The job "${updated.title}" has been updated by the employer. Please review the changes.`,
+        updated._id.toString(),
+        req.user!.id
+      );
+
+      // Notify all admins
+      const admins = await User.find({ role: "admin" });
+      for (const admin of admins) {
+        await createNotification(
+          admin._id.toString(),
+          "anomaly_detected",
+          "Job Updated with Accepted Student",
+          `Job "${updated.title}" was updated while a student is accepted. This may require review.`,
+          updated._id.toString(),
+          req.user!.id
+        );
+      }
     }
 
     // updatedAt auto-changes here
@@ -204,6 +246,28 @@ router.get("/", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+/**
+ * DELETE /api/internships/delete-all
+ * Delete all internships (for resetting with new structure)
+ * WARNING: Admin only or use with caution
+ */
+router.delete("/delete-all", requireAuth, async (req: any, res) => {
+  try {
+    if (req.user?.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Admin only" });
+    }
+    const result = await Internship.deleteMany({});
+    res.json({ 
+      success: true, 
+      message: `Deleted ${result.deletedCount} internships`,
+      deletedCount: result.deletedCount 
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Failed to delete internships" });
   }
 });
 

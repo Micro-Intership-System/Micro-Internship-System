@@ -59,7 +59,8 @@ router.post("/:taskId", requireAuth, async (req: any, res) => {
       return res.status(403).json({ success: false, message: "Access denied" });
     }
 
-    if (task.status === "completed" || task.status === "cancelled") {
+    // Allow messages for disputed tasks, but not for completed/cancelled (unless disputed)
+    if ((task.status === "completed" || task.status === "cancelled") && task.submissionStatus !== "disputed") {
       return res.status(400).json({
         success: false,
         message: "Cannot send messages to completed/cancelled tasks",

@@ -5,7 +5,8 @@ export type AnomalyType =
   | "student_overwork"
   | "missed_deadline"
   | "delayed_payment"
-  | "task_stalled";
+  | "task_stalled"
+  | "company_name_change";
 
 export type AnomalySeverity = "low" | "medium" | "high" | "critical";
 export type AnomalyStatus = "open" | "investigating" | "resolved" | "dismissed";
@@ -33,7 +34,7 @@ const anomalySchema = new Schema<IAnomaly>(
   {
     type: {
       type: String,
-      enum: ["employer_inactivity", "student_overwork", "missed_deadline", "delayed_payment", "task_stalled"],
+      enum: ["employer_inactivity", "student_overwork", "missed_deadline", "delayed_payment", "task_stalled", "company_name_change"],
       required: true,
     },
     severity: {

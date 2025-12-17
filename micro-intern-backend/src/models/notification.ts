@@ -6,12 +6,19 @@ export type NotificationType =
   | "application_rejected"
   | "task_assigned"
   | "task_completed"
+  | "task_submitted"
+  | "task_confirmed"
+  | "task_rejected"
+  | "task_cancelled"
   | "payment_released"
   | "payment_received"
+  | "delayed_payment"
   | "message_received"
   | "anomaly_detected"
+  | "company_name_change"
   | "milestone_reached"
-  | "review_received";
+  | "review_received"
+  | "dispute_resolved";
 
 export interface INotification extends Document {
   userId: Types.ObjectId;
@@ -35,12 +42,19 @@ const notificationSchema = new Schema<INotification>(
         "application_rejected",
         "task_assigned",
         "task_completed",
+        "task_submitted",
+        "task_confirmed",
+        "task_rejected",
+        "task_cancelled",
         "payment_released",
         "payment_received",
+        "delayed_payment",
         "message_received",
         "anomaly_detected",
+        "company_name_change",
         "milestone_reached",
         "review_received",
+        "dispute_resolved",
       ],
       required: true,
     },

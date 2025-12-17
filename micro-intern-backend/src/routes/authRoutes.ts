@@ -71,15 +71,31 @@ router.post("/login", async (req, res) => {
       { expiresIn: "7d" }
     );
 
+    // Build user response with role-specific fields
+    const userResponse: any = {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role
+    };
+
+    // Include gamification fields for students
+    if (user.role === "student") {
+      userResponse.gold = user.gold || 0;
+      userResponse.xp = user.xp || 0;
+      userResponse.starRating = user.starRating || 1;
+      userResponse.totalTasksCompleted = user.totalTasksCompleted || 0;
+      userResponse.averageCompletionTime = user.averageCompletionTime || 0;
+      userResponse.institution = user.institution;
+      userResponse.skills = user.skills || [];
+      userResponse.bio = user.bio;
+      userResponse.profilePicture = user.profilePicture;
+    }
+
     res.json({
       success: true,
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      }
+      user: userResponse
     });
 
   } catch (err) {

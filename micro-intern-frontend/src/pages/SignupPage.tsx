@@ -1,8 +1,10 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { apiPost } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import type { AuthUser } from "../context/AuthContext";
+
+type Role = "student" | "employer" | "admin";
 
 const SignupPage = () => {
   const navigate = useNavigate();
@@ -12,55 +14,154 @@ const SignupPage = () => {
     name: "",
     email: "",
     password: "",
-    role: "student"
+    role: "student" as Role
   });
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError(null);
+    setLoading(true);
     try {
       const data = await apiPost("/auth/signup", form) as { token: string; user: AuthUser };
       login(data.token, data.user);
-      navigate("/dashboard/student");
+      
+      if (data.user.role === "employer") {
+        navigate("/dashboard/employer");
+      } else if (data.user.role === "admin") {
+        navigate("/dashboard/admin");
+      } else {
+        navigate("/dashboard/student");
+      }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      if (err instanceof Error) setError(err.message);
+      else setError("Signup failed");
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white shadow-lg p-8 rounded-xl w-full max-w-md"
-      >
-        <h1 className="text-2xl font-semibold mb-4">Sign Up</h1>
+    <div className="login-page">
+      <div className="login-shell">
+        {/* top heading like login page */}
+        <div className="login-hero">
+          <div className="login-brand">MI</div>
+          <div className="login-tagline">
+            Micro-Internship · Skill-based micro projects for students
+          </div>
+          <h1 className="login-hero-title">
+            Start building your experience today.
+          </h1>
+          <p className="login-hero-text">
+            Create an account to access micro-internships, connect with employers, and build a portfolio that showcases your skills.
+          </p>
+          <ul className="login-hero-list">
+            <li>Join a community of students and employers.</li>
+            <li>Earn while you learn with paid micro-internships.</li>
+            <li>Build a portfolio that stands out to employers.</li>
+          </ul>
+        </div>
 
-        <input name="name" onChange={handleChange} value={form.name}
-          className="w-full border p-2 rounded mb-2" placeholder="Name" />
+        {/* main layout: hero text (left) + form card (right) */}
+        <div className="login-main">
+          <div /> {/* left column empty for now; hero is above */}
+          <div className="login-card">
+            <h2>Sign up</h2>
+            <p className="login-card-subtitle">
+              Create your account. Choose your role and get started.
+            </p>
 
-        <input name="email" onChange={handleChange} value={form.email}
-          className="w-full border p-2 rounded mb-2" placeholder="Email" />
+            <form onSubmit={handleSubmit}>
+              <div className="login-field">
+                <label className="login-label" htmlFor="name">
+                  Full name
+                </label>
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  className="login-input"
+                  value={form.name}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
 
-        <input name="password" type="password"
-          onChange={handleChange} value={form.password}
-          className="w-full border p-2 rounded mb-2" placeholder="Password" />
+              <div className="login-field">
+                <label className="login-label" htmlFor="email">
+                  Email address
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  className="login-input"
+                  value={form.email}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
 
-        <select name="role" value={form.role} onChange={handleChange}
-          className="w-full border p-2 rounded mb-4">
-          <option value="student">Student</option>
-          <option value="employer">Employer</option>
-        </select>
+              <div className="login-field">
+                <label className="login-label" htmlFor="password">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  className="login-input"
+                  value={form.password}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
 
-        {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
+              <div className="login-field">
+                <span className="login-role-label">Sign up as</span>
+                <div className="login-role-toggle">
+                  {(["student", "employer", "admin"] as Role[]).map(r => (
+                    <button
+                      key={r}
+                      type="button"
+                      className={
+                        "login-role-button" +
+                        (form.role === r ? " login-role-button--active" : "")
+                      }
+                      onClick={() => setForm({ ...form, role: r })}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-        <button type="submit" className="w-full bg-black text-white py-2 rounded-full">
-          Create Account
-        </button>
-      </form>
+              {error && <div className="login-error">{error}</div>}
+
+              <button
+                type="submit"
+                className="login-submit"
+                disabled={loading}
+              >
+                {loading ? "Creating account…" : "Create account"}
+              </button>
+            </form>
+
+            <p className="login-footer-text">
+              Already have an account?{" "}
+              <Link to="/login" className="login-footer-link">
+                Log in
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

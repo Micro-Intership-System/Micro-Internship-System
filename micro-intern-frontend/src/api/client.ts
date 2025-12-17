@@ -64,3 +64,13 @@ export async function apiPatch<T>(path: string, data: unknown): Promise<T> {
   if (!res.ok) throw new Error((body as ApiErrorBody).message ?? "Request failed");
   return body as T;
 }
+
+export async function apiDelete<T>(path: string): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "DELETE",
+    headers: buildHeaders(),
+  });
+  const body = await parseJsonSafe<T | ApiErrorBody>(res);
+  if (!res.ok) throw new Error((body as ApiErrorBody).message ?? "Request failed");
+  return body as T;
+}

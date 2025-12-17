@@ -16,6 +16,12 @@ import MessagesPage from "./pages/dashboard/student/MessagesPage";
 import StudentPortfolioPage from "./pages/dashboard/student/StudentPortfolioPage";
 import CourseShopPage from "./pages/dashboard/student/CourseShopPage";
 import LeaderboardPage from "./pages/dashboard/student/LeaderboardPage";
+import NotificationsPage from "./pages/dashboard/student/NotificationsPage";
+import PaymentsPage from "./pages/dashboard/student/PaymentsPage";
+import SubmitReviewPage from "./pages/dashboard/student/SubmitReviewPage";
+import ViewReviewsPage from "./pages/dashboard/student/ViewReviewsPage";
+import CertificatesPage from "./pages/dashboard/student/CertificatesPage";
+import RunningJobsPage from "./pages/dashboard/student/RunningJobsPage";
 
 import InternshipDetailsPage from "./pages/InternshipDetailsPage";
 import EmployerProfile from "./pages/dashboard/employer/EmployerProfile";
@@ -27,6 +33,19 @@ import EmployerJobsPage from "./pages/dashboard/employer/EmployerJobsPage.tsx";
 import EditJobPage from "./pages/dashboard/employer/EditJobPage.tsx";
 import JobApplicationsPage from "./pages/dashboard/employer/JobApplicationsPage.tsx";
 import EmployerStudentPortfolioPage from "./pages/dashboard/employer/EmployerStudentPortfolioPage.tsx";
+import EmployerNotificationsPage from "./pages/dashboard/employer/EmployerNotificationsPage.tsx";
+import EmployerMessagesPage from "./pages/dashboard/employer/EmployerMessagesPage";
+import TaskPaymentPage from "./pages/dashboard/employer/TaskPaymentPage";
+import EmployerSubmitReviewPage from "./pages/dashboard/employer/SubmitReviewPage";
+import JobSubmissionsPage from "./pages/dashboard/employer/JobSubmissionsPage";
+
+import AdminLayout from "./pages/dashboard/admin/AdminLayout";
+import AdminDashboard from "./pages/dashboard/admin/AdminDashboard";
+import AnomaliesPage from "./pages/dashboard/admin/AnomaliesPage";
+import StudentsPage from "./pages/dashboard/admin/StudentsPage";
+import EmployersPage from "./pages/dashboard/admin/EmployersPage";
+import AllChatsPage from "./pages/dashboard/admin/AllChatsPage";
+import AllTasksPage from "./pages/dashboard/admin/AllTasksPage";
 
 const App: React.FC = () => {
   return (
@@ -58,6 +77,12 @@ const App: React.FC = () => {
             <Route path="portfolio" element={<StudentPortfolioPage />} />
             <Route path="courses" element={<CourseShopPage />} />
             <Route path="leaderboard" element={<LeaderboardPage />} />
+            <Route path="notifications" element={<NotificationsPage />} />
+            <Route path="payments" element={<PaymentsPage />} />
+            <Route path="reviews/submit/:taskId" element={<SubmitReviewPage />} />
+            <Route path="reviews/:studentId" element={<ViewReviewsPage />} />
+            <Route path="certificates" element={<CertificatesPage />} />
+            <Route path="running-jobs" element={<RunningJobsPage />} />
           </Route>
 
           {/* Internship details */}
@@ -83,14 +108,36 @@ const App: React.FC = () => {
             <Route path="jobs" element={<EmployerJobsPage />} />
             <Route path="jobs/:id/edit" element={<EditJobPage />} />
             <Route path="jobs/:id/applications" element={<JobApplicationsPage />} />
+            <Route path="submissions" element={<JobSubmissionsPage />} />
             <Route path="profile" element={<EmployerProfile />} />
             <Route path="post" element={<PostInternshipPage />} />
+            <Route path="notifications" element={<EmployerNotificationsPage />} />
+            <Route path="messages" element={<EmployerMessagesPage />} />
+            <Route path="jobs/:id/payment" element={<TaskPaymentPage />} />
+            <Route path="reviews/submit/:taskId" element={<EmployerSubmitReviewPage />} />
 
             {/* 👇 Employer views student portfolio (read-only) */}
             <Route
               path="students/:studentId"
               element={<EmployerStudentPortfolioPage />}
             />
+          </Route>
+
+          {/* Admin dashboard */}
+          <Route
+            path="/dashboard/admin"
+            element={
+              <ProtectedRoute>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<AdminDashboard />} />
+            <Route path="anomalies" element={<AnomaliesPage />} />
+            <Route path="students" element={<StudentsPage />} />
+            <Route path="employers" element={<EmployersPage />} />
+            <Route path="chats" element={<AllChatsPage />} />
+            <Route path="tasks" element={<AllTasksPage />} />
           </Route>
 
           {/* Fallback */}
