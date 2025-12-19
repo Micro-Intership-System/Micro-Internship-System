@@ -1,32 +1,26 @@
-import React from "react";
-import { NavLink, Outlet } from "react-router-dom";
-import "./css/EmployerLayout.css";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useAuth } from "../../../context/AuthContext";
+import "./css/EmployerLayout.css"; 
 
 export default function EmployerLayout() {
-  // ✅ replace with real employer user from auth/context
-  const employer = {
-    name: "Employer",
-    email: "employer@email.com",
-    org: "Your Company",
-  };
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const nav = [
-    { label: "Home", to: "/dashboard/employer/overview" },
-    { label: "Post Job", to: "/dashboard/employer/post-job" },
-    { label: "My Jobs", to: "/dashboard/employer/my-jobs" },
-    { label: "Applications", to: "/dashboard/employer/applications" },
-    { label: "Running Jobs", to: "/dashboard/employer/running-jobs" },
+    { label: "Home", to: "/dashboard/employer" },
+    { label: "Post Job", to: "/dashboard/employer/post" },
+    { label: "My Jobs", to: "/dashboard/employer/jobs" },
+    { label: "Applications", to: "/dashboard/employer/jobs" },
+    { label: "Submissions", to: "/dashboard/employer/submissions" },
     { label: "Messages", to: "/dashboard/employer/messages" },
-    { label: "Payments", to: "/dashboard/employer/payments" },
-    { label: "Certificates", to: "/dashboard/employer/certificates" },
-    { label: "Reviews", to: "/dashboard/employer/reviews" },
     { label: "Notifications", to: "/dashboard/employer/notifications" },
     { label: "Profile", to: "/dashboard/employer/profile" },
   ];
 
   function handleLogout() {
-    // ✅ put your logout logic here
-    console.log("Employer logout");
+    // clear auth and redirect to login
+    logout();
+    navigate("/login", { replace: true });
   }
 
   return (
@@ -37,7 +31,7 @@ export default function EmployerLayout() {
           <div className="employer-brand">
             <div className="employer-logo" />
             <div>
-              <div className="employer-brand-title">MiMicro-Internship</div>
+              <div className="employer-brand-title">Micro-Internship</div>
               <div className="employer-brand-sub">Employer Dashboard</div>
             </div>
           </div>
@@ -55,14 +49,16 @@ export default function EmployerLayout() {
           </nav>
 
           <div className="employer-profile">
-            <div className="employer-profile-name">{employer.name}</div>
-            <div className="employer-profile-org">{employer.org}</div>
-            <div className="employer-profile-email">{employer.email}</div>
+            <div className="employer-profile-name">{user?.name ?? "Employer"}</div>
+            {(user as any)?.organization && (
+              <div className="employer-profile-org">{(user as any).organization}</div>
+            )}
+            <div className="employer-profile-email">{user?.email ?? ""}</div>
 
             <button className="employer-logout" onClick={handleLogout}>
               Logout
             </button>
-          </div>
+          </div> 
         </aside>
 
         {/* Main */}
@@ -71,7 +67,7 @@ export default function EmployerLayout() {
             <div className="employer-topbar-title">Employer</div>
 
             <div className="employer-topbar-actions">
-              <NavLink className="employer-quick" to="/dashboard/employer/post-job">
+              <NavLink className="employer-quick" to="/dashboard/employer/post">
                 + Post Job
               </NavLink>
             </div>
