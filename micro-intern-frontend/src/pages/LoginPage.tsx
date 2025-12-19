@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { apiPost } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import "./LoginPage.css";
 
 type Role = "student" | "employer" | "admin";
 
@@ -41,29 +42,34 @@ const LoginPage: React.FC = () => {
   return (
     <div className="login-page">
       <div className="login-shell">
-        {/* top heading like your screenshot */}
+
+        {/* HERO */}
         <div className="login-hero">
           <div className="login-brand">MI</div>
           <div className="login-tagline">
             Micro-Internship · Skill-based micro projects for students
           </div>
+
           <h1 className="login-hero-title">
             Turn small tasks into big experience.
           </h1>
+
           <p className="login-hero-text">
             Log in to find micro-internships, track applications, and build a
             portfolio that actually shows what you can do.
           </p>
+
           <ul className="login-hero-list">
             <li>Quick, paid micro-internships from real employers.</li>
             <li>Certificates and reviews you can show on your CV.</li>
-            <li>Built for students who are tired of “experience required” postings.</li>
+            <li>Built for students tired of “experience required”.</li>
           </ul>
         </div>
 
-        {/* main layout: hero text (left) + form card (right) */}
+        {/* MAIN */}
         <div className="login-main">
-          <div /> {/* left column empty for now; hero is above */}
+          <div />
+
           <div className="login-card">
             <h2>Log in</h2>
             <p className="login-card-subtitle">
@@ -72,29 +78,23 @@ const LoginPage: React.FC = () => {
 
             <form onSubmit={handleSubmit}>
               <div className="login-field">
-                <label className="login-label" htmlFor="email">
-                  Email address
-                </label>
+                <label className="login-label">Email address</label>
                 <input
-                  id="email"
-                  type="email"
                   className="login-input"
+                  type="email"
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                 />
               </div>
 
               <div className="login-field">
-                <label className="login-label" htmlFor="password">
-                  Password
-                </label>
+                <label className="login-label">Password</label>
                 <input
-                  id="password"
-                  type="password"
                   className="login-input"
+                  type="password"
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
                 />
               </div>
@@ -102,7 +102,7 @@ const LoginPage: React.FC = () => {
               <div className="login-field">
                 <span className="login-role-label">Login as</span>
                 <div className="login-role-toggle">
-                  {(["student", "employer", "admin"] as Role[]).map(r => (
+                  {(["student", "employer", "admin"] as Role[]).map((r) => (
                     <button
                       key={r}
                       type="button"
@@ -120,11 +120,7 @@ const LoginPage: React.FC = () => {
 
               {error && <div className="login-error">{error}</div>}
 
-              <button
-                type="submit"
-                className="login-submit"
-                disabled={loading}
-              >
+              <button className="login-submit" disabled={loading}>
                 {loading ? "Logging in…" : "Continue"}
               </button>
             </form>
