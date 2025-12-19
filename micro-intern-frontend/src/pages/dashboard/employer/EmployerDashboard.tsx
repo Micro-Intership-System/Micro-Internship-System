@@ -1,21 +1,23 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
-import "./EmployerDashboard.css";
+import "./css/EmployerDashboard.css";
 
 export default function EmployerDashboard() {
   const { user } = useAuth();
 
   return (
-    <div className="employer-dash space-y-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold mb-2">Employer Dashboard</h1>
+    <div className="employer-dash">
+      {/* Header */}
+      <div className="dash-header">
+        <h1>Employer Dashboard</h1>
         <p className="subtitle">
           Welcome back, {user?.name || "Employer"}! Manage your micro-internships.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Link to="/dashboard/employer/post" className="action-card">
+      {/* Action Cards */}
+      <div className="action-grid">
+        <Link to="/dashboard/employer/post" className="action-card primary">
           <div className="icon-box">+</div>
           <h3>Post New Job</h3>
           <p>Create a new micro-internship opportunity</p>
@@ -34,6 +36,7 @@ export default function EmployerDashboard() {
         </Link>
       </div>
 
+      {/* Info Section */}
       <div className="info-card">
         <h2>Getting Started</h2>
         <p>

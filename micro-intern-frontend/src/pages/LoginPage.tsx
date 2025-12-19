@@ -78,7 +78,24 @@ export default function LoginPage() {
         {/* HERO */}
         <div className="login-hero">
           <div className="login-brand">MI</div>
-          {/* keep your hero content here */}
+            <div className="login-tagline">
+              Micro-Internship · Skill-based micro projects for students
+            </div>
+
+            <h1 className="login-hero-title">
+              Turn small tasks into big experience.
+            </h1>
+
+            <p className="login-hero-text">
+              Log in to find micro-internships, track applications, and build a
+              portfolio that actually shows what you can do.
+            </p>
+
+            <ul className="login-hero-list">
+              <li>Quick, paid micro-internships from real employers.</li>
+              <li>Certificates and reviews you can show on your CV.</li>
+              <li>Built for students tired of “experience required”.</li>
+            </ul>
         </div>
 
         {/* FORM */}

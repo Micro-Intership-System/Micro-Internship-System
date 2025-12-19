@@ -8,13 +8,13 @@ export default function EmployerLayout() {
 
   const nav = [
     { label: "Home", to: "/dashboard/employer" },
+    { label: "Profile", to: "/dashboard/employer/profile" },
     { label: "Post Job", to: "/dashboard/employer/post" },
     { label: "My Jobs", to: "/dashboard/employer/jobs" },
     { label: "Applications", to: "/dashboard/employer/jobs" },
     { label: "Submissions", to: "/dashboard/employer/submissions" },
     { label: "Messages", to: "/dashboard/employer/messages" },
     { label: "Notifications", to: "/dashboard/employer/notifications" },
-    { label: "Profile", to: "/dashboard/employer/profile" },
   ];
 
   function handleLogout() {

@@ -1,24 +1,48 @@
 /* ===== Global Styles ===== */
 
-* {
-  margin: 0;
-  padding: 0;
+:root {
+  /* Colors (same ones you already used) */
+  --text: #111827;        /* dark grey, almost black */
+  --muted: #6b7280;       /* muted gray */
+  --muted2: #4b5563;      /* slightly darker muted gray */
+  --border: #e5e7eb;      /* light border */
+  --border2: #d1d5db;     /* input border */
+  --danger: #b91c1c;      /* error text */
+  --dangerBg: #fee2e2;    /* error bg */
+
+  /* Radius + sizing */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+}
+
+*,
+*::before,
+*::after {
   box-sizing: border-box;
+}
+
+html {
+  width: 100%;
+  overflow-x: hidden;
 }
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background-color: #ffffff;
-  color: #111827; /* dark grey, almost black */
+  color: var(--text);
   line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-html {
-  max-width: 100vw;
-  overflow-x: hidden;
+/* Better keyboard focus (applies to inputs, buttons, links, etc.) */
+:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
 }
+
+/* ===== Login Page ===== */
 
 .login-page {
   min-height: 100vh;
@@ -27,7 +51,6 @@ html {
   justify-content: center;
   align-items: flex-start;
   padding: 40px 16px;
-  box-sizing: border-box;
 }
 
 .login-shell {
@@ -40,32 +63,32 @@ html {
 .login-brand {
   font-size: 14px;
   font-weight: 600;
-  margin-bottom: 4px;
+  margin: 0 0 4px 0;
 }
 
 .login-tagline {
   font-size: 13px;
-  color: #4b5563;
-  margin-bottom: 24px;
+  color: var(--muted2);
+  margin: 0 0 24px 0;
 }
 
 .login-hero-title {
   font-size: 32px;
   font-weight: 700;
   line-height: 1.2;
-  margin-bottom: 8px;
+  margin: 0 0 8px 0;
 }
 
 .login-hero-text {
   font-size: 14px;
-  color: #4b5563;
+  color: var(--muted2);
   max-width: 640px;
-  margin-bottom: 12px;
+  margin: 0 0 12px 0;
 }
 
 .login-hero-list {
   font-size: 14px;
-  color: #111827;
+  color: var(--text);
   margin: 0 0 24px 0;
   padding: 0;
   list-style: none;
@@ -93,22 +116,22 @@ html {
 /* form card */
 
 .login-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   padding: 20px 24px 24px;
-  box-sizing: border-box;
+  background: #ffffff;
 }
 
 .login-card h2 {
-  margin: 0 0 4px;
+  margin: 0 0 4px 0;
   font-size: 20px;
   font-weight: 600;
 }
 
 .login-card-subtitle {
   font-size: 13px;
-  color: #6b7280;
-  margin-bottom: 16px;
+  color: var(--muted);
+  margin: 0 0 16px 0;
 }
 
 /* labels & inputs */
@@ -122,21 +145,22 @@ html {
   font-size: 12px;
   font-weight: 500;
   color: #374151;
-  margin-bottom: 4px;
+  margin: 0 0 4px 0;
 }
 
 .login-input {
   width: 100%;
-  box-sizing: border-box;
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border2);
   padding: 8px 10px;
   font-size: 14px;
+  color: var(--text);
+  background: #ffffff;
 }
 
+/* keep the same focus look but rely on :focus-visible globally */
 .login-input:focus {
-  outline: 2px solid #111827;
-  outline-offset: 1px;
+  outline: none;
 }
 
 /* role toggle */
@@ -146,14 +170,15 @@ html {
   font-size: 12px;
   font-weight: 500;
   color: #374151;
-  margin-bottom: 6px;
+  margin: 0 0 6px 0;
 }
 
 .login-role-toggle {
   display: inline-flex;
   border-radius: 999px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border2);
   overflow: hidden;
+  background: #ffffff;
 }
 
 .login-role-button {
@@ -161,16 +186,16 @@ html {
   font-size: 12px;
   border: none;
   background-color: #ffffff;
-  color: #4b5563;
+  color: var(--muted2);
   cursor: pointer;
 }
 
 .login-role-button + .login-role-button {
-  border-left: 1px solid #d1d5db;
+  border-left: 1px solid var(--border2);
 }
 
 .login-role-button--active {
-  background-color: #111827;
+  background-color: var(--text);
   color: #ffffff;
 }
 
@@ -178,11 +203,11 @@ html {
 
 .login-error {
   font-size: 12px;
-  color: #b91c1c;
-  background-color: #fee2e2;
-  border-radius: 8px;
+  color: var(--danger);
+  background-color: var(--dangerBg);
+  border-radius: var(--radius-sm);
   padding: 6px 8px;
-  margin-bottom: 8px;
+  margin: 0 0 8px 0;
 }
 
 .login-submit {
@@ -193,9 +218,13 @@ html {
   padding: 9px 14px;
   font-size: 14px;
   font-weight: 500;
-  background-color: #111827;
+  background-color: var(--text);
   color: #ffffff;
   cursor: pointer;
+}
+
+.login-submit:hover {
+  opacity: 0.95;
 }
 
 .login-submit:disabled {
@@ -206,13 +235,16 @@ html {
 .login-footer-text {
   margin-top: 10px;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--muted);
 }
 
 .login-footer-link {
-  color: #111827;
+  color: var(--text);
   font-weight: 500;
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
+}
+.login-footer-link:hover {
+  opacity: 0.8;
 }

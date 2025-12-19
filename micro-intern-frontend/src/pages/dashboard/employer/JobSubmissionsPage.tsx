@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiGet, apiPost } from "../../../api/client";
 import { useAuth } from "../../../context/AuthContext";
+import "./css/JobSubmissionsPage.css";
 
 type Submission = {
   _id: string;
@@ -43,9 +44,7 @@ export default function JobSubmissionsPage() {
       setLoading(true);
       setError("");
       const res = await apiGet<{ success: boolean; data: Submission[] }>("/jobs/submissions");
-      if (res.success) {
-        setSubmissions(res.data || []);
-      }
+      if (res.success) setSubmissions(res.data || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load submissions");
     } finally {
@@ -54,20 +53,23 @@ export default function JobSubmissionsPage() {
   }
 
   async function handleConfirm(jobId: string) {
-    if (!confirm("Confirm this submission and release payment to the student?")) {
-      return;
-    }
+    if (!confirm("Confirm this submission and release payment to the student?")) return;
 
     try {
       setConfirming(jobId);
-      const res = await apiPost<{ success: boolean; data: any; goldAwarded?: number; studentNewBalance?: number }>(`/jobs/${jobId}/confirm`, {});
+      const res = await apiPost<{
+        success: boolean;
+        data: any;
+        goldAwarded?: number;
+        studentNewBalance?: number;
+      }>(`/jobs/${jobId}/confirm`, {});
+
       if (res.success) {
-        const message = res.goldAwarded 
+        const message = res.goldAwarded
           ? `Submission confirmed! ${res.goldAwarded} gold released to student.`
           : "Submission confirmed! Payment released to student.";
         alert(message);
         await loadSubmissions();
-        // Refresh user data in case student is viewing their own dashboard
         await refreshUser();
       }
     } catch (err) {
@@ -101,66 +103,64 @@ export default function JobSubmissionsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Loading submissions…</div>
+      <div className="empSub__loadingWrap">
+        <div className="empSub__loadingText">Loading submissions…</div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="empSub">
       {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-[#111827] mb-2">Job Submissions</h1>
-        <p className="text-sm text-[#6b7280]">Review and confirm or reject student submissions</p>
+      <div className="empSub__header">
+        <h1 className="empSub__title">Job Submissions</h1>
+        <p className="empSub__subtitle">Review and confirm or reject student submissions</p>
       </div>
 
       {/* Error */}
-      {error && (
-        <div className="border border-[#fecaca] bg-[#fee2e2] rounded-lg px-4 py-3 text-sm text-[#991b1b]">
-          {error}
-        </div>
-      )}
+      {error && <div className="empSub__error">{error}</div>}
 
       {/* Submissions List */}
       {submissions.length === 0 ? (
-        <div className="border border-[#e5e7eb] rounded-lg bg-white p-16 text-center">
-          <h3 className="text-lg font-semibold text-[#111827] mb-2">No Submissions</h3>
-          <p className="text-sm text-[#6b7280] mb-6">
-            No jobs have been submitted for review yet.
-          </p>
+        <div className="empSub__empty">
+          <h3 className="empSub__emptyTitle">No Submissions</h3>
+          <p className="empSub__emptyText">No jobs have been submitted for review yet.</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="empSub__list">
           {submissions.map((sub) => (
-            <div key={sub._id} className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-              <div className="flex items-start justify-between gap-6">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-lg bg-[#111827] flex items-center justify-center text-white font-bold flex-shrink-0">
-                      {sub.title.charAt(0)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-[#111827] mb-1 truncate">
-                        {sub.title}
-                      </h3>
+            <div key={sub._id} className="empSub__card">
+              <div className="empSub__cardTop">
+                <div className="empSub__left">
+                  <div className="empSub__titleRow">
+                    <div className="empSub__icon">{sub.title.charAt(0)}</div>
+
+                    <div className="empSub__jobTitleWrap">
+                      <h3 className="empSub__jobTitle">{sub.title}</h3>
+
                       {sub.acceptedStudentId && (
-                        <p className="text-sm text-[#6b7280]">
+                        <p className="empSub__submitter">
                           Submitted by: {sub.acceptedStudentId.name} ({sub.acceptedStudentId.email})
                         </p>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-3 mb-4">
-                    <span className="px-3 py-1.5 rounded-lg bg-[#f9fafb] text-[#374151] text-xs font-semibold border border-[#e5e7eb]">
-                      {sub.gold} Gold
+                  <div className="empSub__badges">
+                    <span className="empSub__badge">{sub.gold} Gold</span>
+
+                    <span className="empSub__badge empSub__badge--info">
+                      {sub.submissionStatus === "submitted"
+                        ? "Submitted"
+                        : sub.submissionStatus === "confirmed"
+                        ? "Confirmed"
+                        : sub.submissionStatus === "rejected"
+                        ? "Rejected"
+                        : "Disputed"}
                     </span>
-                    <span className="px-3 py-1.5 rounded-lg bg-[#dbeafe] text-[#1e40af] text-xs font-semibold border border-[#bfdbfe]">
-                      Submitted
-                    </span>
+
                     {sub.submissionReport?.submittedAt && (
-                      <span className="px-3 py-1.5 rounded-lg bg-[#f9fafb] text-[#374151] text-xs border border-[#e5e7eb]">
+                      <span className="empSub__badge empSub__badge--muted">
                         Submitted: {new Date(sub.submissionReport.submittedAt).toLocaleString()}
                       </span>
                     )}
@@ -168,9 +168,9 @@ export default function JobSubmissionsPage() {
 
                   {/* Submission Report */}
                   {sub.submissionReport && (
-                    <div className="mt-4 p-4 bg-[#f9fafb] border border-[#e5e7eb] rounded-lg">
-                      <div className="text-sm font-semibold text-[#111827] mb-2">Completion Report</div>
-                      <div className="text-xs text-[#6b7280] space-y-1">
+                    <div className="empSub__report">
+                      <div className="empSub__reportTitle">Completion Report</div>
+                      <div className="empSub__reportBody">
                         {sub.submissionReport.timeTaken && (
                           <div>Time Taken: {sub.submissionReport.timeTaken} hours</div>
                         )}
@@ -183,12 +183,12 @@ export default function JobSubmissionsPage() {
 
                   {/* Proof URL */}
                   {sub.submissionProofUrl && (
-                    <div className="mt-4">
+                    <div className="empSub__proof">
                       <a
                         href={sub.submissionProofUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-[#111827] hover:underline"
+                        className="empSub__proofLink"
                       >
                         View Proof Document →
                       </a>
@@ -196,53 +196,57 @@ export default function JobSubmissionsPage() {
                   )}
                 </div>
 
-                <div className="flex flex-col gap-2 flex-shrink-0">
+                <div className="empSub__actions">
                   {sub.submissionStatus === "submitted" && (
                     <>
                       <button
                         onClick={() => handleConfirm(sub._id)}
                         disabled={confirming === sub._id}
-                        className="px-6 py-2.5 rounded-lg bg-[#065f46] text-white text-sm font-semibold hover:bg-[#047857] transition-colors whitespace-nowrap disabled:opacity-50"
+                        className="empSub__btnSuccess"
                       >
                         {confirming === sub._id ? "Confirming..." : "Confirm & Pay"}
                       </button>
+
                       <button
                         onClick={() => setShowRejectModal(sub._id)}
                         disabled={rejecting === sub._id}
-                        className="px-6 py-2.5 rounded-lg border border-[#d1d5db] text-[#111827] text-sm font-semibold hover:bg-[#f9fafb] transition-colors whitespace-nowrap disabled:opacity-50"
+                        className="empSub__btnOutline"
                       >
                         Reject
                       </button>
                     </>
                   )}
+
                   {sub.submissionStatus === "confirmed" && (
-                    <span className="px-6 py-2.5 rounded-lg bg-[#d1fae5] text-[#065f46] text-sm font-semibold border border-[#a7f3d0] whitespace-nowrap text-center">
+                    <span className="empSub__statusPill empSub__statusPill--confirmed">
                       Confirmed ✓
                     </span>
                   )}
+
                   {sub.submissionStatus === "rejected" && (
-                    <div className="space-y-2">
-                      <span className="px-6 py-2.5 rounded-lg bg-[#fee2e2] text-[#991b1b] text-sm font-semibold border border-[#fecaca] whitespace-nowrap text-center block">
+                    <div>
+                      <span className="empSub__statusPill empSub__statusPill--rejected">
                         Rejected
                       </span>
+
                       {sub.rejectionReason && (
-                        <div className="text-xs text-[#991b1b] max-w-xs">
-                          Reason: {sub.rejectionReason}
-                        </div>
+                        <div className="empSub__rejectReason">Reason: {sub.rejectionReason}</div>
                       )}
                     </div>
                   )}
+
                   {sub.submissionStatus === "disputed" && (
                     <Link
                       to={`/dashboard/employer/messages?taskId=${sub._id}`}
-                      className="px-6 py-2.5 rounded-lg bg-[#f3e8ff] text-[#6b21a8] text-sm font-semibold border border-[#c4b5fd] whitespace-nowrap text-center hover:bg-[#e9d5ff] transition-colors"
+                      className="empSub__btnDispute"
                     >
                       View Dispute
                     </Link>
                   )}
+
                   <Link
                     to={`/dashboard/employer/messages?taskId=${sub._id}`}
-                    className="px-6 py-2.5 rounded-lg border border-[#d1d5db] text-[#111827] text-sm font-semibold hover:bg-[#f9fafb] transition-colors whitespace-nowrap text-center"
+                    className="empSub__btnOutline"
                   >
                     Messages
                   </Link>
@@ -255,33 +259,40 @@ export default function JobSubmissionsPage() {
 
       {/* Reject Modal */}
       {showRejectModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h2 className="text-lg font-semibold text-[#111827] mb-4">Reject Submission</h2>
-            <p className="text-sm text-[#6b7280] mb-4">
-              Please provide a detailed reason for rejection (minimum 10 characters). This reason will be sent to the student.
+        <div className="empSub__modalOverlay">
+          <div className="empSub__modal">
+            <h2 className="empSub__modalTitle">Reject Submission</h2>
+
+            <p className="empSub__modalText">
+              Please provide a detailed reason for rejection (minimum 10 characters). This reason
+              will be sent to the student.
             </p>
+
             <textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              className="w-full px-4 py-2 border border-[#d1d5db] rounded-lg text-sm mb-4"
+              className="empSub__textarea"
               rows={4}
               placeholder="Enter rejection reason..."
             />
-            <div className="flex gap-3">
+
+            <div className="empSub__modalActions">
               <button
                 onClick={() => {
                   setShowRejectModal(null);
                   setRejectReason("");
                 }}
-                className="flex-1 px-4 py-2 rounded-lg border border-[#d1d5db] text-[#111827] text-sm font-semibold hover:bg-[#f9fafb] transition-colors"
+                className="empSub__btnOutline empSub__modalBtn"
               >
                 Cancel
               </button>
+
               <button
                 onClick={() => handleReject(showRejectModal)}
-                disabled={rejecting === showRejectModal || !rejectReason.trim() || rejectReason.trim().length < 10}
-                className="flex-1 px-4 py-2 rounded-lg bg-[#991b1b] text-white text-sm font-semibold hover:bg-[#7f1d1d] transition-colors disabled:opacity-50"
+                disabled={
+                  rejecting === showRejectModal || !rejectReason.trim() || rejectReason.trim().length < 10
+                }
+                className="empSub__btnDanger empSub__modalBtn"
               >
                 {rejecting === showRejectModal ? "Rejecting..." : "Reject"}
               </button>
@@ -292,4 +303,3 @@ export default function JobSubmissionsPage() {
     </div>
   );
 }
-
