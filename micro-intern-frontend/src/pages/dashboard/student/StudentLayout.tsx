@@ -2,6 +2,25 @@ import React from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import "./css/StudentLayout.css";
 
+function LoginIllustration() {
+  return (
+    <div className="login-illustration">
+      <svg viewBox="0 0 600 300" className="login-illustration-svg">
+        <rect width="600" height="300" rx="24" fill="#a78bfa33" />
+        <rect x="60" y="70" width="140" height="160" rx="16" fill="#ffffff22" />
+        <rect x="230" y="40" width="140" height="200" rx="16" fill="#ffffff22" />
+        <rect x="400" y="80" width="140" height="140" rx="16" fill="#ffffff22" />
+
+        <text x="90" y="60" fill="white" fontSize="14">Student</text>
+        <text x="260" y="30" fill="white" fontSize="14">Employer</text>
+        <text x="430" y="70" fill="white" fontSize="14">Admin</text>
+      </svg>
+    </div>
+  );
+}
+
+
+
 export default function StudentLayout() {
   // ✅ এখানে তোমার context/auth থেকে user আনলে ভালো
   // এখন demo হিসেবে রাখলাম
