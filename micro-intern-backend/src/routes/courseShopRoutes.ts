@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { Types } from "mongoose";
 import { requireAuth } from "../middleware/requireAuth";
 import { CourseShopItem } from "../models/courseShop";
 import { StudentCourse } from "../models/studentCourse";
@@ -57,7 +58,33 @@ router.post("/courses/:courseId/enroll", requireAuth, async (req: any, res) => {
       return res.status(404).json({ success: false, message: "Student not found" });
     }
 
-    const course = await CourseShopItem.findById(req.params.courseId);
+    let course = null;
+    // Try to find course by ID (only if it's a valid ObjectId)
+    if (Types.ObjectId.isValid(req.params.courseId)) {
+      course = await CourseShopItem.findById(req.params.courseId);
+    }
+    
+    // If course not found and courseData is provided, create it (for predefined courses)
+    if (!course && req.body.courseData) {
+      const courseData = req.body.courseData;
+      // Check if course with same title already exists
+      course = await CourseShopItem.findOne({ title: courseData.title });
+      if (!course) {
+        course = await CourseShopItem.create({
+          title: courseData.title,
+          description: courseData.description,
+          cost: courseData.cost,
+          category: courseData.category,
+          duration: courseData.duration,
+          instructor: courseData.instructor,
+          thumbnailUrl: courseData.thumbnailUrl,
+          learningOutcomes: courseData.learningOutcomes,
+          prerequisites: courseData.prerequisites,
+          isActive: true,
+        });
+      }
+    }
+    
     if (!course || !course.isActive) {
       return res.status(404).json({ success: false, message: "Course not found" });
     }
@@ -153,15 +180,17 @@ router.patch("/courses/:courseId/complete", requireAuth, async (req: any, res) =
     const course = enrollment.courseId as any;
     
     enrollment.progress = 100;
-    enrollment.completedAt = new Date();
+    const completedAt = new Date();
+    enrollment.completedAt = completedAt;
     
-    // Generate certificate
+    // Generate certificate using the completedAt date
     try {
-      const certificateUrl = await generateCourseCertificate(
+      const certificateId = await generateCourseCertificate(
         req.user.id,
-        course._id.toString()
+        course._id.toString(),
+        completedAt
       );
-      enrollment.certificateUrl = certificateUrl;
+      enrollment.certificateUrl = certificateId;
     } catch (err) {
       console.error("Failed to generate certificate:", err);
       // Continue without certificate if generation fails

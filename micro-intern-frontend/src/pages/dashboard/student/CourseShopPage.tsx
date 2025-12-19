@@ -169,17 +169,38 @@ export default function CourseShopPage() {
   async function loadData() {
     try {
       setLoading(true);
-      // Try to load from API, but fallback to predefined courses
+      // Always show predefined courses, merge with database courses
       try {
         const [coursesRes, myCoursesRes] = await Promise.all([
           apiGet<{ success: boolean; data: Course[] }>("/shop/courses"),
           apiGet<{ success: boolean; data: Enrollment[] }>("/shop/my-courses"),
         ]);
+        
+        // Start with predefined courses
+        let allCourses = [...PREDEFINED_COURSES];
+        
+        // Merge with courses from database (replace predefined ones with DB versions if title matches)
         if (coursesRes.success && coursesRes.data && coursesRes.data.length > 0) {
-          setCourses(coursesRes.data);
-        } else {
-          setCourses(PREDEFINED_COURSES);
+          const dbCourses = coursesRes.data;
+          // Create a map of DB courses by title for quick lookup
+          const dbCoursesByTitle = new Map(dbCourses.map(c => [c.title, c]));
+          
+          // Replace predefined courses with DB versions if they exist
+          allCourses = allCourses.map(predefinedCourse => {
+            const dbCourse = dbCoursesByTitle.get(predefinedCourse.title);
+            return dbCourse || predefinedCourse;
+          });
+          
+          // Add any DB courses that don't match predefined courses
+          dbCourses.forEach(dbCourse => {
+            if (!allCourses.some(c => c.title === dbCourse.title)) {
+              allCourses.push(dbCourse);
+            }
+          });
         }
+        
+        setCourses(allCourses);
+        
         if (myCoursesRes.success) {
           setMyCourses(myCoursesRes.data || []);
         }
@@ -197,8 +218,11 @@ export default function CourseShopPage() {
   async function handleEnroll(courseId: string) {
     try {
       setError("");
-      await apiPost(`/shop/courses/${courseId}/enroll`, {});
+      // Find the course data to send to backend
+      const course = courses.find((c) => c._id === courseId);
+      await apiPost(`/shop/courses/${courseId}/enroll`, { courseData: course });
       await loadData();
+      refreshUser(); // Refresh to get updated gold balance
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to enroll");
     }
@@ -333,7 +357,11 @@ export default function CourseShopPage() {
                     </tr>
                   ) : (
                     filteredCourses.map((course) => {
-                      const isEnrolled = myCourses.some((e) => e.courseId._id === course._id);
+                      // Check enrollment by both ID and title (since DB courses have different IDs than predefined)
+                      const isEnrolled = myCourses.some((e) => {
+                        const enrolledCourse = e.courseId as any;
+                        return enrolledCourse._id === course._id || enrolledCourse.title === course.title;
+                      });
                       const canAfford = studentGold >= course.cost;
 
                       return (

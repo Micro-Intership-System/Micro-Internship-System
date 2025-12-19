@@ -42,6 +42,28 @@ router.post("/", requireAuth, async (req: any, res) => {
       });
     }
 
+    // For students reviewing employers: require payment to be released
+    // For employers reviewing students: require submission to be confirmed (payment may be via escrow or direct confirmation)
+    if (req.user?.role === "student") {
+      const Payment = (await import("../models/payment")).Payment;
+      const payment = await Payment.findOne({ taskId: task._id });
+      
+      if (!payment || payment.status !== "released") {
+        return res.status(400).json({
+          success: false,
+          message: "Can only review tasks after payment has been cleared",
+        });
+      }
+    } else if (req.user?.role === "employer") {
+      // For employers, require submission to be confirmed
+      if (task.submissionStatus !== "confirmed") {
+        return res.status(400).json({
+          success: false,
+          message: "Can only review tasks after submission has been confirmed",
+        });
+      }
+    }
+
     const reviewer = await User.findById(req.user.id);
     if (!reviewer) {
       return res.status(404).json({ success: false, message: "Reviewer not found" });
@@ -221,6 +243,26 @@ router.get("/employer/:employerId", async (req, res) => {
       averageRating: Math.round(avgRating * 10) / 10,
       totalReviews: reviews.length,
     });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Failed to load reviews" });
+  }
+});
+
+/**
+ * GET /api/reviews/me
+ * Get all reviews submitted by the current user
+ */
+router.get("/me", requireAuth, async (req: any, res) => {
+  try {
+    const reviews = await TaskReview.find({
+      reviewerId: req.user.id,
+    })
+      .populate("taskId", "title")
+      .populate("reviewedId", "name email companyName")
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, data: reviews });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Failed to load reviews" });

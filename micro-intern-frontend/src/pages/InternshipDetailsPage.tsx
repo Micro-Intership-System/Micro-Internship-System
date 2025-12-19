@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { apiGet, apiPost } from "../api/client";
+import "./dashboard/student/css/BrowsePage.css";
 
 type Internship = {
   _id: string;
@@ -37,13 +38,52 @@ export default function InternshipDetailsPage() {
   const [applying, setApplying] = useState(false);
   const [applied, setApplied] = useState(false);
   const [error, setError] = useState("");
+  const [previousApplication, setPreviousApplication] = useState<{ status: string; createdAt: string } | null>(null);
+  const [isInRunningJobs, setIsInRunningJobs] = useState(false);
 
   useEffect(() => {
     if (!id) return;
 
-    apiGet<InternshipResponse>(`/internships/${id}`)
-      .then(res => {
-        if (res.success) setJob(res.data);
+    Promise.all([
+      apiGet<InternshipResponse>(`/internships/${id}`),
+      apiGet<{ success: boolean; data: Array<{ status: string; createdAt: string; internshipId: { _id: string } | string }> }>("/applications/me").catch(() => ({ success: false, data: [] })),
+      apiGet<{ success: boolean; data: Array<{ _id: string }> }>("/jobs/running").catch(() => ({ success: false, data: [] })),
+    ])
+      .then(([jobRes, appsRes, runningJobsRes]) => {
+        if (jobRes.success) {
+          setJob(jobRes.data);
+          
+          // Check if this job is in running jobs
+          const isInRunningJobs = runningJobsRes.success && runningJobsRes.data.some(
+            (runningJob) => runningJob._id === id
+          );
+          setIsInRunningJobs(isInRunningJobs);
+          
+          // Check if user has a previous application for this job
+          if (appsRes.success && appsRes.data) {
+            const prevApp = appsRes.data.find((app) => {
+              const internshipId = typeof app.internshipId === "string" 
+                ? app.internshipId 
+                : app.internshipId._id;
+              return internshipId === id;
+            });
+            if (prevApp) {
+              setPreviousApplication(prevApp);
+              // Mark as applied if status is not rejected (applied, accepted, evaluating)
+              if (prevApp.status !== "rejected") {
+                setApplied(true);
+              } else {
+                setApplied(false);
+              }
+            } else {
+              setPreviousApplication(null);
+              setApplied(false);
+            }
+          } else {
+            setPreviousApplication(null);
+            setApplied(false);
+          }
+        }
       })
       .catch(() => setError("Failed to load job details"))
       .finally(() => setLoading(false));
@@ -60,7 +100,9 @@ export default function InternshipDetailsPage() {
         internshipId: job._id,
       });
 
+      // After successful application, mark as applied
       setApplied(true);
+      setPreviousApplication({ status: "applied", createdAt: new Date().toISOString() });
     } catch (e: unknown) {
       if (e instanceof Error) {
         setError(e.message);
@@ -74,94 +116,159 @@ export default function InternshipDetailsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Loading job details…</div>
+      <div className="browse-page">
+        <div className="browse-inner">
+          <div className="browse-loading">Loading job details…</div>
+        </div>
       </div>
     );
   }
 
   if (!job) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#991b1b]">Job not found.</div>
+      <div className="browse-page">
+        <div className="browse-inner">
+          <div className="browse-alert" style={{ marginTop: "16px" }}>
+            Job not found.
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-        <h1 className="text-3xl font-semibold text-[#111827] mb-2">
-          {job.title}
-        </h1>
-        <p className="text-sm text-[#6b7280]">
-          {job.companyName} · Updated {timeAgo(job.updatedAt)}
-        </p>
-      </div>
-
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Description */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-            <h2 className="text-xl font-semibold text-[#111827] mb-4">Description</h2>
-            <p className="text-sm text-[#374151] whitespace-pre-line leading-relaxed">
-              {job.description || "No description provided."}
+    <div className="browse-page">
+      <div className="browse-inner">
+        {/* Header */}
+        <header className="browse-header">
+          <div className="browse-title-wrap">
+            <div className="browse-eyebrow">Job Details</div>
+            <h1 className="browse-title">{job.title}</h1>
+            <p className="browse-subtitle">
+              {job.companyName} · Updated {timeAgo(job.updatedAt)}
             </p>
           </div>
-
-          {job.skills && job.skills.length > 0 && (
-            <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-              <h2 className="text-xl font-semibold text-[#111827] mb-4">Required Skills</h2>
-              <div className="flex flex-wrap gap-2">
-                {job.skills.map((skill, index) => (
-                  <span
-                    key={index}
-                    className="px-3 py-1 rounded-full bg-[#f9fafb] text-xs text-[#374151] border border-[#e5e7eb]"
-                  >
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Right Column - Details & Actions */}
-        <div className="lg:col-span-1 space-y-6">
-          <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-            <h2 className="text-lg font-semibold text-[#111827] mb-4">Job Details</h2>
-            <div className="space-y-4 text-sm">
-              <div>
-                <div className="text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-1">Location</div>
-                <div className="text-[#111827] font-medium">{job.location}</div>
-              </div>
-              <div>
-                <div className="text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-1">Duration</div>
-                <div className="text-[#111827] font-medium">{job.duration}</div>
-              </div>
-              <div>
-                <div className="text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-1">Gold Reward</div>
-                <div className="text-[#111827] font-medium text-lg">{job.gold.toLocaleString()} Gold</div>
-              </div>
+          <div className="browse-actions">
+            <div className="browse-stat">
+              <div className="browse-stat-label">Gold Reward</div>
+              <div className="browse-stat-value">{job.gold.toLocaleString()}</div>
             </div>
           </div>
+        </header>
 
-          <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-            <h2 className="text-lg font-semibold text-[#111827] mb-4">Apply Now</h2>
-            {error && (
-              <div className="mb-4 border border-[#fecaca] bg-[#fee2e2] rounded-lg px-3 py-2 text-xs text-[#991b1b]">
-                {error}
+        {/* Main Content Grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "16px", marginTop: "16px" }}>
+          {/* Left Column - Description & Skills */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px", minWidth: 0 }}>
+            {/* Description */}
+            <section className="browse-panel">
+              <div className="browse-panel-head">
+                <h2 className="browse-panel-title">Description</h2>
               </div>
+              <div style={{ fontSize: "14px", lineHeight: 1.7, color: "var(--text)", whiteSpace: "pre-line" }}>
+                {job.description || "No description provided."}
+              </div>
+            </section>
+
+            {/* Required Skills */}
+            {job.skills && job.skills.length > 0 && (
+              <section className="browse-panel">
+                <div className="browse-panel-head">
+                  <h2 className="browse-panel-title">Required Skills</h2>
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                  {job.skills.map((skill, index) => (
+                    <span key={index} className="skill-pill">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </section>
             )}
-            <button
-              onClick={apply}
-              disabled={applied || applying}
-              className="w-full rounded-lg bg-[#111827] px-6 py-3 text-sm font-semibold text-white hover:bg-[#1f2937] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {applied ? "Applied ✓" : applying ? "Applying…" : "Apply Now"}
-            </button>
+          </div>
+
+          {/* Right Column - Details & Actions */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px", minWidth: 0 }}>
+            {/* Job Details */}
+            <section className="browse-panel">
+              <div className="browse-panel-head">
+                <h2 className="browse-panel-title">Job Details</h2>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div>
+                  <div className="browse-stat-label" style={{ marginBottom: "6px" }}>Location</div>
+                  <div style={{ fontSize: "14px", fontWeight: 800 }}>{job.location}</div>
+                </div>
+                <div>
+                  <div className="browse-stat-label" style={{ marginBottom: "6px" }}>Duration</div>
+                  <div style={{ fontSize: "14px", fontWeight: 800 }}>{job.duration}</div>
+                </div>
+                <div>
+                  <div className="browse-stat-label" style={{ marginBottom: "6px" }}>Gold Reward</div>
+                  <div className="browse-stat-value" style={{ margin: 0, fontSize: "20px" }}>
+                    {job.gold.toLocaleString()} Gold
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Apply Now */}
+            <section className="browse-panel">
+              <div className="browse-panel-head">
+                <h2 className="browse-panel-title">Apply Now</h2>
+              </div>
+              {applied && (
+                <div style={{ 
+                  marginBottom: "16px", 
+                  padding: "12px", 
+                  background: "rgba(59,130,246,.1)", 
+                  border: "1px solid rgba(59,130,246,.3)", 
+                  borderRadius: "12px",
+                  fontSize: "13px",
+                  color: "var(--text)",
+                  textAlign: "center"
+                }}>
+                  Already applied
+                </div>
+              )}
+              {previousApplication && previousApplication.status === "rejected" && (
+                <div style={{ 
+                  marginBottom: "16px", 
+                  padding: "12px", 
+                  background: "rgba(251,191,36,.1)", 
+                  border: "1px solid rgba(251,191,36,.3)", 
+                  borderRadius: "12px",
+                  fontSize: "13px",
+                  color: "var(--text)"
+                }}>
+                  <div style={{ fontWeight: 800, marginBottom: "4px" }}>Previously Rejected</div>
+                  <div style={{ fontSize: "12px", color: "var(--muted)" }}>
+                    You can apply again. Previous application was rejected on {new Date(previousApplication.createdAt).toLocaleDateString()}.
+                  </div>
+                </div>
+              )}
+              {error && (
+                <div className="browse-alert" style={{ marginBottom: "16px" }}>
+                  {error}
+                </div>
+              )}
+              <button
+                onClick={apply}
+                disabled={applied || applying || isInRunningJobs}
+                className="browse-btn browse-btn--primary"
+                style={{ width: "100%", fontSize: "14px", padding: "12px 20px" }}
+              >
+                {applied
+                  ? "Applied ✓" 
+                  : applying 
+                    ? "Applying…" 
+                    : previousApplication && previousApplication.status === "rejected"
+                      ? "Apply Again"
+                      : isInRunningJobs
+                        ? "Job in Progress"
+                        : "Apply Now"}
+              </button>
+            </section>
           </div>
         </div>
       </div>

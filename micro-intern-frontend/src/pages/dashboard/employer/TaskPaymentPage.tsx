@@ -72,6 +72,8 @@ export default function TaskPaymentPage() {
       setError("");
       await apiPost(`/payments/release/${payment._id}`);
       await loadPayment();
+      // Trigger user data refresh for students
+      window.dispatchEvent(new Event("userDataRefresh"));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to release payment");
     } finally {
@@ -205,7 +207,7 @@ export default function TaskPaymentPage() {
 
             {payment.status === "released" && (
               <div className="p-4 bg-[#d1fae5] rounded-lg text-sm text-[#065f46]">
-                Payment has been released to the student. Gold and XP have been awarded.
+                Payment has been released to the student. Gold has been awarded.
               </div>
             )}
           </div>

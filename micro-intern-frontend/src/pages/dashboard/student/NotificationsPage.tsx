@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiGet, apiPatch } from "../../../api/client";
-import "./NotificationsPage.css";
-
+import { useAuth } from "../../../context/AuthContext";
 import "./NotificationsPage.css";
 
 
@@ -96,6 +95,7 @@ function timeAgo(iso: string): string {
 }
 
 export default function NotificationsPage() {
+  const { refreshUser } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -120,6 +120,14 @@ export default function NotificationsPage() {
           : res.data;
         setNotifications(filtered);
         setUnreadCount(res.pagination.unreadCount);
+        
+        // Refresh user data if there are payment-related notifications
+        const hasPaymentNotification = res.data.some(
+          n => (n.type === "payment_received" || n.type === "payment_released" || n.type === "dispute_resolved") && !n.isRead
+        );
+        if (hasPaymentNotification) {
+          refreshUser();
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load notifications");

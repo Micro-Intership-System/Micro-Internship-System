@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { apiGet, apiPost } from "../../../api/client";
 import { Link } from "react-router-dom";
+import "../student/css/BrowsePage.css";
 
 type Stats = {
   totalStudents: number;
@@ -29,9 +30,13 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [cleaning, setCleaning] = useState(false);
   const [fixingRoles, setFixingRoles] = useState(false);
+  const [escrowedPayments, setEscrowedPayments] = useState<any[]>([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
+  const [releasingPayment, setReleasingPayment] = useState<string | null>(null);
 
   useEffect(() => {
     loadStats();
+    loadEscrowedPayments();
   }, []);
 
   async function fixUserRoles() {
@@ -45,7 +50,7 @@ export default function AdminDashboard() {
       if (res.success) {
         const summary = [
           `Fixed ${res.fixed} user(s)`,
-          ...res.issues.slice(0, 10), // Show first 10 issues
+          ...res.issues.slice(0, 10),
           res.issues.length > 10 ? `... and ${res.issues.length - 10} more` : "",
         ].filter(Boolean).join("\n");
         alert(`User roles fixed!\n\n${summary}`);
@@ -105,10 +110,45 @@ export default function AdminDashboard() {
     }
   }
 
+  async function loadEscrowedPayments() {
+    try {
+      setLoadingPayments(true);
+      const res = await apiGet<{ success: boolean; data: any[]; count: number }>("/admin/payments/escrowed");
+      if (res.success) {
+        setEscrowedPayments(res.data || []);
+      }
+    } catch (err) {
+      console.error("Failed to load escrowed payments:", err);
+    } finally {
+      setLoadingPayments(false);
+    }
+  }
+
+  async function releasePayment(paymentId: string) {
+    if (!confirm("Release this escrowed payment to the student? The student will receive the gold immediately.")) {
+      return;
+    }
+
+    try {
+      setReleasingPayment(paymentId);
+      const res = await apiPost<{ success: boolean; data: any; studentId: string; goldAwarded: number }>(`/admin/payments/release/${paymentId}`);
+      if (res.success) {
+        alert(`Payment released! Student received ${res.goldAwarded} gold.`);
+        await loadEscrowedPayments();
+        await loadStats();
+        // Trigger user data refresh for students
+        window.dispatchEvent(new Event("userDataRefresh"));
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to release payment");
+    } finally {
+      setReleasingPayment(null);
+    }
+  }
+
   async function loadStats() {
     try {
       setLoading(true);
-      // Load all stats from various endpoints
       const [studentsRes, employersRes, tasksRes, anomaliesRes, paymentsRes] = await Promise.all([
         apiGet<{ success: boolean; data: any[] }>("/student/all").catch(() => ({ success: false, data: [] })),
         apiGet<{ success: boolean; data: any[] }>("/employer/all").catch(() => ({ success: false, data: [] })),
@@ -143,8 +183,10 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Loading dashboard…</div>
+      <div className="browse-page">
+        <div className="browse-inner">
+          <div className="browse-loading">Loading dashboard…</div>
+        </div>
       </div>
     );
   }
@@ -154,174 +196,275 @@ export default function AdminDashboard() {
       label: "Total Students",
       value: stats.totalStudents,
       link: "/dashboard/admin/students",
-      color: "bg-[#111827]",
     },
     {
       label: "Total Employers",
       value: stats.totalEmployers,
       link: "/dashboard/admin/employers",
-      color: "bg-[#111827]",
     },
     {
       label: "Active Tasks",
       value: stats.activeTasks,
       link: "/dashboard/admin/tasks",
-      color: "bg-[#111827]",
     },
     {
       label: "Open Anomalies",
       value: stats.openAnomalies,
       link: "/dashboard/admin/anomalies",
-      color: stats.openAnomalies > 0 ? "bg-[#991b1b]" : "bg-[#111827]",
+      isAlert: stats.openAnomalies > 0,
     },
   ];
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="mb-8 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-[#111827] mb-2">Admin Dashboard</h1>
-          <p className="text-sm text-[#6b7280]">
-            Monitor and manage the entire Micro-Internship platform. View statistics, resolve anomalies, and oversee all activities.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={fixUserRoles}
-            disabled={fixingRoles}
-            className="px-4 py-2 rounded-lg bg-[#065f46] text-white text-sm font-semibold hover:bg-[#047857] transition-colors disabled:opacity-50 whitespace-nowrap"
-            title="Fix user roles in database"
-          >
-            {fixingRoles ? "Fixing..." : "Fix User Roles"}
-          </button>
-          <button
-            onClick={cleanupJobs}
-            disabled={cleaning}
-            className="px-4 py-2 rounded-lg bg-[#991b1b] text-white text-sm font-semibold hover:bg-[#7f1d1d] transition-colors disabled:opacity-50 whitespace-nowrap"
-            title="Cleanup invalid, disputed, and hanging jobs. Returns coins to users appropriately."
-          >
-            {cleaning ? "Cleaning..." : "Cleanup Jobs"}
-          </button>
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        {statCards.map((stat, index) => (
-          <Link
-            key={index}
-            to={stat.link}
-            className="border border-[#e5e7eb] rounded-lg bg-white p-6 hover:shadow-md transition-shadow text-center"
-          >
-            <div className={`w-16 h-16 ${stat.color} rounded-lg mx-auto mb-4 flex items-center justify-center text-white text-2xl font-bold`}>
-              {stat.value}
-            </div>
-            <div className="text-xs font-medium text-[#6b7280] uppercase tracking-wide">{stat.label}</div>
-          </Link>
-        ))}
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Anomalies Card */}
-        <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-[#111827]">Anomaly Detection</h2>
-            <Link
-              to="/dashboard/admin/anomalies"
-              className="text-xs text-[#111827] hover:underline font-medium"
+    <div className="browse-page">
+      <div className="browse-inner">
+        {/* Header */}
+        <header className="browse-header">
+          <div className="browse-title-wrap">
+            <div className="browse-eyebrow">Admin Dashboard</div>
+            <h1 className="browse-title">Platform Management</h1>
+            <p className="browse-subtitle">
+              Monitor and manage the entire Micro-Internship platform. View statistics, resolve anomalies, and oversee all activities.
+            </p>
+          </div>
+          <div className="browse-actions">
+            <button
+              onClick={fixUserRoles}
+              disabled={fixingRoles}
+              className="browse-btn browse-btn--ghost"
+              style={{ fontSize: "12px", padding: "8px 12px" }}
+              title="Fix user roles in database"
             >
-              View all →
-            </Link>
-          </div>
-          <p className="text-sm text-[#6b7280] mb-4">
-            Monitor system anomalies including missed deadlines, delayed payments, and user inactivity.
-          </p>
-          <div className="flex items-center gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-[#111827]">{stats.openAnomalies}</div>
-              <div className="text-xs text-[#6b7280]">Open Issues</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-[#111827]">{stats.totalAnomalies}</div>
-              <div className="text-xs text-[#6b7280]">Total Detected</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Tasks Overview */}
-        <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-[#111827]">Tasks Overview</h2>
-            <Link
-              to="/dashboard/admin/tasks"
-              className="text-xs text-[#111827] hover:underline font-medium"
+              {fixingRoles ? "Fixing..." : "Fix Roles"}
+            </button>
+            {escrowedPayments.length > 0 && (
+              <div className="browse-stat" style={{ 
+                fontSize: "12px", 
+                padding: "8px 12px",
+                background: "rgba(251,191,36,.1)",
+                border: "1px solid rgba(251,191,36,.3)",
+                borderRadius: "8px",
+              }}>
+                <div style={{ fontSize: "11px", color: "var(--muted)" }}>Escrowed Payments</div>
+                <div style={{ fontSize: "16px", fontWeight: 800 }}>{escrowedPayments.length}</div>
+              </div>
+            )}
+            <button
+              onClick={cleanupJobs}
+              disabled={cleaning}
+              className="browse-btn"
+              style={{ 
+                fontSize: "12px", 
+                padding: "8px 12px",
+                background: cleaning ? "rgba(239,68,68,.5)" : "rgba(239,68,68,.8)",
+                border: "1px solid rgba(239,68,68,.5)",
+              }}
+              title="Cleanup invalid, disputed, and hanging jobs"
             >
-              View all →
-            </Link>
+              {cleaning ? "Cleaning..." : "Cleanup"}
+            </button>
           </div>
-          <p className="text-sm text-[#6b7280] mb-4">
-            Track all micro-internship tasks across the platform.
-          </p>
-          <div className="flex items-center gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-[#111827]">{stats.activeTasks}</div>
-              <div className="text-xs text-[#6b7280]">Active</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-[#111827]">{stats.completedTasks}</div>
-              <div className="text-xs text-[#6b7280]">Completed</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-[#111827]">{stats.totalTasks}</div>
-              <div className="text-xs text-[#6b7280]">Total</div>
-            </div>
-          </div>
-        </div>
+        </header>
 
-        {/* Payments Overview */}
-        <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-[#111827]">Payments</h2>
+        {/* Stats Grid */}
+        <section className="browse-panel" style={{ marginTop: "16px" }}>
+          <div className="browse-panel-head">
+            <h2 className="browse-panel-title">Platform Statistics</h2>
+            <div className="browse-panel-subtitle">Key metrics at a glance</div>
           </div>
-          <p className="text-sm text-[#6b7280] mb-4">
-            Monitor payment status and escrow transactions.
-          </p>
-          <div className="flex items-center gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-[#111827]">{stats.pendingPayments}</div>
-              <div className="text-xs text-[#6b7280]">Pending</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-[#111827]">{stats.totalPayments}</div>
-              <div className="text-xs text-[#6b7280]">Total</div>
-            </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
+            {statCards.map((stat, index) => (
+              <Link
+                key={index}
+                to={stat.link}
+                className="browse-stat"
+                style={{ 
+                  minWidth: "auto",
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  borderColor: stat.isAlert ? "rgba(239,68,68,.5)" : undefined,
+                  background: stat.isAlert ? "rgba(239,68,68,.1)" : undefined,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,.2)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.borderColor = stat.isAlert ? "rgba(239,68,68,.5)" : "var(--border)";
+                }}
+              >
+                <div className="browse-stat-label">{stat.label}</div>
+                <div className="browse-stat-value">{stat.value}</div>
+              </Link>
+            ))}
           </div>
-        </div>
+        </section>
 
-        {/* User Management */}
-        <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-[#111827]">User Management</h2>
+        {/* Quick Actions */}
+        <section className="browse-panel" style={{ marginTop: "16px" }}>
+          <div className="browse-panel-head">
+            <h2 className="browse-panel-title">Overview</h2>
+            <div className="browse-panel-subtitle">System status and management</div>
           </div>
-          <p className="text-sm text-[#6b7280] mb-4">
-            Manage students and employers on the platform.
-          </p>
-          <div className="flex items-center gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-[#111827]">{stats.totalStudents}</div>
-              <div className="text-xs text-[#6b7280]">Students</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "12px" }}>
+            {/* Anomalies Card */}
+            <div className="job-card">
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "12px" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: 800, margin: 0 }}>Anomaly Detection</h3>
+                <Link to="/dashboard/admin/anomalies" className="browse-link" style={{ fontSize: "11px" }}>
+                  View all →
+                </Link>
+              </div>
+              <p style={{ fontSize: "13px", color: "var(--muted)", marginBottom: "16px" }}>
+                Monitor system anomalies including missed deadlines, delayed payments, and user inactivity.
+              </p>
+              <div style={{ display: "flex", gap: "16px" }}>
+                <div>
+                  <div className="browse-stat-value" style={{ margin: "0", fontSize: "24px" }}>{stats.openAnomalies}</div>
+                  <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>Open Issues</div>
+                </div>
+                <div>
+                  <div className="browse-stat-value" style={{ margin: "0", fontSize: "24px" }}>{stats.totalAnomalies}</div>
+                  <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>Total Detected</div>
+                </div>
+              </div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-[#111827]">{stats.totalEmployers}</div>
-              <div className="text-xs text-[#6b7280]">Employers</div>
+
+            {/* Tasks Overview */}
+            <div className="job-card">
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "12px" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: 800, margin: 0 }}>Tasks Overview</h3>
+                <Link to="/dashboard/admin/tasks" className="browse-link" style={{ fontSize: "11px" }}>
+                  View all →
+                </Link>
+              </div>
+              <p style={{ fontSize: "13px", color: "var(--muted)", marginBottom: "16px" }}>
+                Track all micro-internship tasks across the platform.
+              </p>
+              <div style={{ display: "flex", gap: "16px" }}>
+                <div>
+                  <div className="browse-stat-value" style={{ margin: "0", fontSize: "24px" }}>{stats.activeTasks}</div>
+                  <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>Active</div>
+                </div>
+                <div>
+                  <div className="browse-stat-value" style={{ margin: "0", fontSize: "24px" }}>{stats.completedTasks}</div>
+                  <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>Completed</div>
+                </div>
+                <div>
+                  <div className="browse-stat-value" style={{ margin: "0", fontSize: "24px" }}>{stats.totalTasks}</div>
+                  <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>Total</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Payments Overview */}
+            <div className="job-card">
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "12px" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: 800, margin: 0 }}>Payments</h3>
+              </div>
+              <p style={{ fontSize: "13px", color: "var(--muted)", marginBottom: "16px" }}>
+                Monitor payment status and escrow transactions.
+              </p>
+              <div style={{ display: "flex", gap: "16px" }}>
+                <div>
+                  <div className="browse-stat-value" style={{ margin: "0", fontSize: "24px" }}>{stats.pendingPayments}</div>
+                  <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>Pending</div>
+                </div>
+                <div>
+                  <div className="browse-stat-value" style={{ margin: "0", fontSize: "24px" }}>{stats.totalPayments}</div>
+                  <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>Total</div>
+                </div>
+              </div>
+            </div>
+
+            {/* User Management */}
+            <div className="job-card">
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "12px" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: 800, margin: 0 }}>User Management</h3>
+              </div>
+              <p style={{ fontSize: "13px", color: "var(--muted)", marginBottom: "16px" }}>
+                Manage students and employers on the platform.
+              </p>
+              <div style={{ display: "flex", gap: "16px" }}>
+                <div>
+                  <div className="browse-stat-value" style={{ margin: "0", fontSize: "24px" }}>{stats.totalStudents}</div>
+                  <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>Students</div>
+                </div>
+                <div>
+                  <div className="browse-stat-value" style={{ margin: "0", fontSize: "24px" }}>{stats.totalEmployers}</div>
+                  <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>Employers</div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </section>
+
+        {/* Escrowed Payments Section */}
+        {escrowedPayments.length > 0 && (
+          <section className="browse-panel" style={{ marginTop: "16px" }}>
+            <div className="browse-panel-head">
+              <h2 className="browse-panel-title">Escrowed Payments</h2>
+              <div className="browse-panel-subtitle">
+                {escrowedPayments.length} payment{escrowedPayments.length !== 1 ? "s" : ""} ready to release for completed jobs
+              </div>
+            </div>
+            <div className="browse-cards" style={{ marginTop: "16px" }}>
+              {escrowedPayments.map((payment: any) => {
+                const task = payment.taskId;
+                const student = payment.studentId;
+                const employer = payment.employerId;
+                const escrowedDate = payment.escrowedAt 
+                  ? new Date(payment.escrowedAt).toLocaleDateString()
+                  : "Unknown";
+
+                return (
+                  <article key={payment._id} className="job-card">
+                    <div className="job-card-top">
+                      <div className="job-card-main">
+                        <div className="job-title">{task?.title || "Unknown Task"}</div>
+                        <div className="job-sub">
+                          {employer?.companyName || employer?.name || "Unknown Employer"} · Escrowed {escrowedDate}
+                        </div>
+                      </div>
+                      <div className="job-badges">
+                        <span className="badge badge--gold">{payment.amount} Gold</span>
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: "12px", fontSize: "13px", color: "var(--muted)" }}>
+                      <div><strong>Student:</strong> {student?.name || "Unknown"} ({student?.email || "N/A"})</div>
+                      <div style={{ marginTop: "4px" }}><strong>Task Status:</strong> {task?.status || "Unknown"}</div>
+                      {task?.completedAt && (
+                        <div style={{ marginTop: "4px" }}>
+                          <strong>Completed:</strong> {new Date(task.completedAt).toLocaleDateString()}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="job-card-bottom">
+                      <div className="job-meta">
+                        <span className="meta-dot" />
+                        Escrowed
+                        <span className="meta-dot" />
+                        {escrowedDate}
+                      </div>
+                      <button
+                        onClick={() => releasePayment(payment._id)}
+                        disabled={releasingPayment === payment._id}
+                        className="browse-btn browse-btn--primary"
+                        style={{ fontSize: "12px", padding: "8px 16px" }}
+                      >
+                        {releasingPayment === payment._id ? "Releasing..." : "Release Payment"}
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );
 }
-
-

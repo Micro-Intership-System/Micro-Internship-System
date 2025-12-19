@@ -41,7 +41,6 @@ export default function StudentPortfolioPage({
         starRating: (user as any)?.starRating || 1,
         totalTasksCompleted: (user as any)?.totalTasksCompleted || 0,
         gold: (user as any)?.gold || 0,
-        xp: (user as any)?.xp || 0,
         averageCompletionTime: (user as any)?.averageCompletionTime || 0,
       });
     } catch (err) {
@@ -112,7 +111,7 @@ export default function StudentPortfolioPage({
             )}
 
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4 border-t border-[#e5e7eb]">
+            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[#e5e7eb]">
               <div>
                 <div className="text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-2">Tasks Completed</div>
                 <div className="text-lg font-bold text-[#111827]">
@@ -123,12 +122,6 @@ export default function StudentPortfolioPage({
                 <div className="text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-2">Gold</div>
                 <div className="text-lg font-bold text-[#111827]">
                   {portfolioData.gold || 0}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-2">XP</div>
-                <div className="text-lg font-bold text-[#111827]">
-                  {portfolioData.xp || 0}
                 </div>
               </div>
             </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiGet, apiDelete } from "../../../api/client";
+import "../student/css/BrowsePage.css";
 
 type Employer = {
   _id: string;
@@ -58,99 +59,129 @@ export default function EmployersPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Loading employers…</div>
+      <div className="browse-page">
+        <div className="browse-inner">
+          <div className="browse-loading">Loading employers…</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="text-center mb-12">
-        <h1 className="text-3xl font-semibold text-[#111827] mb-3">Employer Management</h1>
-        <p className="text-sm text-[#6b7280] max-w-2xl mx-auto">
-          Search and manage all employers on the platform. View their companies, verification status, and activity.
-        </p>
-      </div>
-
-      {/* Search */}
-      <div className="max-w-md mx-auto mb-8">
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search by name, email, or company..."
-          className="w-full px-4 py-3 border border-[#d1d5db] rounded-lg text-sm text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent bg-white"
-        />
-      </div>
-
-      {/* Employers Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {filteredEmployers.length === 0 ? (
-          <div className="col-span-full border border-[#e5e7eb] rounded-lg bg-white p-12 text-center">
-            <p className="text-sm text-[#6b7280]">
-              {searchQuery ? "No employers found matching your search" : "No employers found"}
+    <div className="browse-page">
+      <div className="browse-inner">
+        {/* Header */}
+        <header className="browse-header">
+          <div className="browse-title-wrap">
+            <div className="browse-eyebrow">Employer Management</div>
+            <h1 className="browse-title">All Employers</h1>
+            <p className="browse-subtitle">
+              Search and manage all employers on the platform. View their companies, verification status, and activity.
             </p>
           </div>
-        ) : (
-          filteredEmployers.map((employer) => (
-            <div
-              key={employer._id}
-              className="border border-[#e5e7eb] rounded-lg bg-white p-6 hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-start gap-4 mb-4">
-                <div className="w-12 h-12 rounded-full bg-[#111827] flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
-                  {employer.name.charAt(0).toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-lg font-semibold text-[#111827] mb-1">{employer.name}</div>
-                  <div className="text-sm text-[#6b7280] mb-2">{employer.email}</div>
-                  {employer.companyName && (
-                    <div className="text-sm font-medium text-[#111827] mb-1">{employer.companyName}</div>
-                  )}
-                  {employer.companyDescription && (
-                    <p className="text-xs text-[#6b7280] line-clamp-2">{employer.companyDescription}</p>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-4 pt-4 border-t border-[#e5e7eb]">
-                <div className="text-center flex-1">
-                  <div className="text-lg font-bold text-[#111827]">{employer.totalTasksPosted || 0}</div>
-                  <div className="text-xs text-[#6b7280]">Tasks Posted</div>
-                </div>
-                <div className="text-center flex-1">
-                  <div className="text-lg font-bold text-[#111827]">{employer.totalPaymentsMade || 0}</div>
-                  <div className="text-xs text-[#6b7280]">Payments Made</div>
-                </div>
-                <div className="text-center flex-1">
-                  <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${
-                    employer.verificationStatus === "verified"
-                      ? "bg-[#d1fae5] text-[#065f46] border border-[#a7f3d0]"
-                      : "bg-[#fef3c7] text-[#92400e] border border-[#fde68a]"
-                  }`}>
-                    {employer.verificationStatus || "Pending"}
-                  </span>
-                </div>
-              </div>
-              <div className="pt-4 border-t border-[#e5e7eb] mt-4">
-                <button
-                  onClick={() => handleDeleteEmployer(employer._id)}
-                  className="w-full px-4 py-2 rounded-lg bg-[#991b1b] text-white text-sm font-semibold hover:bg-[#7f1d1d] transition-colors"
-                >
-                  Delete Employer
-                </button>
-              </div>
+          <div className="browse-actions">
+            <div className="browse-stat">
+              <div className="browse-stat-label">Total Employers</div>
+              <div className="browse-stat-value">{employers.length}</div>
             </div>
-          ))
-        )}
-      </div>
+          </div>
+        </header>
 
-      <div className="text-center text-sm text-[#6b7280]">
-        Showing {filteredEmployers.length} of {employers.length} employers
+        {/* Search */}
+        <section className="browse-panel" style={{ marginTop: "16px" }}>
+          <div className="browse-field">
+            <label className="browse-label">Search</label>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name, email, or company..."
+              className="browse-input"
+            />
+          </div>
+        </section>
+
+        {/* Employers Grid */}
+        <section className="browse-panel" style={{ marginTop: "16px" }}>
+          <div className="browse-panel-head">
+            <h2 className="browse-panel-title">Employers</h2>
+            <div className="browse-panel-subtitle">{filteredEmployers.length} found</div>
+          </div>
+          {filteredEmployers.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--muted)" }}>
+              {searchQuery ? "No employers found matching your search" : "No employers found"}
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "12px" }}>
+              {filteredEmployers.map((employer) => (
+                <div key={employer._id} className="job-card">
+                  <div style={{ display: "flex", alignItems: "start", gap: "12px", marginBottom: "16px" }}>
+                    {employer.profilePicture ? (
+                      <img
+                        src={employer.profilePicture}
+                        alt={employer.name}
+                        style={{ width: "48px", height: "48px", borderRadius: "50%", objectFit: "cover" }}
+                      />
+                    ) : (
+                      <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: "16px", flexShrink: 0 }}>
+                        {employer.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 800, fontSize: "16px", marginBottom: "4px" }}>{employer.name}</div>
+                      <div style={{ fontSize: "12px", color: "var(--muted)", marginBottom: "8px" }}>{employer.email}</div>
+                      {employer.companyName && (
+                        <div style={{ fontSize: "14px", fontWeight: 800, marginBottom: "4px" }}>{employer.companyName}</div>
+                      )}
+                      {employer.companyDescription && (
+                        <p style={{ fontSize: "11px", color: "var(--muted)", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                          {employer.companyDescription}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", paddingTop: "12px", borderTop: "1px solid var(--border)", marginBottom: "12px" }}>
+                    <div style={{ textAlign: "center", flex: 1 }}>
+                      <div className="browse-stat-value" style={{ margin: "0", fontSize: "18px" }}>{employer.totalTasksPosted || 0}</div>
+                      <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>Tasks Posted</div>
+                    </div>
+                    <div style={{ textAlign: "center", flex: 1 }}>
+                      <div className="browse-stat-value" style={{ margin: "0", fontSize: "18px" }}>{employer.totalPaymentsMade || 0}</div>
+                      <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>Payments Made</div>
+                    </div>
+                    <div style={{ textAlign: "center", flex: 1 }}>
+                      <span className="badge" style={{
+                        borderColor: employer.verificationStatus === "verified" ? "rgba(34,197,94,.35)" : "rgba(251,191,36,.35)",
+                        background: employer.verificationStatus === "verified" ? "rgba(34,197,94,.16)" : "rgba(251,191,36,.16)",
+                        color: employer.verificationStatus === "verified" ? "#22c55e" : "#fbbf24",
+                        fontSize: "11px",
+                      }}>
+                        {employer.verificationStatus || "Pending"}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteEmployer(employer._id)}
+                    className="browse-btn"
+                    style={{
+                      width: "100%",
+                      fontSize: "12px",
+                      padding: "8px 14px",
+                      background: "rgba(239,68,68,.8)",
+                      border: "1px solid rgba(239,68,68,.5)",
+                    }}
+                  >
+                    Delete Employer
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{ textAlign: "center", padding: "16px", fontSize: "12px", color: "var(--muted)", borderTop: "1px solid var(--border)", marginTop: "12px" }}>
+            Showing {filteredEmployers.length} of {employers.length} employers
+          </div>
+        </section>
       </div>
     </div>
   );
 }
-
-

@@ -82,7 +82,6 @@ router.post("/login", async (req, res) => {
     // Include gamification fields for students
     if (user.role === "student") {
       userResponse.gold = user.gold || 0;
-      userResponse.xp = user.xp || 0;
       userResponse.starRating = user.starRating || 1;
       userResponse.totalTasksCompleted = user.totalTasksCompleted || 0;
       userResponse.averageCompletionTime = user.averageCompletionTime || 0;

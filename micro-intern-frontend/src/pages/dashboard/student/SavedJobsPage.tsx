@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiGet } from "../../../api/client";
+import "./css/BrowsePage.css";
 
 type Internship = {
   _id: string;
@@ -26,7 +27,6 @@ export default function SavedJobsPage() {
     try {
       setLoading(true);
       setError("");
-      // TODO: Replace with actual saved jobs endpoint
       const res = await apiGet<{ success: boolean; data: Internship[] }>("/internships");
       if (res.success) {
         setJobs(res.data || []);
@@ -40,76 +40,105 @@ export default function SavedJobsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Loading saved jobs…</div>
+      <div className="browse-page">
+        <div className="browse-inner">
+          <div className="browse-loading">Loading saved jobs…</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-[#111827] mb-2">Saved Jobs</h1>
-        <p className="text-sm text-[#6b7280]">Your bookmarked micro-internship opportunities</p>
-      </div>
+    <div className="browse-page">
+      <div className="browse-inner">
+        {/* Header */}
+        <header className="browse-header">
+          <div className="browse-title-wrap">
+            <div className="browse-eyebrow">Bookmarked Jobs</div>
+            <h1 className="browse-title">Saved Jobs</h1>
+            <p className="browse-subtitle">
+              Your bookmarked micro-internship opportunities
+            </p>
+          </div>
+          <div className="browse-actions">
+            <div className="browse-stat">
+              <div className="browse-stat-label">Saved</div>
+              <div className="browse-stat-value">{jobs.length}</div>
+            </div>
+          </div>
+        </header>
 
-      {/* Error */}
-      {error && (
-        <div className="border border-[#fecaca] bg-[#fee2e2] rounded-lg px-4 py-3 text-sm text-[#991b1b]">
-          {error}
-        </div>
-      )}
+        {/* Error */}
+        {error && (
+          <div className="browse-alert" style={{ marginTop: "16px" }}>
+            {error}
+          </div>
+        )}
 
-      {/* Jobs List */}
-      {jobs.length === 0 ? (
-        <div className="border border-[#e5e7eb] rounded-lg bg-white p-16 text-center">
-          <h3 className="text-lg font-semibold text-[#111827] mb-2">No Saved Jobs</h3>
-          <p className="text-sm text-[#6b7280] mb-6">
-            You haven't saved any jobs yet. Start browsing and save opportunities you're interested in!
-          </p>
-          <Link to="/dashboard/student/browse" className="inline-block px-6 py-3 rounded-lg bg-[#111827] text-white text-sm font-semibold hover:bg-[#1f2937] transition-colors">
-            Browse Jobs
-          </Link>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {jobs.map((job) => (
-            <div key={job._id} className="border border-[#e5e7eb] rounded-lg bg-white p-6 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between gap-4 mb-4">
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-semibold text-[#111827] mb-1 truncate">{job.title}</h3>
-                  <p className="text-sm text-[#6b7280] mb-2">{job.companyName} • {job.location}</p>
+        {/* Jobs List */}
+        {jobs.length === 0 ? (
+          <section className="browse-panel" style={{ marginTop: "16px" }}>
+            <div style={{ textAlign: "center", padding: "60px 20px" }}>
+              <h3 style={{ fontSize: "18px", fontWeight: 800, marginBottom: "8px" }}>No Saved Jobs</h3>
+              <p style={{ color: "var(--muted)", fontSize: "14px", marginBottom: "20px" }}>
+                You haven't saved any jobs yet. Start browsing and save opportunities you're interested in!
+              </p>
+              <Link to="/dashboard/student/browse" className="browse-btn browse-btn--primary">
+                Browse Jobs →
+              </Link>
+            </div>
+          </section>
+        ) : (
+          <section className="browse-results" style={{ marginTop: "16px" }}>
+            <div className="browse-results-head">
+              <h2 className="browse-results-title">Your Saved Jobs</h2>
+              <div className="browse-results-count">{jobs.length} found</div>
+            </div>
+
+            <div className="browse-cards">
+              {jobs.map((job) => (
+                <article key={job._id} className="job-card">
+                  <div className="job-card-top">
+                    <div className="job-card-main">
+                      <div className="job-title">{job.title}</div>
+                      <div className="job-sub">
+                        {job.companyName} · {job.location} · {job.duration}
+                      </div>
+                    </div>
+                    <div className="job-badges">
+                      <span className="badge badge--gold">{job.gold.toLocaleString()} Gold</span>
+                    </div>
+                  </div>
+
                   {job.skills && job.skills.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mb-3">
+                    <div style={{ marginTop: "12px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
                       {job.skills.slice(0, 3).map((skill, i) => (
-                        <span
-                          key={i}
-                          className="px-2 py-0.5 rounded bg-[#f9fafb] text-xs text-[#374151] border border-[#e5e7eb]"
-                        >
+                        <span key={i} className="skill-pill">
                           {skill}
                         </span>
                       ))}
                     </div>
                   )}
-                </div>
-              </div>
-              <div className="flex items-center justify-between pt-4 border-t border-[#e5e7eb] gap-4">
-                <div className="flex items-center gap-4 flex-shrink-0">
-                  <div className="text-lg font-bold text-[#111827]">{job.gold.toLocaleString()} Gold</div>
-                  <div className="text-sm text-[#6b7280]">{job.duration}</div>
-                </div>
-                <Link
-                  to={`/internships/${job._id}`}
-                  className="px-6 py-2.5 rounded-lg bg-[#111827] text-white text-sm font-semibold hover:bg-[#1f2937] transition-colors whitespace-nowrap flex-shrink-0"
-                >
-                  View Details
-                </Link>
-              </div>
+
+                  <div className="job-card-bottom">
+                    <div className="job-meta">
+                      <span className="meta-dot" />
+                      {job.duration}
+                    </div>
+                    <Link
+                      to={`/internships/${job._id}`}
+                      className="browse-btn browse-btn--primary"
+                      style={{ fontSize: "12px", padding: "8px 14px" }}
+                    >
+                      View Details
+                    </Link>
+                  </div>
+                </article>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          </section>
+        )}
+      </div>
     </div>
   );
 }

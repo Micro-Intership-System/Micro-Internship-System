@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { apiGet } from "../../../api/client";
+import "./css/BrowsePage.css";
 
 type Review = {
   _id: string;
@@ -59,19 +60,16 @@ export default function ViewReviewsPage() {
 
   function renderStars(rating: number) {
     return (
-      <div className="flex gap-1">
+      <div style={{ display: "flex", gap: "2px", fontSize: "16px" }}>
         {[1, 2, 3, 4, 5].map((star) => (
-          <svg
+          <span
             key={star}
-            className={`w-4 h-4 ${
-              star <= rating
-                ? "text-yellow-400 fill-current"
-                : "text-[#e5e7eb] fill-current"
-            }`}
-            viewBox="0 0 20 20"
+            style={{
+              color: star <= rating ? "#fbbf24" : "rgba(255,255,255,0.3)",
+            }}
           >
-            <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-          </svg>
+            ★
+          </span>
         ))}
       </div>
     );
@@ -79,87 +77,105 @@ export default function ViewReviewsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Loading reviews…</div>
+      <div className="browse-page">
+        <div className="browse-inner">
+          <div className="browse-loading">Loading reviews…</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-[#111827] mb-2">Reviews</h1>
-        <p className="text-sm text-[#6b7280]">View all reviews for this student</p>
-      </div>
-
-      {/* Summary */}
-      <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-        <div className="flex items-center gap-6">
-          <div>
-            <div className="text-sm text-[#6b7280] mb-1">Average Rating</div>
-            <div className="text-3xl font-bold text-[#111827]">{averageRating.toFixed(1)}</div>
+    <div className="browse-page">
+      <div className="browse-inner">
+        {/* Header */}
+        <header className="browse-header">
+          <div className="browse-title-wrap">
+            <div className="browse-eyebrow">Student Reviews</div>
+            <h1 className="browse-title">Reviews</h1>
+            <p className="browse-subtitle">
+              View all reviews for this student
+            </p>
           </div>
-          <div>
-            <div className="text-sm text-[#6b7280] mb-1">Total Reviews</div>
-            <div className="text-3xl font-bold text-[#111827]">{totalReviews}</div>
+          <div className="browse-actions">
+            <div className="browse-stat">
+              <div className="browse-stat-label">Average Rating</div>
+              <div className="browse-stat-value">{averageRating.toFixed(1)}</div>
+            </div>
+            <div className="browse-stat">
+              <div className="browse-stat-label">Total Reviews</div>
+              <div className="browse-stat-value">{totalReviews}</div>
+            </div>
           </div>
-          <div className="flex-1">
-            {renderStars(Math.round(averageRating))}
-          </div>
-        </div>
-      </div>
+        </header>
 
-      {/* Error */}
-      {error && (
-        <div className="border border-[#fecaca] bg-[#fee2e2] rounded-lg px-4 py-3 text-sm text-[#991b1b]">
-          {error}
-        </div>
-      )}
-
-      {/* Reviews List */}
-      {reviews.length === 0 ? (
-        <div className="border border-[#e5e7eb] rounded-lg bg-white p-16 text-center">
-          <h3 className="text-lg font-semibold text-[#111827] mb-2">No Reviews Yet</h3>
-          <p className="text-sm text-[#6b7280]">
-            This student hasn't received any reviews yet.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {reviews.map((review) => (
-            <div
-              key={review._id}
-              className="border border-[#e5e7eb] rounded-lg bg-white p-6 hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-start justify-between gap-4 mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-full bg-[#111827] flex items-center justify-center text-white text-sm font-semibold">
-                      {review.reviewerId.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="font-semibold text-sm text-[#111827]">
-                        {review.reviewerId.companyName || review.reviewerId.name}
-                      </div>
-                      <div className="text-xs text-[#6b7280]">{review.taskId.title}</div>
-                    </div>
-                  </div>
-                  {review.comment && (
-                    <p className="text-sm text-[#374151] mt-3">{review.comment}</p>
-                  )}
-                </div>
-                <div className="text-right">
-                  {renderStars(review.starRating)}
-                  <div className="text-xs text-[#6b7280] mt-1">
-                    {new Date(review.createdAt).toLocaleDateString()}
-                  </div>
-                </div>
+        {/* Summary */}
+        <section className="browse-panel" style={{ marginTop: "16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
+            <div>
+              <div className="browse-stat-label" style={{ marginBottom: "8px" }}>Overall Rating</div>
+              <div style={{ fontSize: "32px", fontWeight: 800, color: "var(--text)" }}>
+                {averageRating.toFixed(1)}
               </div>
             </div>
-          ))}
-        </div>
-      )}
+            <div style={{ flex: 1 }}>
+              {renderStars(Math.round(averageRating))}
+            </div>
+          </div>
+        </section>
+
+        {/* Error */}
+        {error && (
+          <div className="browse-alert" style={{ marginTop: "16px" }}>
+            {error}
+          </div>
+        )}
+
+        {/* Reviews List */}
+        {reviews.length === 0 ? (
+          <section className="browse-panel" style={{ marginTop: "16px" }}>
+            <div style={{ textAlign: "center", padding: "60px 20px" }}>
+              <h3 style={{ fontSize: "18px", fontWeight: 800, marginBottom: "8px" }}>No Reviews Yet</h3>
+              <p style={{ color: "var(--muted)", fontSize: "14px" }}>
+                This student hasn't received any reviews yet.
+              </p>
+            </div>
+          </section>
+        ) : (
+          <section className="browse-results" style={{ marginTop: "16px" }}>
+            <div className="browse-results-head">
+              <h2 className="browse-results-title">All Reviews</h2>
+              <div className="browse-results-count">{reviews.length} found</div>
+            </div>
+
+            <div className="browse-cards">
+              {reviews.map((review) => (
+                <article key={review._id} className="job-card">
+                  <div className="job-card-top">
+                    <div className="job-card-main">
+                      <div className="job-title">{review.taskId.title}</div>
+                      <div className="job-sub">
+                        {review.reviewerId.companyName || review.reviewerId.name} · {new Date(review.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <div className="job-badges">
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                        {renderStars(review.starRating)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {review.comment && (
+                    <div style={{ marginTop: "12px", fontSize: "13px", color: "var(--text)", lineHeight: 1.6 }}>
+                      {review.comment}
+                    </div>
+                  )}
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
     </div>
   );
 }

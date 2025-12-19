@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { User } from "../models/user";
 import { Internship } from "../models/internship";
+import { TaskReview } from "../models/taskReview";
 
 const router = Router();
 
@@ -10,12 +11,38 @@ const router = Router();
  */
 router.get("/", async (req, res) => {
   try {
-    const { sortBy = "starRating", limit = 50 } = req.query;
+    const { sortBy = "stars", limit = 50 } = req.query;
     
     // Get all students with their stats
     const students = await User.find({ role: "student" })
-      .select("name email xp starRating gold totalTasksCompleted averageCompletionTime profilePicture institution completedCourses")
+      .select("name email starRating gold totalTasksCompleted averageCompletionTime profilePicture institution completedCourses")
       .lean();
+
+    // Get review counts for all students
+    const TaskReviewModel = TaskReview;
+    const reviewCounts = await TaskReviewModel.aggregate([
+      {
+        $match: {
+          reviewType: "employer_to_student",
+          isVisible: true,
+        },
+      },
+      {
+        $group: {
+          _id: "$reviewedId",
+          count: { $sum: 1 },
+          averageRating: { $avg: "$starRating" },
+        },
+      },
+    ]);
+
+    const reviewCountMap = new Map();
+    reviewCounts.forEach((item) => {
+      reviewCountMap.set(item._id.toString(), {
+        count: item.count,
+        averageRating: Math.round(item.averageRating * 10) / 10,
+      });
+    });
 
     // Calculate average completion time for students who don't have it
     for (const student of students) {
@@ -35,11 +62,18 @@ router.get("/", async (req, res) => {
           student.averageCompletionTime = Math.round((totalDays / completedTasks.length) * 10) / 10; // Round to 1 decimal
         }
       }
+
+      // Update star rating from reviews if available
+      const reviewData = reviewCountMap.get(student._id.toString());
+      if (reviewData) {
+        student.starRating = reviewData.averageRating;
+      }
     }
 
     // Sort based on sortBy parameter
     const sortField = sortBy === "stars" ? "starRating" : 
                      sortBy === "jobs" ? "totalTasksCompleted" :
+                     sortBy === "gold" ? "gold" :
                      sortBy === "time" ? "averageCompletionTime" : "starRating";
 
     students.sort((a, b) => {
@@ -50,11 +84,16 @@ router.get("/", async (req, res) => {
       return (b[sortField as keyof typeof b] as number || 0) - (a[sortField as keyof typeof a] as number || 0);
     });
 
-    // Limit and add position
-    const leaderboard = students.slice(0, parseInt(limit as string)).map((student, index) => ({
-      position: index + 1,
-      ...student,
-    }));
+    // Limit and add position, review count
+    const leaderboard = students.slice(0, parseInt(limit as string)).map((student, index) => {
+      const reviewData = reviewCountMap.get(student._id.toString());
+      return {
+        position: index + 1,
+        ...student,
+        totalReviews: reviewData?.count || 0,
+        starRating: reviewData?.averageRating || student.starRating || 1,
+      };
+    });
 
     res.json({ success: true, data: leaderboard });
   } catch (err) {
@@ -78,8 +117,8 @@ router.get("/stars/:stars", async (req, res) => {
       role: "student",
       starRating: stars,
     })
-      .select("name email xp starRating gold totalTasksCompleted averageCompletionTime profilePicture institution")
-      .sort({ totalTasksCompleted: -1, xp: -1 });
+      .select("name email starRating gold totalTasksCompleted averageCompletionTime profilePicture institution")
+      .sort({ totalTasksCompleted: -1, starRating: -1 });
 
     res.json({ success: true, data: students });
   } catch (err) {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiGet } from "../../../api/client";
+import "./css/BrowsePage.css";
 
 type Application = {
   _id: string;
@@ -21,10 +22,10 @@ type ApplicationsResponse = {
 
 function getStatusBadge(status: string) {
   const badges = {
-    accepted: { text: "Accepted", bg: "bg-[#d1fae5]", textColor: "text-[#065f46]", border: "border-[#a7f3d0]" },
-    rejected: { text: "Rejected", bg: "bg-[#fee2e2]", textColor: "text-[#991b1b]", border: "border-[#fecaca]" },
-    evaluating: { text: "Under Review", bg: "bg-[#fef3c7]", textColor: "text-[#92400e]", border: "border-[#fde68a]" },
-    applied: { text: "Applied", bg: "bg-[#dbeafe]", textColor: "text-[#1e40af]", border: "border-[#bfdbfe]" },
+    accepted: { text: "Accepted", style: { borderColor: "rgba(34,197,94,.35)", background: "rgba(34,197,94,.16)", color: "#22c55e" } },
+    rejected: { text: "Rejected", style: { borderColor: "rgba(239,68,68,.35)", background: "rgba(239,68,68,.16)", color: "#ef4444" } },
+    evaluating: { text: "Under Review", style: { borderColor: "rgba(251,191,36,.35)", background: "rgba(251,191,36,.16)", color: "#fbbf24" } },
+    applied: { text: "Applied", style: { borderColor: "rgba(59,130,246,.35)", background: "rgba(59,130,246,.16)", color: "#3b82f6" } },
   };
   return badges[status as keyof typeof badges] || badges.applied;
 }
@@ -44,7 +45,15 @@ export default function ApplicationsPage() {
       setError("");
       const res = await apiGet<ApplicationsResponse>("/applications/me");
       if (res.success) {
-        setApps(res.data || []);
+        // Filter to only show pending applications:
+        // - Status must be "applied" or "evaluating" (not rejected or accepted)
+        // - Job status must not be "completed"
+        const pendingApps = (res.data || []).filter((app) => {
+          const isPendingStatus = app.status === "applied" || app.status === "evaluating";
+          const isJobNotCompleted = app.internshipId.status !== "completed";
+          return isPendingStatus && isJobNotCompleted;
+        });
+        setApps(pendingApps);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load applications");
@@ -55,88 +64,109 @@ export default function ApplicationsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Loading applications…</div>
+      <div className="browse-page">
+        <div className="browse-inner">
+          <div className="browse-loading">Loading applications…</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-[#111827] mb-2">My Applications</h1>
-        <p className="text-sm text-[#6b7280]">Track the status of your job applications</p>
+    <div className="browse-page">
+      <div className="browse-inner">
+        {/* Header */}
+        <header className="browse-header">
+          <div className="browse-title-wrap">
+            <div className="browse-eyebrow">Job Applications</div>
+            <h1 className="browse-title">My Applications</h1>
+            <p className="browse-subtitle">
+              Track the status of your job applications and manage your opportunities.
+            </p>
+          </div>
+          <div className="browse-actions">
+            <div className="browse-stat">
+              <div className="browse-stat-label">Applications</div>
+              <div className="browse-stat-value">{apps.length}</div>
+            </div>
+          </div>
+        </header>
+
+        {/* Error */}
+        {error && (
+          <div className="browse-alert" style={{ marginTop: "16px" }}>
+            {error}
+          </div>
+        )}
+
+        {/* Applications List */}
+        {apps.length === 0 ? (
+          <section className="browse-panel" style={{ marginTop: "16px" }}>
+            <div style={{ textAlign: "center", padding: "60px 20px" }}>
+              <h3 style={{ fontSize: "18px", fontWeight: 800, marginBottom: "8px" }}>No Applications Yet</h3>
+              <p style={{ color: "var(--muted)", fontSize: "14px", marginBottom: "20px" }}>
+                You haven't applied to any jobs yet. Start browsing opportunities!
+              </p>
+              <Link to="/dashboard/student/browse" className="browse-btn browse-btn--primary">
+                Browse Jobs →
+              </Link>
+            </div>
+          </section>
+        ) : (
+          <section className="browse-results" style={{ marginTop: "16px" }}>
+            <div className="browse-results-head">
+              <h2 className="browse-results-title">Your Applications</h2>
+              <div className="browse-results-count">{apps.length} found</div>
+            </div>
+
+            <div className="browse-cards">
+              {apps.map((app) => {
+                const badge = getStatusBadge(app.status);
+                return (
+                  <article key={app._id} className="job-card">
+                    <div className="job-card-top">
+                      <div className="job-card-main">
+                        <div className="job-title">{app.internshipId.title}</div>
+                        <div className="job-sub">
+                          {app.internshipId.companyName} · Applied {new Date(app.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div className="job-badges">
+                        <span className="badge" style={badge.style}>
+                          {badge.text}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="job-card-bottom">
+                      <div className="job-meta">
+                        <span className="meta-dot" />
+                        {app.internshipId.status || "Active"}
+                      </div>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <Link
+                          to={`/internships/${app.internshipId._id}`}
+                          className="browse-btn browse-btn--ghost"
+                        >
+                          View Job
+                        </Link>
+                        {app.status === "accepted" && app.internshipId.status === "completed" && (
+                          <Link
+                            to={`/dashboard/student/reviews/submit/${app.internshipId._id}`}
+                            className="browse-btn browse-btn--primary"
+                          >
+                            Review
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        )}
       </div>
-
-      {/* Error */}
-      {error && (
-        <div className="border border-[#fecaca] bg-[#fee2e2] rounded-lg px-4 py-3 text-sm text-[#991b1b]">
-          {error}
-        </div>
-      )}
-
-      {/* Applications List */}
-      {apps.length === 0 ? (
-        <div className="border border-[#e5e7eb] rounded-lg bg-white p-16 text-center">
-          <h3 className="text-lg font-semibold text-[#111827] mb-2">No Applications Yet</h3>
-          <p className="text-sm text-[#6b7280] mb-6">
-            You haven't applied to any jobs yet. Start browsing opportunities!
-          </p>
-          <Link to="/dashboard/student/browse" className="inline-block px-6 py-3 rounded-lg bg-[#111827] text-white text-sm font-semibold hover:bg-[#1f2937] transition-colors">
-            Browse Jobs
-          </Link>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {apps.map((app) => {
-            const badge = getStatusBadge(app.status);
-            return (
-              <div key={app._id} className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-                <div className="flex items-start justify-between gap-6">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-12 h-12 rounded-lg bg-[#111827] flex items-center justify-center text-white font-bold flex-shrink-0">
-                        {app.internshipId.title.charAt(0)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-semibold text-[#111827] mb-1 truncate">
-                          {app.internshipId.title}
-                        </h3>
-                        <p className="text-sm text-[#6b7280]">{app.internshipId.companyName}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <span className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${badge.bg} ${badge.textColor} ${badge.border}`}>
-                        {badge.text}
-                      </span>
-                      <span className="text-xs text-[#9ca3af]">
-                        Applied on {new Date(app.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 flex-shrink-0">
-                    <Link
-                      to={`/internships/${app.internshipId._id}`}
-                      className="px-6 py-2.5 rounded-lg border border-[#d1d5db] text-[#111827] text-sm font-semibold hover:bg-[#f9fafb] transition-colors whitespace-nowrap"
-                    >
-                      View Job
-                    </Link>
-                    {app.status === "accepted" && app.internshipId.status === "completed" && (
-                      <Link
-                        to={`/dashboard/student/reviews/submit/${app.internshipId._id}`}
-                        className="px-6 py-2.5 rounded-lg bg-[#111827] text-white text-sm font-semibold hover:bg-[#1f2937] transition-colors whitespace-nowrap"
-                      >
-                        Review
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }

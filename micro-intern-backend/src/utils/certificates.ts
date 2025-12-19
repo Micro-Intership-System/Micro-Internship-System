@@ -10,7 +10,8 @@ import crypto from "crypto";
  */
 export async function generateCourseCertificate(
   studentId: string,
-  courseId: string
+  courseId: string,
+  completedAt?: Date
 ): Promise<string> {
   const student = await User.findById(studentId);
   const course = await CourseShopItem.findById(courseId);
@@ -19,13 +20,23 @@ export async function generateCourseCertificate(
     throw new Error("Student or course not found");
   }
 
+  // Use provided completedAt or get from enrollment
+  let completionDate = completedAt;
+  if (!completionDate) {
+    const enrollment = await StudentCourse.findOne({
+      studentId: student._id,
+      courseId: course._id,
+    });
+    completionDate = enrollment?.completedAt || new Date();
+  }
+
   // Generate unique certificate ID
   const certificateData = {
     studentId: student._id.toString(),
     studentName: student.name,
     courseId: course._id.toString(),
     courseTitle: course.title,
-    completedAt: new Date().toISOString(),
+    completedAt: completionDate.toISOString(),
   };
 
   // Create a hash for verification
@@ -37,16 +48,9 @@ export async function generateCourseCertificate(
 
   const certificateId = `CERT-${student._id.toString().substring(0, 8)}-${course._id.toString().substring(0, 8)}-${hash}`;
 
-  // In production, you would:
-  // 1. Generate a PDF certificate using a library like pdfkit or puppeteer
-  // 2. Upload it to cloud storage (S3, Supabase, etc.)
-  // 3. Return the public URL
-
-  // For now, we'll return a URL that can be used to verify the certificate
-  const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-  const certificateUrl = `${baseUrl}/certificates/${certificateId}`;
-
-  return certificateUrl;
+  // Return just the certificate ID (not the full URL)
+  // The frontend will construct the URL when needed
+  return certificateId;
 }
 
 /**
@@ -138,72 +142,134 @@ export function generateCertificateHTML(
 <head>
   <meta charset="UTF-8">
   <style>
-    body {
-      font-family: 'Georgia', serif;
+    @page {
+      size: A4 landscape;
       margin: 0;
-      padding: 60px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: #333;
+    }
+    body {
+      font-family: 'Times New Roman', serif;
+      margin: 0;
+      padding: 80px 100px;
+      background: #f5f5f5;
+      color: #1a1a1a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
     }
     .certificate {
       background: white;
-      padding: 60px;
-      border: 8px solid #667eea;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      padding: 80px 100px;
+      border: 12px solid #d4af37;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
       text-align: center;
-      max-width: 800px;
-      margin: 0 auto;
+      width: 100%;
+      max-width: 1000px;
+      position: relative;
+    }
+    .certificate::before {
+      content: '';
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      right: 20px;
+      bottom: 20px;
+      border: 2px solid #d4af37;
+      pointer-events: none;
+    }
+    .certificate-header {
+      margin-bottom: 50px;
     }
     .certificate h1 {
-      font-size: 48px;
-      margin: 20px 0;
-      color: #667eea;
+      font-size: 52px;
+      margin: 0 0 20px 0;
+      color: #1a1a1a;
       font-weight: bold;
+      letter-spacing: 4px;
+      text-transform: uppercase;
     }
     .certificate h2 {
-      font-size: 32px;
+      font-size: 28px;
       margin: 30px 0;
       color: #333;
       font-weight: normal;
+      font-style: italic;
     }
     .certificate p {
-      font-size: 18px;
-      line-height: 1.8;
-      margin: 20px 0;
-      color: #666;
+      font-size: 20px;
+      line-height: 2;
+      margin: 25px 0;
+      color: #444;
     }
-    .student-name {
-      font-size: 36px;
+    .name-line {
+      display: inline-block;
+      min-width: 400px;
+      border-bottom: 3px solid #1a1a1a;
+      padding-bottom: 8px;
+      margin: 20px 0;
+      font-size: 32px;
       font-weight: bold;
-      color: #667eea;
-      margin: 20px 0;
+      color: #1a1a1a;
     }
-    .course-title {
-      font-size: 24px;
-      color: #333;
+    .course-line {
+      display: inline-block;
+      min-width: 500px;
+      border-bottom: 3px solid #1a1a1a;
+      padding-bottom: 8px;
       margin: 20px 0;
+      font-size: 24px;
+      font-weight: bold;
+      color: #1a1a1a;
     }
     .date {
-      font-size: 16px;
-      color: #999;
-      margin-top: 40px;
+      font-size: 18px;
+      color: #666;
+      margin-top: 50px;
+      font-style: italic;
     }
     .certificate-id {
-      font-size: 12px;
-      color: #ccc;
+      font-size: 11px;
+      color: #999;
       margin-top: 40px;
-      font-family: monospace;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 1px;
+    }
+    .signature-section {
+      margin-top: 60px;
+      display: flex;
+      justify-content: space-around;
+      padding-top: 40px;
+    }
+    .signature {
+      width: 200px;
+    }
+    .signature-line {
+      border-top: 2px solid #1a1a1a;
+      margin-top: 60px;
+      padding-top: 10px;
+      font-size: 14px;
+      color: #666;
     }
   </style>
 </head>
 <body>
   <div class="certificate">
-    <h1>CERTIFICATE OF COMPLETION</h1>
+    <div class="certificate-header">
+      <h1>Certificate of Completion</h1>
+    </div>
     <p>This is to certify that</p>
-    <div class="student-name">${studentName}</div>
+    <div class="name-line">${studentName}</div>
     <p>has successfully completed the course</p>
-    <div class="course-title">${courseTitle}</div>
+    <div class="course-line">${courseTitle}</div>
     <p class="date">Completed on ${completedAt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+    <div class="signature-section">
+      <div class="signature">
+        <div class="signature-line">Authorized Signature</div>
+      </div>
+      <div class="signature">
+        <div class="signature-line">Date</div>
+      </div>
+    </div>
     <div class="certificate-id">Certificate ID: ${certificateId}</div>
   </div>
 </body>

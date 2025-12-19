@@ -1,16 +1,15 @@
 /**
- * Calculate star rating based on XP and performance
+ * Calculate star rating based on performance (XP removed)
  * Stars are primarily based on employer reviews, but this provides a baseline
  */
-export function calculateStarRating(xp: number, totalTasksCompleted: number, averageCompletionTime: number): number {
-  // Base star from XP (1-3 stars)
+export function calculateStarRating(totalTasksCompleted: number, averageCompletionTime: number): number {
+  // Base star from completion count
   let stars = 1;
-  if (xp >= 500) stars = 2;
-  if (xp >= 2000) stars = 3;
+  if (totalTasksCompleted >= 3) stars = 2;
+  if (totalTasksCompleted >= 10) stars = 3;
+  if (totalTasksCompleted >= 20) stars = 4;
   
-  // Bonus for completion rate and speed
-  if (totalTasksCompleted >= 5) stars = Math.min(5, stars + 1);
-  if (totalTasksCompleted >= 15) stars = Math.min(5, stars + 1);
+  // Bonus for completion speed
   if (averageCompletionTime > 0 && averageCompletionTime <= 3) {
     stars = Math.min(5, stars + 1); // Fast completion bonus
   }

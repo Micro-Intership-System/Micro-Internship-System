@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiGet } from "../../../api/client";
-import "./LeaderboardPage.css";
+import "./css/BrowsePage.css";
 
 type LeaderboardEntry = {
   position: number;
@@ -10,8 +10,8 @@ type LeaderboardEntry = {
   starRating: number;
   totalTasksCompleted: number;
   averageCompletionTime: number;
-  xp: number;
   gold: number;
+  totalReviews?: number;
   profilePicture?: string;
   institution?: string;
 };
@@ -19,7 +19,7 @@ type LeaderboardEntry = {
 export default function LeaderboardPage() {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<"starRating" | "totalTasksCompleted" | "averageCompletionTime">("starRating");
+  const [sortBy, setSortBy] = useState<"stars" | "jobs" | "gold" | "time">("stars");
 
   useEffect(() => {
     loadLeaderboard();
@@ -29,7 +29,7 @@ export default function LeaderboardPage() {
     try {
       setLoading(true);
       const res = await apiGet<{ success: boolean; data: LeaderboardEntry[] }>(
-        `/leaderboard?sortBy=${sortBy === "starRating" ? "stars" : sortBy === "totalTasksCompleted" ? "jobs" : "time"}`
+        `/leaderboard?sortBy=${sortBy}`
       );
       setEntries(res.data || []);
     } catch (err) {
@@ -39,176 +39,197 @@ export default function LeaderboardPage() {
     }
   }
 
-  function renderStars(rating: number) {
+  function renderStars(rating: number, reviewCount?: number) {
     return (
-      <div className="flex items-center gap-0.5">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <svg
-            key={star}
-            className={`w-3 h-3 ${
-              star <= rating ? "text-yellow-400 fill-current" : "text-[#e5e7eb] fill-current"
-            }`}
-            viewBox="0 0 20 20"
-          >
-            <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-          </svg>
-        ))}
-        <span className="ml-1 text-sm font-medium text-[#374151]">
-          {rating.toFixed(1)}
-        </span>
+      <div style={{ display: "flex", flexDirection: "column", gap: "4px", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          {[1, 2, 3, 4, 5].map((star) => (
+            <span
+              key={star}
+              style={{
+                fontSize: "14px",
+                color: star <= rating ? "#fbbf24" : "rgba(255,255,255,0.3)",
+              }}
+            >
+              ★
+            </span>
+          ))}
+          <span style={{ marginLeft: "4px", fontSize: "12px", color: "var(--muted)" }}>
+            {rating.toFixed(1)}
+          </span>
+        </div>
+        {reviewCount !== undefined && reviewCount > 0 && (
+          <span style={{ fontSize: "11px", color: "var(--muted)" }}>
+            ({reviewCount} review{reviewCount !== 1 ? "s" : ""})
+          </span>
+        )}
       </div>
     );
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Loading leaderboard…</div>
+      <div className="browse-page">
+        <div className="browse-inner">
+          <div className="browse-loading">Loading leaderboard…</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-[#111827] mb-2">Leaderboard</h1>
-        <p className="text-sm text-[#6b7280]">
-          Top performers ranked by their achievements and performance metrics.
-        </p>
-      </div>
+    <div className="browse-page">
+      <div className="browse-inner">
+        {/* Header */}
+        <header className="browse-header">
+          <div className="browse-title-wrap">
+            <div className="browse-eyebrow">Student Rankings</div>
+            <h1 className="browse-title">Leaderboard</h1>
+            <p className="browse-subtitle">
+              Top performers ranked by their achievements and performance metrics.
+            </p>
+          </div>
+          <div className="browse-actions">
+            <div className="browse-stat">
+              <div className="browse-stat-label">Students</div>
+              <div className="browse-stat-value">{entries.length}</div>
+            </div>
+          </div>
+        </header>
 
-      {/* Sort Options */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => setSortBy("starRating")}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-            sortBy === "starRating"
-              ? "bg-[#111827] text-white"
-              : "bg-[#f9fafb] text-[#374151] border border-[#e5e7eb] hover:bg-[#f3f4f6]"
-          }`}
-        >
-          Stars
-        </button>
-        <button
-          onClick={() => setSortBy("totalTasksCompleted")}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-            sortBy === "totalTasksCompleted"
-              ? "bg-[#111827] text-white"
-              : "bg-[#f9fafb] text-[#374151] border border-[#e5e7eb] hover:bg-[#f3f4f6]"
-          }`}
-        >
-          Jobs Completed
-        </button>
-        <button
-          onClick={() => setSortBy("averageCompletionTime")}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-            sortBy === "averageCompletionTime"
-              ? "bg-[#111827] text-white"
-              : "bg-[#f9fafb] text-[#374151] border border-[#e5e7eb] hover:bg-[#f3f4f6]"
-          }`}
-        >
-          Avg. Time
-        </button>
-      </div>
+        {/* Sort Options */}
+        <section className="browse-panel" style={{ marginTop: "16px" }}>
+          <div className="browse-panel-head">
+            <h2 className="browse-panel-title">Sort By</h2>
+            <div className="browse-panel-subtitle">Choose ranking criteria</div>
+          </div>
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+            <button
+              onClick={() => setSortBy("stars")}
+              className={`browse-btn ${sortBy === "stars" ? "browse-btn--primary" : "browse-btn--ghost"}`}
+              style={{ fontSize: "12px", padding: "8px 16px" }}
+            >
+              Stars
+            </button>
+            <button
+              onClick={() => setSortBy("jobs")}
+              className={`browse-btn ${sortBy === "jobs" ? "browse-btn--primary" : "browse-btn--ghost"}`}
+              style={{ fontSize: "12px", padding: "8px 16px" }}
+            >
+              Jobs Completed
+            </button>
+            <button
+              onClick={() => setSortBy("gold")}
+              className={`browse-btn ${sortBy === "gold" ? "browse-btn--primary" : "browse-btn--ghost"}`}
+              style={{ fontSize: "12px", padding: "8px 16px" }}
+            >
+              Highest Earner
+            </button>
+            <button
+              onClick={() => setSortBy("time")}
+              className={`browse-btn ${sortBy === "time" ? "browse-btn--primary" : "browse-btn--ghost"}`}
+              style={{ fontSize: "12px", padding: "8px 16px" }}
+            >
+              Avg. Time
+            </button>
+          </div>
+        </section>
 
-      {/* Leaderboard Table */}
-      <div className="border border-[#e5e7eb] rounded-lg bg-white overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-[#f9fafb] border-b border-[#e5e7eb]">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#374151] uppercase tracking-wider">
-                  Rank
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#374151] uppercase tracking-wider">
-                  Student
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">
-                  Rating
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">
-                  Jobs
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">
-                  Avg. Time
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">
-                  XP
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#e5e7eb]">
-              {entries.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-sm text-[#6b7280]">
-                    No students found.
-                  </td>
-                </tr>
-              ) : (
-                entries.map((entry) => (
-                  <tr
-                    key={entry._id}
-                    className={`hover:bg-[#f9fafb] transition-colors ${
-                      entry.position <= 3 ? "bg-yellow-50" : ""
-                    }`}
-                  >
-                    <td className="px-6 py-4">
-                      <span className="text-sm font-semibold text-[#111827]">
+        {/* Leaderboard Table */}
+        <section className="browse-panel" style={{ marginTop: "16px" }}>
+          <div className="browse-panel-head">
+            <h2 className="browse-panel-title">Rankings</h2>
+            <div className="browse-panel-subtitle">Top {entries.length} students</div>
+          </div>
+          {entries.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--muted)" }}>
+              No students found.
+            </div>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                    <th style={{ padding: "12px", textAlign: "left", fontSize: "12px", fontWeight: 800, textTransform: "uppercase", color: "var(--muted)" }}>
+                      Rank
+                    </th>
+                    <th style={{ padding: "12px", textAlign: "left", fontSize: "12px", fontWeight: 800, textTransform: "uppercase", color: "var(--muted)" }}>
+                      Student
+                    </th>
+                    <th style={{ padding: "12px", textAlign: "center", fontSize: "12px", fontWeight: 800, textTransform: "uppercase", color: "var(--muted)" }}>
+                      Rating
+                    </th>
+                    <th style={{ padding: "12px", textAlign: "center", fontSize: "12px", fontWeight: 800, textTransform: "uppercase", color: "var(--muted)" }}>
+                      Jobs
+                    </th>
+                    <th style={{ padding: "12px", textAlign: "center", fontSize: "12px", fontWeight: 800, textTransform: "uppercase", color: "var(--muted)" }}>
+                      Gold
+                    </th>
+                    <th style={{ padding: "12px", textAlign: "center", fontSize: "12px", fontWeight: 800, textTransform: "uppercase", color: "var(--muted)" }}>
+                      Avg. Time
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entries.map((entry) => (
+                    <tr
+                      key={entry._id}
+                      style={{
+                        borderBottom: "1px solid var(--border)",
+                        transition: "background 0.2s",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.03)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                    >
+                      <td style={{ padding: "16px", fontWeight: 800 }}>
                         #{entry.position}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        {entry.profilePicture ? (
-                          <img
-                            src={entry.profilePicture}
-                            alt={entry.name}
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-[#111827] flex items-center justify-center text-white font-semibold text-sm">
-                            {entry.name.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                        <div>
-                          <div className="text-sm font-semibold text-[#111827]">
-                            {entry.name}
-                          </div>
-                          {entry.institution && (
-                            <div className="text-xs text-[#6b7280]">
-                              {entry.institution}
+                      </td>
+                      <td style={{ padding: "16px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                          {entry.profilePicture ? (
+                            <img
+                              src={entry.profilePicture}
+                              alt={entry.name}
+                              style={{ width: "40px", height: "40px", borderRadius: "50%", objectFit: "cover" }}
+                            />
+                          ) : (
+                            <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: "14px" }}>
+                              {entry.name.charAt(0).toUpperCase()}
                             </div>
                           )}
+                          <div>
+                            <div style={{ fontWeight: 800, fontSize: "14px" }}>
+                              {entry.name}
+                            </div>
+                            {entry.institution && (
+                              <div style={{ fontSize: "12px", color: "var(--muted)" }}>
+                                {entry.institution}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      {renderStars(entry.starRating || 1)}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-sm font-semibold text-[#111827]">
+                      </td>
+                      <td style={{ padding: "16px", textAlign: "center" }}>
+                        {renderStars(entry.starRating || 1, entry.totalReviews)}
+                      </td>
+                      <td style={{ padding: "16px", textAlign: "center", fontWeight: 800 }}>
                         {entry.totalTasksCompleted || 0}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-sm font-semibold text-[#111827]">
+                      </td>
+                      <td style={{ padding: "16px", textAlign: "center", fontWeight: 800 }}>
+                        {entry.gold?.toLocaleString() || 0}
+                      </td>
+                      <td style={{ padding: "16px", textAlign: "center", fontWeight: 800 }}>
                         {entry.averageCompletionTime
                           ? `${entry.averageCompletionTime.toFixed(1)}d`
                           : "—"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-sm font-semibold text-[#111827]">
-                        {entry.xp || 0}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );

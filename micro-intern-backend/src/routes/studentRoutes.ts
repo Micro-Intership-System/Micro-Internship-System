@@ -45,7 +45,6 @@ router.get("/me", requireStudent, (req: any, res) => {
       profilePicture: s.profilePicture,
       // Gamification fields
       gold: s.gold || 0,
-      xp: s.xp || 0,
       starRating: s.starRating || 1,
       totalTasksCompleted: s.totalTasksCompleted || 0,
       averageCompletionTime: s.averageCompletionTime || 0,
@@ -93,7 +92,7 @@ router.get("/all", requireAuth, async (req: any, res) => {
     }
 
     const students = await User.find({ role: "student" })
-      .select("name email institution skills bio profilePicture gold xp starRating totalTasksCompleted averageCompletionTime createdAt")
+      .select("name email institution skills bio profilePicture gold starRating totalTasksCompleted averageCompletionTime createdAt")
       .sort({ createdAt: -1 });
 
     res.json({ success: true, data: students });

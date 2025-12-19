@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiGet, apiPost } from "../../../api/client";
+import "../student/css/BrowsePage.css";
 
 type Task = {
   _id: string;
@@ -56,7 +57,7 @@ export default function SubmitReviewPage() {
         starRating,
         comment: comment.trim() || undefined,
       });
-      navigate("/dashboard/employer/jobs");
+      navigate("/dashboard/employer/reviews");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to submit review");
     } finally {
@@ -66,123 +67,161 @@ export default function SubmitReviewPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Loading task information…</div>
+      <div className="browse-page">
+        <div className="browse-inner">
+          <div className="browse-loading">Loading task information…</div>
+        </div>
       </div>
     );
   }
 
   if (!task) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Task not found</div>
+      <div className="browse-page">
+        <div className="browse-inner">
+          <div className="browse-alert" style={{ marginTop: "16px" }}>Task not found</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-[#111827] mb-2">Submit Review</h1>
-        <p className="text-sm text-[#6b7280]">Review the student's performance</p>
-      </div>
-
-      {/* Task Info */}
-      <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-        <h2 className="text-lg font-semibold text-[#111827] mb-4">Task Information</h2>
-        <div className="space-y-2 text-sm">
-          <div>
-            <span className="text-[#6b7280]">Task:</span>
-            <span className="ml-2 font-medium text-[#111827]">{task.title}</span>
-          </div>
-          <div>
-            <span className="text-[#6b7280]">Student:</span>
-            <span className="ml-2 font-medium text-[#111827]">{task.acceptedStudentId.name}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Review Form */}
-      <div className="border border-[#e5e7eb] rounded-lg bg-white p-6 space-y-6">
-        {/* Error */}
-        {error && (
-          <div className="border border-[#fecaca] bg-[#fee2e2] rounded-lg px-4 py-3 text-sm text-[#991b1b]">
-            {error}
-          </div>
-        )}
-
-        {/* Star Rating */}
-        <div>
-          <label className="block text-sm font-medium text-[#111827] mb-3">
-            Rating <span className="text-[#ef4444]">*</span>
-          </label>
-          <div className="flex gap-2">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
-                type="button"
-                onClick={() => setStarRating(star)}
-                className="focus:outline-none"
-              >
-                <svg
-                  className={`w-8 h-8 ${
-                    star <= starRating
-                      ? "text-yellow-400 fill-current"
-                      : "text-[#e5e7eb] fill-current"
-                  }`}
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                </svg>
-              </button>
-            ))}
-          </div>
-          {starRating > 0 && (
-            <p className="text-xs text-[#6b7280] mt-2">
-              {starRating === 5
-                ? "Excellent"
-                : starRating === 4
-                ? "Very Good"
-                : starRating === 3
-                ? "Good"
-                : starRating === 2
-                ? "Fair"
-                : "Poor"}
+    <div className="browse-page">
+      <div className="browse-inner">
+        {/* Header */}
+        <header className="browse-header">
+          <div className="browse-title-wrap">
+            <div className="browse-eyebrow">Submit Review</div>
+            <h1 className="browse-title">Review Student</h1>
+            <p className="browse-subtitle">
+              Share your feedback about the student's performance
             </p>
+          </div>
+        </header>
+
+        {/* Task Info */}
+        <section className="browse-panel" style={{ marginTop: "16px" }}>
+          <div className="browse-panel-head">
+            <h2 className="browse-panel-title">Task Information</h2>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div>
+              <div className="browse-stat-label" style={{ marginBottom: "6px" }}>Task</div>
+              <div style={{ fontSize: "14px", fontWeight: 800, color: "var(--text)" }}>{task.title}</div>
+            </div>
+            <div>
+              <div className="browse-stat-label" style={{ marginBottom: "6px" }}>Student</div>
+              <div style={{ fontSize: "14px", fontWeight: 800, color: "var(--text)" }}>
+                {task.acceptedStudentId.name}
+              </div>
+              {task.acceptedStudentId.email && (
+                <div style={{ fontSize: "12px", color: "var(--muted)", marginTop: "4px" }}>
+                  {task.acceptedStudentId.email}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* Review Form */}
+        <section className="browse-panel" style={{ marginTop: "16px" }}>
+          <div className="browse-panel-head">
+            <h2 className="browse-panel-title">Your Review</h2>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div className="browse-alert" style={{ marginBottom: "20px" }}>
+              {error}
+            </div>
           )}
-        </div>
 
-        {/* Comment */}
-        <div>
-          <label className="block text-sm font-medium text-[#111827] mb-2">
-            Comment (Optional)
-          </label>
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="Share your feedback about the student's work..."
-            rows={6}
-            className="w-full px-4 py-2 border border-[#d1d5db] rounded-lg text-sm text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent resize-none"
-          />
-        </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+            {/* Star Rating */}
+            <div>
+              <label className="browse-stat-label" style={{ marginBottom: "12px", display: "block" }}>
+                Rating <span style={{ color: "#ef4444" }}>*</span>
+              </label>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setStarRating(star)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: "4px",
+                      fontSize: "32px",
+                      color: star <= starRating ? "#fbbf24" : "rgba(255,255,255,0.3)",
+                      transition: "color 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (starRating === 0 || star > starRating) {
+                        e.currentTarget.style.color = "#fbbf24";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (star > starRating) {
+                        e.currentTarget.style.color = "rgba(255,255,255,0.3)";
+                      }
+                    }}
+                  >
+                    ★
+                  </button>
+                ))}
+              </div>
+              {starRating > 0 && (
+                <p style={{ fontSize: "12px", color: "var(--muted)", marginTop: "8px" }}>
+                  {starRating === 5
+                    ? "Excellent"
+                    : starRating === 4
+                    ? "Very Good"
+                    : starRating === 3
+                    ? "Good"
+                    : starRating === 2
+                    ? "Fair"
+                    : "Poor"}
+                </p>
+              )}
+            </div>
 
-        {/* Submit Button */}
-        <div className="flex gap-3">
-          <button
-            onClick={submitReview}
-            disabled={starRating === 0 || submitting}
-            className="px-6 py-2.5 rounded-lg bg-[#111827] text-white text-sm font-semibold hover:bg-[#1f2937] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {submitting ? "Submitting..." : "Submit Review"}
-          </button>
-          <button
-            onClick={() => navigate("/dashboard/employer/jobs")}
-            className="px-6 py-2.5 rounded-lg border border-[#d1d5db] text-[#111827] text-sm font-semibold hover:bg-[#f9fafb] transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
+            {/* Comment */}
+            <div>
+              <label className="browse-stat-label" style={{ marginBottom: "8px", display: "block" }}>
+                Comment (Optional)
+              </label>
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Share your feedback about the student's work..."
+                rows={6}
+                className="browse-input"
+                style={{ resize: "vertical", minHeight: "120px" }}
+              />
+            </div>
+
+            {/* Submit Button */}
+            <div style={{ display: "flex", gap: "12px", marginTop: "8px" }}>
+              <button
+                onClick={submitReview}
+                disabled={starRating === 0 || submitting}
+                className="browse-btn browse-btn--primary"
+                style={{ fontSize: "14px", padding: "12px 24px" }}
+              >
+                {submitting ? "Submitting..." : "Submit Review"}
+              </button>
+              <button
+                onClick={() => navigate("/dashboard/employer/reviews")}
+                className="browse-btn browse-btn--ghost"
+                style={{ fontSize: "14px", padding: "12px 24px" }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   );

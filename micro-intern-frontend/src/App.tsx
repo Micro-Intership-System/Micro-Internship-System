@@ -20,6 +20,7 @@ import NotificationsPage from "./pages/dashboard/student/NotificationsPage";
 import PaymentsPage from "./pages/dashboard/student/PaymentsPage";
 import SubmitReviewPage from "./pages/dashboard/student/SubmitReviewPage";
 import ViewReviewsPage from "./pages/dashboard/student/ViewReviewsPage";
+import ReviewsPage from "./pages/dashboard/student/ReviewsPage";
 import CertificatesPage from "./pages/dashboard/student/CertificatesPage";
 import RunningJobsPage from "./pages/dashboard/student/RunningJobsPage";
 
@@ -37,6 +38,7 @@ import EmployerNotificationsPage from "./pages/dashboard/employer/EmployerNotifi
 import EmployerMessagesPage from "./pages/dashboard/employer/EmployerMessagesPage";
 import TaskPaymentPage from "./pages/dashboard/employer/TaskPaymentPage";
 import EmployerSubmitReviewPage from "./pages/dashboard/employer/SubmitReviewPage";
+import EmployerReviewsPage from "./pages/dashboard/employer/ReviewsPage";
 import JobSubmissionsPage from "./pages/dashboard/employer/JobSubmissionsPage";
 
 import AdminLayout from "./pages/dashboard/admin/AdminLayout";
@@ -79,6 +81,7 @@ const App: React.FC = () => {
             <Route path="leaderboard" element={<LeaderboardPage />} />
             <Route path="notifications" element={<NotificationsPage />} />
             <Route path="payments" element={<PaymentsPage />} />
+            <Route path="reviews" element={<ReviewsPage />} />
             <Route path="reviews/submit/:taskId" element={<SubmitReviewPage />} />
             <Route path="reviews/:studentId" element={<ViewReviewsPage />} />
             <Route path="certificates" element={<CertificatesPage />} />
@@ -114,6 +117,7 @@ const App: React.FC = () => {
             <Route path="notifications" element={<EmployerNotificationsPage />} />
             <Route path="messages" element={<EmployerMessagesPage />} />
             <Route path="jobs/:id/payment" element={<TaskPaymentPage />} />
+            <Route path="reviews" element={<EmployerReviewsPage />} />
             <Route path="reviews/submit/:taskId" element={<EmployerSubmitReviewPage />} />
 
             {/* 👇 Employer views student portfolio (read-only) */}

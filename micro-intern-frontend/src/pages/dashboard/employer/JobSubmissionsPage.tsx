@@ -69,6 +69,8 @@ export default function JobSubmissionsPage() {
         await loadSubmissions();
         // Refresh user data in case student is viewing their own dashboard
         await refreshUser();
+        // Trigger user data refresh for students
+        window.dispatchEvent(new Event("userDataRefresh"));
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to confirm submission";

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { apiGet } from "../api/client";
 
 type Role = "student" | "employer" | "admin";
@@ -10,7 +10,6 @@ export interface AuthUser {
   role: Role;
   // Gamification fields (for students)
   gold?: number;
-  xp?: number;
   starRating?: number;
   totalTasksCompleted?: number;
   averageCompletionTime?: number;
@@ -45,6 +44,86 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [loading, setLoading] = useState(false);
 
+  const refreshUser = useCallback(async () => {
+    if (!token || !user) return;
+    
+    try {
+      setLoading(true);
+      // Fetch updated user data based on role
+      const role = user.role;
+      let endpoint = "";
+      
+      if (role === "student") {
+        endpoint = "/student/me";
+      } else if (role === "employer") {
+        endpoint = "/employer/me";
+      } else if (role === "admin") {
+        // Admin might not have a /me endpoint, skip for now
+        return;
+      }
+      
+      if (endpoint) {
+        const data = await apiGet<{ success: boolean; data: any }>(endpoint);
+        if (data.success && data.data) {
+          // Replace user data completely to ensure all fields are updated
+          setUser({
+            id: data.data.id || user.id,
+            name: data.data.name || user.name,
+            email: data.data.email || user.email,
+            role: data.data.role || user.role,
+            // Gamification fields (for students)
+            gold: data.data.gold ?? 0,
+            starRating: data.data.starRating ?? 1,
+            totalTasksCompleted: data.data.totalTasksCompleted ?? 0,
+            averageCompletionTime: data.data.averageCompletionTime ?? 0,
+            // Other fields
+            institution: data.data.institution,
+            skills: data.data.skills,
+            bio: data.data.bio,
+            profilePicture: data.data.profilePicture,
+            completedCourses: data.data.completedCourses,
+          } as AuthUser);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to refresh user data:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [token, user]);
+
+  // Set up global refresh mechanism
+  useEffect(() => {
+    if (!token || !user) return;
+
+    // Refresh on window focus (when user switches back to tab)
+    const handleFocus = () => {
+      refreshUser();
+    };
+
+    // Refresh on visibility change (when tab becomes visible)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        refreshUser();
+      }
+    };
+
+    // Listen for custom refresh events
+    const handleRefreshEvent = () => {
+      refreshUser();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("userDataRefresh", handleRefreshEvent);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("userDataRefresh", handleRefreshEvent);
+    };
+  }, [token, user, refreshUser]);
+
   // keep localStorage in sync if state changes
   useEffect(() => {
     if (user) localStorage.setItem("mi_user", JSON.stringify(user));
@@ -68,42 +147,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem("mi_user");
   };
 
-  const refreshUser = async () => {
-    if (!token || !user) return;
-    
-    try {
-      setLoading(true);
-      // Fetch updated user data based on role
-      const role = user.role;
-      let endpoint = "";
-      
-      if (role === "student") {
-        endpoint = "/student/me";
-      } else if (role === "employer") {
-        endpoint = "/employer/me";
-      } else if (role === "admin") {
-        // Admin might not have a /me endpoint, skip for now
-        return;
-      }
-      
-      if (endpoint) {
-        const data = await apiGet<{ success: boolean; data: any }>(endpoint);
-        if (data.success && data.data) {
-          // Merge with existing user data, preserving id and role
-          setUser((prev) => ({
-            ...prev,
-            ...data.data,
-            id: prev?.id || data.data.id,
-            role: prev?.role || data.data.role,
-          } as AuthUser));
-        }
-      }
-    } catch (err) {
-      console.error("Failed to refresh user data:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <AuthContext.Provider value={{ user, token, loading, login, logout, refreshUser }}>

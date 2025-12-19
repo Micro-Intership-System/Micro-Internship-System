@@ -19,6 +19,11 @@ type Application = {
     totalTasksCompleted?: number;
   };
   createdAt: string;
+  previousApplications?: Array<{
+    _id: string;
+    status: string;
+    createdAt: string;
+  }>;
 };
 
 type Response = {
@@ -162,6 +167,18 @@ export default function JobApplicationsPage() {
                     <span className="text-xs text-[#9ca3af]">
                       Applied {new Date(app.createdAt).toLocaleDateString()}
                     </span>
+                    {app.previousApplications && app.previousApplications.length > 0 && (
+                      <div className="mt-2 p-2 bg-[#fef3c7] border border-[#fde68a] rounded-lg">
+                        <div className="text-xs font-semibold text-[#92400e] mb-1">
+                          Previous Application History
+                        </div>
+                        {app.previousApplications.map((prevApp) => (
+                          <div key={prevApp._id} className="text-xs text-[#92400e]">
+                            • {prevApp.status} on {new Date(prevApp.createdAt).toLocaleDateString()}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 

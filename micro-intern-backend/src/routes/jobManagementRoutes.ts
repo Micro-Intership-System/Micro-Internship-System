@@ -7,6 +7,7 @@ import { createNotification } from "../utils/notifications";
 import { Anomaly } from "../models/anomaly";
 import { TaskChatMessage } from "../models/taskChat";
 import { Payment } from "../models/payment";
+import { calculateStarRating } from "../utils/gamification";
 
 const router = Router();
 
@@ -311,6 +312,7 @@ router.get("/running", requireAuth, async (req: any, res) => {
           acceptedAt: task.acceptedAt,
           submissionReport: task.submissionReport,
           submissionProofUrl: task.submissionProofUrl,
+          rejectionReason: task.rejectionReason,
         };
       });
 
@@ -318,6 +320,107 @@ router.get("/running", requireAuth, async (req: any, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Failed to load running jobs" });
+  }
+});
+
+/**
+ * GET /api/jobs/completed
+ * Get all completed jobs for the logged-in student
+ */
+router.get("/completed", requireAuth, async (req: any, res) => {
+  try {
+    if (req.user?.role !== "student") {
+      return res.status(403).json({ success: false, message: "Students only" });
+    }
+
+    const completedJobs = await Internship.find({
+      acceptedStudentId: req.user.id,
+      status: "completed",
+    })
+      .populate("employerId", "name email companyName")
+      .sort({ completedAt: -1 });
+
+    // Get payment info for each job
+    const Payment = (await import("../models/payment")).Payment;
+    const jobsWithPayments = await Promise.all(
+      completedJobs.map(async (job) => {
+        const payment = await Payment.findOne({ taskId: job._id });
+        return {
+          _id: job._id,
+          title: job.title,
+          companyName: job.companyName,
+          gold: job.gold,
+          completedAt: job.completedAt,
+          submissionStatus: job.submissionStatus,
+          employerId: job.employerId,
+          payment: payment
+            ? {
+                _id: payment._id,
+                status: payment.status,
+                amount: payment.amount,
+                releasedAt: payment.releasedAt,
+                escrowedAt: payment.escrowedAt,
+              }
+            : null,
+        };
+      })
+    );
+
+    res.json({ success: true, data: jobsWithPayments });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Failed to load completed jobs" });
+  }
+});
+
+/**
+ * GET /api/jobs/completed-employer
+ * Get all completed jobs for the logged-in employer (for reviews)
+ */
+router.get("/completed-employer", requireAuth, async (req: any, res) => {
+  try {
+    if (req.user?.role !== "employer") {
+      return res.status(403).json({ success: false, message: "Employers only" });
+    }
+
+    const completedJobs = await Internship.find({
+      employerId: req.user.id,
+      status: "completed",
+      submissionStatus: "confirmed",
+    })
+      .populate("acceptedStudentId", "name email")
+      .sort({ completedAt: -1 });
+
+    // Get payment info for each job
+    const Payment = (await import("../models/payment")).Payment;
+    const jobsWithPayments = await Promise.all(
+      completedJobs.map(async (job) => {
+        const payment = await Payment.findOne({ taskId: job._id });
+        return {
+          _id: job._id,
+          title: job.title,
+          companyName: job.companyName,
+          gold: job.gold,
+          completedAt: job.completedAt,
+          submissionStatus: job.submissionStatus,
+          acceptedStudentId: job.acceptedStudentId,
+          payment: payment
+            ? {
+                _id: payment._id,
+                status: payment.status,
+                amount: payment.amount,
+                releasedAt: payment.releasedAt,
+                escrowedAt: payment.escrowedAt,
+              }
+            : null,
+        };
+      })
+    );
+
+    res.json({ success: true, data: jobsWithPayments });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Failed to load completed jobs" });
   }
 });
 
@@ -522,10 +625,43 @@ router.post("/:id/confirm", requireAuth, async (req: any, res) => {
     task.completedAt = new Date();
     await task.save();
 
-    // Award gold to student
-    const currentGold = student.gold || 0;
-    student.gold = currentGold + task.gold;
-    await student.save();
+    // Award gold to student and update completion stats using atomic update
+    const goldEarned = task.gold;
+    
+    // Use atomic update to prevent race conditions
+    const updatedStudent = await User.findByIdAndUpdate(
+      task.acceptedStudentId,
+      {
+        $inc: { gold: goldEarned, totalTasksCompleted: 1 },
+      },
+      { new: true }
+    );
+
+    if (!updatedStudent) {
+      console.error(`[Job Confirm] Failed to update student ${task.acceptedStudentId}`);
+      return res.status(500).json({ success: false, message: "Failed to update student gold" });
+    }
+    
+    // Update average completion time if we have acceptedAt
+    if (task.acceptedAt && task.completedAt) {
+      const completionDays = (task.completedAt.getTime() - task.acceptedAt.getTime()) / (1000 * 60 * 60 * 24);
+      const currentAvg = updatedStudent.averageCompletionTime || 0;
+      const completedCount = updatedStudent.totalTasksCompleted || 0;
+      const newAvg = completedCount > 1
+        ? ((currentAvg * (completedCount - 1)) + completionDays) / completedCount
+        : completionDays;
+      updatedStudent.averageCompletionTime = Math.round(newAvg * 10) / 10;
+    }
+    
+    // Update star rating
+    updatedStudent.starRating = calculateStarRating(
+      updatedStudent.totalTasksCompleted,
+      updatedStudent.averageCompletionTime
+    );
+    
+    await updatedStudent.save();
+
+    console.log(`[Job Confirm] Student ${task.acceptedStudentId} received ${goldEarned} gold. New balance: ${updatedStudent.gold}, Completed tasks: ${updatedStudent.totalTasksCompleted}`);
 
     // Notify student
     try {
@@ -641,57 +777,58 @@ router.post("/:id/report-rejection", requireAuth, async (req: any, res) => {
       });
     }
 
-    // Check if rejection reason is invalid (missing or too short)
-    if (!task.rejectionReason || task.rejectionReason.trim().length < 10) {
-      // Create anomaly and dispute chat
-      const anomaly = await Anomaly.create({
-        type: "delayed_payment", // Using existing type, can add new type later
-        severity: "high",
-        taskId: task._id,
-        employerId: task.employerId,
-        studentId: task.acceptedStudentId,
-        description: `Student reported rejection of job "${task.title}" without proper cause. Rejection reason: "${task.rejectionReason || "None provided"}"`,
-        detectedAt: new Date(),
-      });
-
-      // Create initial dispute message
-      const disputeMessage = await TaskChatMessage.create({
-        taskId: task._id,
-        senderId: req.user.id,
-        text: `DISPUTE OPENED: Student has reported this rejection as invalid. The rejection reason provided was: "${task.rejectionReason || "None provided"}". Admin review required.`,
-        status: "sent",
-      });
-
-      task.submissionStatus = "disputed";
-      task.disputeChatId = disputeMessage._id;
-      await task.save();
-
-      // Notify admin
-      const admins = await User.find({ role: "admin" });
-      for (const admin of admins) {
-        await createNotification(
-          admin._id.toString(),
-          "anomaly_detected",
-          "Dispute Opened",
-          `A dispute has been opened for job "${task.title}". Review required.`,
-          task._id.toString(),
-          req.user.id,
-          { anomalyId: anomaly._id.toString() }
-        );
-      }
-
-      res.json({
-        success: true,
-        data: task,
-        anomaly,
-        message: "Dispute opened and anomaly created",
-      });
-    } else {
+    // Check if already in dispute
+    if (task.submissionStatus === "disputed") {
       return res.status(400).json({
         success: false,
-        message: "Rejection reason is valid. Cannot report as anomaly.",
+        message: "This job is already in dispute",
       });
     }
+
+    // Always allow reporting as anomaly, regardless of rejection reason validity
+    // Create anomaly and dispute chat
+    const anomaly = await Anomaly.create({
+      type: "delayed_payment", // Using existing type, can add new type later
+      severity: "high",
+      taskId: task._id,
+      employerId: task.employerId,
+      studentId: task.acceptedStudentId,
+      description: `Student reported rejection of job "${task.title}" as dispute. Rejection reason: "${task.rejectionReason || "None provided"}"`,
+      detectedAt: new Date(),
+    });
+
+    // Create initial dispute message
+    const disputeMessage = await TaskChatMessage.create({
+      taskId: task._id,
+      senderId: req.user.id,
+      text: `DISPUTE OPENED: Student has reported this rejection as invalid. The rejection reason provided was: "${task.rejectionReason || "None provided"}". Admin review required.`,
+      status: "sent",
+    });
+
+    task.submissionStatus = "disputed";
+    task.disputeChatId = disputeMessage._id;
+    await task.save();
+
+    // Notify admin
+    const admins = await User.find({ role: "admin" });
+    for (const admin of admins) {
+      await createNotification(
+        admin._id.toString(),
+        "anomaly_detected",
+        "Dispute Opened",
+        `A dispute has been opened for job "${task.title}". Review required.`,
+        task._id.toString(),
+        req.user.id,
+        { anomalyId: anomaly._id.toString() }
+      );
+    }
+
+    res.json({
+      success: true,
+      data: task,
+      anomaly,
+      message: "Dispute opened and anomaly created",
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Failed to report rejection" });
@@ -735,13 +872,43 @@ router.post("/:id/resolve-dispute", requireAuth, async (req: any, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // Calculate payment: original gold + 50% fee
-    const payment = task.gold + Math.ceil(task.gold * 0.5);
+    // Store student ID for later use (in case we clear it)
+    const studentIdForResponse = task.acceptedStudentId;
+
+    // Calculate payment: 150% of original gold (1.5x)
+    const payment = Math.ceil(task.gold * 1.5);
 
     if (winner === "student") {
-      // Student wins: gets payment
-      student.gold = (student.gold || 0) + payment;
-      await student.save();
+      // Student wins: gets 150% reward
+      // Use atomic update to ensure gold is properly incremented
+      const currentGold = student.gold || 0;
+      const updatedStudent = await User.findByIdAndUpdate(
+        task.acceptedStudentId,
+        { $inc: { gold: payment } },
+        { new: true } // Return updated document
+      );
+      
+      if (!updatedStudent) {
+        return res.status(500).json({ success: false, message: "Failed to update student gold" });
+      }
+      
+      console.log(`[Dispute Resolution] Student ${task.acceptedStudentId} gold updated: ${currentGold} -> ${updatedStudent.gold} (added ${payment})`);
+
+      // Update completion stats
+      updatedStudent.totalTasksCompleted = (updatedStudent.totalTasksCompleted || 0) + 1;
+      
+      // Update average completion time if we have acceptedAt
+      if (task.acceptedAt) {
+        const completionDays = (Date.now() - task.acceptedAt.getTime()) / (1000 * 60 * 60 * 24);
+        const currentAvg = updatedStudent.averageCompletionTime || 0;
+        const completedCount = updatedStudent.totalTasksCompleted || 0;
+        const newAvg = completedCount > 0
+          ? ((currentAvg * (completedCount - 1)) + completionDays) / completedCount
+          : completionDays;
+        updatedStudent.averageCompletionTime = Math.round(newAvg * 10) / 10;
+      }
+      
+      await updatedStudent.save();
 
       task.submissionStatus = "confirmed";
       task.status = "completed";
@@ -751,15 +918,60 @@ router.post("/:id/resolve-dispute", requireAuth, async (req: any, res) => {
         task.acceptedStudentId!.toString(),
         "dispute_resolved",
         "Dispute Resolved - You Won!",
-        `Admin resolved the dispute in your favor. You received ${payment} gold (original ${task.gold} + 50% fee).`,
+        `Admin resolved the dispute in your favor. You received ${payment} gold (150% of original ${task.gold} gold).`,
         task._id.toString(),
         req.user.id,
         { goldEarned: payment, reason }
       );
     } else {
-      // Employer wins: gets refund (if they had escrowed)
+      // Employer wins: student loses - deduct 50% of job's gold from student
+      // Store student ID before clearing it
+      const studentId = task.acceptedStudentId;
+      const penalty = Math.ceil(task.gold * 0.5);
+      const currentGold = student.gold || 0;
+      
+      // Use atomic update to ensure gold is properly decremented
+      const updatedStudent = await User.findByIdAndUpdate(
+        studentId,
+        { $inc: { gold: -penalty } },
+        { new: true } // Return updated document
+      );
+      
+      if (!updatedStudent) {
+        return res.status(500).json({ success: false, message: "Failed to update student gold" });
+      }
+      
+      // Ensure gold doesn't go below 0
+      if (updatedStudent.gold < 0) {
+        updatedStudent.gold = 0;
+        await updatedStudent.save();
+      }
+      
+      console.log(`[Dispute Resolution] Student ${studentId} gold updated: ${currentGold} -> ${updatedStudent.gold} (deducted ${penalty})`);
+
       task.submissionStatus = "rejected";
       task.rejectionReason = reason || task.rejectionReason || "Dispute resolved in employer's favor";
+      // Clear acceptedStudentId to allow re-applying
+      task.acceptedStudentId = undefined;
+
+      // Update the application status to rejected so student can re-apply
+      await Application.updateMany(
+        {
+          internshipId: task._id,
+          studentId: studentId,
+        },
+        { status: "rejected" }
+      );
+
+      await createNotification(
+        studentId!.toString(),
+        "dispute_resolved",
+        "Dispute Resolved - You Lost",
+        `Admin resolved the dispute in employer's favor. ${penalty} gold (50% of job reward) has been deducted from your account.`,
+        task._id.toString(),
+        req.user.id,
+        { goldDeducted: penalty, reason }
+      );
 
       await createNotification(
         task.employerId.toString(),
@@ -787,11 +999,17 @@ router.post("/:id/resolve-dispute", requireAuth, async (req: any, res) => {
       await anomaly.save();
     }
 
+    // Get final student gold value
+    const finalStudent = await User.findById(studentIdForResponse);
+    const finalStudentGold = finalStudent?.gold || 0;
+    
     res.json({
       success: true,
       data: task,
       winner,
       payment: winner === "student" ? payment : 0,
+      penalty: winner === "employer" ? Math.ceil(task.gold * 0.5) : 0,
+      studentGold: finalStudentGold,
     });
   } catch (err) {
     console.error(err);

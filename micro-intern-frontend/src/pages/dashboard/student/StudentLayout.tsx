@@ -14,6 +14,7 @@ export default function StudentLayout() {
     { label: "Messages", to: "/dashboard/student/messages" },
     { label: "Courses", to: "/dashboard/student/courses" },
     { label: "Payments", to: "/dashboard/student/payments" },
+    { label: "Reviews", to: "/dashboard/student/reviews" },
     { label: "Certificates", to: "/dashboard/student/certificates" },
     { label: "Leaderboard", to: "/dashboard/student/leaderboard" },
     { label: "Portfolio", to: "/dashboard/student/portfolio" },

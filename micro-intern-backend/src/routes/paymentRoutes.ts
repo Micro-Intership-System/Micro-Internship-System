@@ -4,7 +4,7 @@ import { Payment } from "../models/payment";
 import { Internship } from "../models/internship";
 import { User } from "../models/user";
 import { createNotification } from "../utils/notifications";
-import { calculateTaskGold, calculateTaskXP, calculateStarRating } from "../utils/gamification";
+import { calculateTaskGold, calculateStarRating } from "../utils/gamification";
 
 const router = Router();
 
@@ -48,7 +48,7 @@ router.post("/escrow", requireAuth, async (req: any, res) => {
       taskId: task._id,
       employerId: task.employerId,
       studentId: task.acceptedStudentId!,
-      amount: task.budget,
+      amount: task.gold, // Use gold instead of budget
       status: "escrowed",
       escrowedAt: new Date(),
     });
@@ -58,7 +58,7 @@ router.post("/escrow", requireAuth, async (req: any, res) => {
         task.acceptedStudentId!.toString(),
         "payment_released",
         "Payment Escrowed",
-        `Payment of ${task.budget} BDT has been escrowed for task "${task.title}"`,
+        `Payment escrowed for task "${task.title}" - you will receive ${task.gold} gold upon completion`,
         task._id.toString(),
         task.employerId.toString()
       );
@@ -111,48 +111,63 @@ router.post("/release/:paymentId", requireAuth, async (req: any, res) => {
     payment.releasedBy = req.user.id;
     await payment.save();
 
-    // Award gold and XP to student, update completion time
-    const student = await User.findById(payment.studentId);
-    if (student && task.acceptedAt && task.completedAt) {
-      const goldEarned = calculateTaskGold(payment.amount);
-      const xpEarned = calculateTaskXP(payment.amount, task.priorityLevel);
+    // Award gold to student, update completion time
+    // Use atomic update to prevent race conditions
+    if (task.acceptedAt && task.completedAt) {
+      const goldEarned = payment.amount; // Payment amount is already in gold units
       
       // Calculate completion time for this task
       const completionDays = (task.completedAt.getTime() - task.acceptedAt.getTime()) / (1000 * 60 * 60 * 24);
-      const currentAvg = student.averageCompletionTime || 0;
-      const completedCount = student.totalTasksCompleted || 0;
       
-      // Update average completion time
-      const newAvg = completedCount > 0
-        ? ((currentAvg * completedCount) + completionDays) / (completedCount + 1)
+      // Use atomic update for gold
+      const updatedStudent = await User.findByIdAndUpdate(
+        payment.studentId,
+        {
+          $inc: { gold: goldEarned, totalTasksCompleted: 1 },
+        },
+        { new: true }
+      );
+
+      if (!updatedStudent) {
+        console.error(`[Payment Release] Failed to update student ${payment.studentId}`);
+        return res.status(500).json({ success: false, message: "Failed to update student gold" });
+      }
+
+      // Calculate new average completion time
+      const currentAvg = updatedStudent.averageCompletionTime || 0;
+      const completedCount = updatedStudent.totalTasksCompleted || 0;
+      const newAvg = completedCount > 1
+        ? ((currentAvg * (completedCount - 1)) + completionDays) / completedCount
         : completionDays;
 
-      student.gold = (student.gold || 0) + goldEarned;
-      student.xp = (student.xp || 0) + xpEarned;
-      student.totalTasksCompleted = (student.totalTasksCompleted || 0) + 1;
-      student.averageCompletionTime = Math.round(newAvg * 10) / 10; // Round to 1 decimal
-      
       // Update star rating based on performance
-      student.starRating = calculateStarRating(
-        student.xp,
-        student.totalTasksCompleted,
-        student.averageCompletionTime
+      updatedStudent.averageCompletionTime = Math.round(newAvg * 10) / 10;
+      updatedStudent.starRating = calculateStarRating(
+        updatedStudent.totalTasksCompleted,
+        updatedStudent.averageCompletionTime
       );
       
-      await student.save();
+      await updatedStudent.save();
+
+      console.log(`[Payment Release] Student ${payment.studentId} received ${goldEarned} gold. New balance: ${updatedStudent.gold}, Completed tasks: ${updatedStudent.totalTasksCompleted}`);
 
       await createNotification(
-        student._id.toString(),
+        updatedStudent._id.toString(),
         "payment_received",
         "Payment Received",
-        `You received ${payment.amount} BDT, ${goldEarned} gold, and ${xpEarned} XP for completing "${task.title}"`,
+        `You received ${goldEarned} gold for completing "${task.title}"`,
         task._id.toString(),
         payment.employerId.toString(),
-        { goldEarned, xpEarned }
+        { goldEarned, refreshUser: true }
       );
     }
 
-    res.json({ success: true, data: payment });
+    res.json({ 
+      success: true, 
+      data: payment,
+      studentId: payment.studentId.toString(),
+      goldAwarded: payment.amount
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Failed to release payment" });
@@ -186,6 +201,28 @@ router.get("/task/:taskId", requireAuth, async (req: any, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Failed to load payment" });
+  }
+});
+
+/**
+ * GET /api/payments/student/me
+ * Get all payments for the current student
+ */
+router.get("/student/me", requireAuth, async (req: any, res) => {
+  try {
+    if (req.user?.role !== "student") {
+      return res.status(403).json({ success: false, message: "Students only" });
+    }
+
+    const payments = await Payment.find({ studentId: req.user.id })
+      .populate("taskId", "title companyName status completedAt")
+      .populate("employerId", "name email companyName")
+      .sort({ releasedAt: -1, escrowedAt: -1, createdAt: -1 });
+
+    res.json({ success: true, data: payments });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Failed to load payments" });
   }
 });
 

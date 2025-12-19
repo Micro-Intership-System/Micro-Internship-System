@@ -26,10 +26,24 @@ router.post("/", requireAuth, async (req, res) => {
       return res.status(404).json({ success: false, message: "Job not found" });
     }
 
-    // prevent duplicate apply
+    // Burnout system: Check if student has 3 or more active jobs
+    const activeJobs = await Internship.find({
+      acceptedStudentId: req.user.id,
+      status: "in_progress",
+    });
+
+    if (activeJobs.length >= 3) {
+      return res.status(400).json({
+        success: false,
+        message: "You are already working on 3 jobs. Please complete or cancel a job before applying to new ones.",
+      });
+    }
+
+    // prevent duplicate apply, but allow re-applying if previously rejected
     const existing = await Application.findOne({
       internshipId,
       studentId: req.user.id,
+      status: { $ne: "rejected" }, // Only block if not rejected
     });
 
     if (existing) {

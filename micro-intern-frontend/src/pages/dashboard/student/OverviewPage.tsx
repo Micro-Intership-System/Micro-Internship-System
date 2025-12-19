@@ -1,149 +1,216 @@
 import { Link } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
+import { apiGet } from "../../../api/client";
+import "./css/BrowsePage.css";
 
 export default function OverviewPage() {
   const { user, refreshUser } = useAuth();
+  const [applicationsCount, setApplicationsCount] = useState(0);
+  const [reviewCount, setReviewCount] = useState(0);
 
   useEffect(() => {
-    // Refresh user data when page loads to get latest gold/xp
+    // Refresh user data when page loads to get latest gold
     refreshUser();
-  }, []);
+    
+    // Load applications count
+    apiGet<{ success: boolean; data: any[] }>("/applications/me")
+      .then(res => {
+        if (res.success) {
+          setApplicationsCount(res.data?.length || 0);
+        }
+      })
+      .catch(() => {});
+
+    // Load review count
+    if ((user as any)?._id) {
+      apiGet<{ success: boolean; totalReviews: number }>(`/reviews/student/${(user as any)._id}`)
+        .then(res => {
+          if (res.success) {
+            setReviewCount(res.totalReviews || 0);
+          }
+        })
+        .catch(() => {});
+    }
+
+    // Refresh user data periodically (every 30 seconds)
+    const interval = setInterval(() => {
+      refreshUser();
+      if ((user as any)?._id) {
+        apiGet<{ success: boolean; totalReviews: number }>(`/reviews/student/${(user as any)._id}`)
+          .then(res => {
+            if (res.success) {
+              setReviewCount(res.totalReviews || 0);
+            }
+          })
+          .catch(() => {});
+      }
+    }, 30000);
+
+    // Refresh when page gains focus
+    const handleFocus = () => {
+      refreshUser();
+      if ((user as any)?._id) {
+        apiGet<{ success: boolean; totalReviews: number }>(`/reviews/student/${(user as any)._id}`)
+          .then(res => {
+            if (res.success) {
+              setReviewCount(res.totalReviews || 0);
+            }
+          })
+          .catch(() => {});
+      }
+    };
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [refreshUser, user]);
 
   const stats = [
     {
       label: "Applications",
-      value: 0,
-      color: "bg-[#111827]",
+      value: applicationsCount,
       detail: "Total applications",
       link: "/dashboard/student/applications",
     },
     {
       label: "Completed Tasks",
       value: (user as any)?.totalTasksCompleted || 0,
-      color: "bg-[#111827]",
       detail: "Tasks finished",
     },
     {
       label: "Star Rating",
       value: (user as any)?.starRating || 1,
-      color: "bg-[#111827]",
       detail: "Average rating",
     },
     {
       label: "Gold Earned",
       value: (user as any)?.gold || 0,
-      color: "bg-[#111827]",
       detail: "Total gold",
     },
   ];
 
+  function renderStars(rating: number, reviewCount?: number) {
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+        <div style={{ display: "flex", gap: "2px", fontSize: "16px", alignItems: "center" }}>
+          {[1, 2, 3, 4, 5].map((star) => (
+            <span
+              key={star}
+              style={{
+                color: star <= fullStars ? "#fbbf24" : star === fullStars + 1 && hasHalfStar ? "#fbbf24" : "rgba(255,255,255,0.3)",
+              }}
+            >
+              ★
+            </span>
+          ))}
+          <span style={{ marginLeft: "4px", fontSize: "12px", color: "var(--muted)" }}>
+            {rating.toFixed(1)}
+          </span>
+        </div>
+        {reviewCount !== undefined && reviewCount > 0 && (
+          <span style={{ fontSize: "11px", color: "var(--muted)" }}>
+            ({reviewCount} review{reviewCount !== 1 ? "s" : ""})
+          </span>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-[#111827] mb-2">Dashboard Overview</h1>
-        <p className="text-sm text-[#6b7280]">Welcome back, {user?.name || "Student"}!</p>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
-          <div key={index} className="border border-[#e5e7eb] rounded-lg bg-white p-6 hover:shadow-md transition-shadow">
-            <div className="flex items-start justify-between mb-4">
-              {stat.link && (
-                <Link to={stat.link} className="text-xs text-[#111827] hover:underline font-medium whitespace-nowrap">
-                  View all →
-                </Link>
-              )}
-            </div>
-            <div className="text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-1">{stat.label}</div>
-            <div className="text-3xl font-bold text-[#111827] mb-1">{stat.value}</div>
-            <div className="text-xs text-[#9ca3af]">{stat.detail}</div>
+    <div className="browse-page">
+      <div className="browse-inner">
+        {/* Header */}
+        <header className="browse-header">
+          <div className="browse-title-wrap">
+            <div className="browse-eyebrow">Dashboard Overview</div>
+            <h1 className="browse-title">Welcome back, {user?.name || "Student"}!</h1>
+            <p className="browse-subtitle">
+              Track your progress, applications, and achievements.
+            </p>
           </div>
-        ))}
-      </div>
-
-      {/* Resources Section */}
-      <div className="mt-10">
-        <h2 className="text-lg font-semibold text-[#111827] mb-6">Resources</h2>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* XP Card */}
-          <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-            <div className="mb-4">
-              <div className="text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-1">XP</div>
-              <div className="text-xs text-[#9ca3af]">Experience Points</div>
+          <div className="browse-actions">
+            <div className="browse-stat">
+              <div className="browse-stat-label">Gold</div>
+              <div className="browse-stat-value">{(user as any)?.gold || 0}</div>
             </div>
-            <div className="flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <div className="text-3xl font-bold text-[#111827] mb-1">{(user as any)?.xp || 0}</div>
-                <div className="text-xs text-[#9ca3af]">Total XP earned</div>
-              </div>
-              <div className="relative w-20 h-20 flex-shrink-0">
-                <svg className="transform -rotate-90 w-20 h-20">
-                  <circle
-                    cx="40"
-                    cy="40"
-                    r="36"
-                    stroke="#e5e7eb"
-                    strokeWidth="8"
-                    fill="none"
-                  />
-                  <circle
-                    cx="40"
-                    cy="40"
-                    r="36"
-                    stroke="#111827"
-                    strokeWidth="8"
-                    fill="none"
-                    strokeDasharray={`${2 * Math.PI * 36}`}
-                    strokeDashoffset={`${2 * Math.PI * 36 * (1 - 0.6)}`}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-sm font-bold text-[#111827]">60%</div>
+          </div>
+        </header>
+
+        {/* Stats Grid */}
+        <section className="browse-panel" style={{ marginTop: "16px" }}>
+          <div className="browse-panel-head">
+            <h2 className="browse-panel-title">Quick Stats</h2>
+            <div className="browse-panel-subtitle">Your key metrics at a glance</div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
+            {stats.map((stat, index) => (
+              <div key={index} className="browse-stat" style={{ minWidth: "auto" }}>
+                <div className="browse-stat-label">{stat.label}</div>
+                <div className="browse-stat-value">
+                  {stat.label === "Star Rating" ? renderStars(stat.value, reviewCount) : stat.value}
                 </div>
+                <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>{stat.detail}</div>
+                {stat.link && (
+                  <Link
+                    to={stat.link}
+                    className="browse-link"
+                    style={{ display: "block", marginTop: "8px", fontSize: "11px" }}
+                  >
+                    View all →
+                  </Link>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Resources Section */}
+        <section className="browse-panel" style={{ marginTop: "16px" }}>
+          <div className="browse-panel-head">
+            <h2 className="browse-panel-title">Resources & Progress</h2>
+            <div className="browse-panel-subtitle">Your learning journey</div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "12px" }}>
+            {/* Skills Card */}
+            <div className="job-card">
+              <div className="browse-stat-label">Skills</div>
+              <div style={{ fontSize: "11px", color: "var(--muted)", marginBottom: "12px" }}>Your skillset</div>
+              <div className="browse-stat-value" style={{ margin: "0 0 12px 0" }}>
+                {(user as any)?.skills?.length || 0}
+              </div>
+              <div style={{ fontSize: "11px", color: "var(--muted)", marginBottom: "12px" }}>Skills acquired</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                {((user as any)?.skills || []).slice(0, 3).map((skill: string, i: number) => (
+                  <span key={i} className="skill-pill">
+                    {skill}
+                  </span>
+                ))}
               </div>
             </div>
-          </div>
 
-          {/* Skills Card */}
-          <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-            <div className="mb-4">
-              <div className="text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-1">Skills</div>
-              <div className="text-xs text-[#9ca3af]">Your skillset</div>
-            </div>
-            <div className="mb-4">
-              <div className="text-3xl font-bold text-[#111827] mb-1">{(user as any)?.skills?.length || 0}</div>
-              <div className="text-xs text-[#9ca3af]">Skills acquired</div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {((user as any)?.skills || []).slice(0, 3).map((skill: string, i: number) => (
-                <span key={i} className="px-2.5 py-1 rounded bg-[#f9fafb] text-xs text-[#374151] border border-[#e5e7eb]">
-                  {skill}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Courses Card */}
-          <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-            <div className="mb-4">
-              <div className="text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-1">Courses</div>
-              <div className="text-xs text-[#9ca3af]">Completed courses</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-[#111827] mb-1">{(user as any)?.completedCourses?.length || 0}</div>
-              <div className="text-xs text-[#9ca3af] mb-4">Courses finished</div>
+            {/* Courses Card */}
+            <div className="job-card">
+              <div className="browse-stat-label">Courses</div>
+              <div style={{ fontSize: "11px", color: "var(--muted)", marginBottom: "12px" }}>Completed courses</div>
+              <div className="browse-stat-value" style={{ margin: "0 0 12px 0" }}>
+                {(user as any)?.completedCourses?.length || 0}
+              </div>
+              <div style={{ fontSize: "11px", color: "var(--muted)", marginBottom: "12px" }}>Courses finished</div>
               <Link
                 to="/dashboard/student/courses"
-                className="text-xs text-[#111827] hover:underline font-medium"
+                className="browse-link"
+                style={{ fontSize: "11px" }}
               >
                 View courses →
               </Link>
             </div>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );

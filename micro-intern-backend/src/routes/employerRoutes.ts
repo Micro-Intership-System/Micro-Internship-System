@@ -216,7 +216,26 @@ router.get(
         )
         .sort({ createdAt: -1 });
 
-      res.json({ success: true, data: apps });
+      // For each application, find all previous applications by the same student for this job
+      const appsWithHistory = await Promise.all(
+        apps.map(async (app) => {
+          const allStudentApps = await Application.find({
+            internshipId: jobId,
+            studentId: app.studentId,
+          })
+            .sort({ createdAt: -1 })
+            .select("status createdAt");
+
+          return {
+            ...app.toObject(),
+            previousApplications: allStudentApps.filter(
+              (a) => a._id.toString() !== app._id.toString()
+            ),
+          };
+        })
+      );
+
+      res.json({ success: true, data: appsWithHistory });
     } catch (err) {
       console.error(err);
       res.status(500).json({

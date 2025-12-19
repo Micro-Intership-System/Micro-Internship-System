@@ -20,6 +20,7 @@ type Internship = {
 
 export default function BrowsePage() {
   const [internships, setInternships] = useState<Internship[]>([]);
+  const [runningJobIds, setRunningJobIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -37,9 +38,22 @@ export default function BrowsePage() {
     try {
       setLoading(true);
       setError("");
-      const res = await apiGet<{ success: boolean; data: Internship[] }>("/internships");
-      const validJobs = (res.data || []).filter((job) => job.employerId);
-      setInternships(validJobs);
+      
+      // Load both internships and running jobs in parallel
+      const [internshipsRes, runningJobsRes] = await Promise.all([
+        apiGet<{ success: boolean; data: Internship[] }>("/internships"),
+        apiGet<{ success: boolean; data: Array<{ _id: string }> }>("/jobs/running").catch(() => ({ success: false, data: [] })),
+      ]);
+      
+      if (internshipsRes.success) {
+        const validJobs = (internshipsRes.data || []).filter((job) => job.employerId);
+        setInternships(validJobs);
+      }
+      
+      if (runningJobsRes.success) {
+        const runningIds = new Set(runningJobsRes.data.map((job) => job._id));
+        setRunningJobIds(runningIds);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load jobs");
     } finally {
@@ -83,6 +97,9 @@ export default function BrowsePage() {
 
   const filteredJobs = useMemo(() => {
     return internships.filter((job) => {
+      // Filter out jobs that are in running jobs
+      if (runningJobIds.has(job._id)) return false;
+      
       if (searchQuery && !job.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
 
       if (selectedSkills.length > 0) {
@@ -96,7 +113,7 @@ export default function BrowsePage() {
       if (location && !job.location.toLowerCase().includes(location.toLowerCase())) return false;
       return true;
     });
-  }, [internships, searchQuery, selectedSkills, duration, gold, location]);
+  }, [internships, runningJobIds, searchQuery, selectedSkills, duration, gold, location]);
 
   function toggleSkill(skill: string) {
     setSelectedSkills((prev) => (prev.includes(skill) ? prev.filter((s) => s !== skill) : [...prev, skill]));

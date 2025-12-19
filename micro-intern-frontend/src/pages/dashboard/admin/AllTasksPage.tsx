@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiGet, apiDelete } from "../../../api/client";
+import "../student/css/BrowsePage.css";
 
 type Task = {
   _id: string;
@@ -65,139 +66,181 @@ export default function AllTasksPage() {
     }
   }
 
-  function getStatusColor(status: string) {
-    const colors = {
-      posted: "bg-[#dbeafe] text-[#1e40af] border-[#bfdbfe]",
-      in_progress: "bg-[#fef3c7] text-[#92400e] border-[#fde68a]",
-      completed: "bg-[#d1fae5] text-[#065f46] border-[#a7f3d0]",
-      cancelled: "bg-[#fee2e2] text-[#991b1b] border-[#fecaca]",
+  function getStatusBadge(status: string) {
+    const badges: Record<string, { style: React.CSSProperties }> = {
+      posted: { style: { borderColor: "rgba(59,130,246,.35)", background: "rgba(59,130,246,.16)", color: "#3b82f6" } },
+      in_progress: { style: { borderColor: "rgba(251,191,36,.35)", background: "rgba(251,191,36,.16)", color: "#fbbf24" } },
+      completed: { style: { borderColor: "rgba(34,197,94,.35)", background: "rgba(34,197,94,.16)", color: "#22c55e" } },
+      cancelled: { style: { borderColor: "rgba(239,68,68,.35)", background: "rgba(239,68,68,.16)", color: "#ef4444" } },
     };
-    return colors[status as keyof typeof colors] || "bg-[#f3f4f6] text-[#374151] border-[#e5e7eb]";
+    return badges[status] || { style: { borderColor: "var(--border)", background: "rgba(255,255,255,.05)", color: "var(--text)" } };
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Loading tasks…</div>
+      <div className="browse-page">
+        <div className="browse-inner">
+          <div className="browse-loading">Loading tasks…</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="text-center mb-12">
-        <h1 className="text-3xl font-semibold text-[#111827] mb-3">All Tasks</h1>
-        <p className="text-sm text-[#6b7280] max-w-2xl mx-auto">
-          Monitor all micro-internship tasks across the platform. View status, assignments, and details.
-        </p>
-      </div>
+    <div className="browse-page">
+      <div className="browse-inner">
+        {/* Header */}
+        <header className="browse-header">
+          <div className="browse-title-wrap">
+            <div className="browse-eyebrow">Task Management</div>
+            <h1 className="browse-title">All Tasks</h1>
+            <p className="browse-subtitle">
+              Monitor all micro-internship tasks across the platform. View status, assignments, and details.
+            </p>
+          </div>
+          <div className="browse-actions">
+            <div className="browse-stat">
+              <div className="browse-stat-label">Total Tasks</div>
+              <div className="browse-stat-value">{tasks.length}</div>
+            </div>
+          </div>
+        </header>
 
-      {/* Filters */}
-      <div className="flex items-center justify-between gap-4 mb-6">
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search tasks..."
-          className="flex-1 max-w-md px-4 py-2 border border-[#d1d5db] rounded-lg text-sm text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#111827] bg-white"
-        />
-        <div className="flex items-center gap-3">
-          <select
-            value={filter.status || ""}
-            onChange={(e) => setFilter({ ...filter, status: e.target.value || undefined })}
-            className="px-3 py-2 border border-[#d1d5db] rounded-lg text-sm text-[#111827] bg-white focus:outline-none focus:ring-2 focus:ring-[#111827]"
-          >
-            <option value="">All Status</option>
-            <option value="posted">Posted</option>
-            <option value="in_progress">In Progress</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-          <select
-            value={filter.priority || ""}
-            onChange={(e) => setFilter({ ...filter, priority: e.target.value || undefined })}
-            className="px-3 py-2 border border-[#d1d5db] rounded-lg text-sm text-[#111827] bg-white focus:outline-none focus:ring-2 focus:ring-[#111827]"
-          >
-            <option value="">All Priorities</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
-        </div>
-      </div>
+        {/* Filters */}
+        <section className="browse-panel" style={{ marginTop: "16px" }}>
+          <div className="browse-panel-head">
+            <h2 className="browse-panel-title">Filters</h2>
+            <div className="browse-panel-subtitle">Narrow down tasks</div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
+            <div className="browse-field">
+              <label className="browse-label">Search</label>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search tasks..."
+                className="browse-input"
+              />
+            </div>
+            <div className="browse-field">
+              <label className="browse-label">Status</label>
+              <select
+                value={filter.status || ""}
+                onChange={(e) => setFilter({ ...filter, status: e.target.value || undefined })}
+                className="browse-select"
+              >
+                <option value="">All Status</option>
+                <option value="posted">Posted</option>
+                <option value="in_progress">In Progress</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+            <div className="browse-field">
+              <label className="browse-label">Priority</label>
+              <select
+                value={filter.priority || ""}
+                onChange={(e) => setFilter({ ...filter, priority: e.target.value || undefined })}
+                className="browse-select"
+              >
+                <option value="">All Priorities</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+            </div>
+          </div>
+        </section>
 
-      {/* Tasks Table */}
-      <div className="border border-[#e5e7eb] rounded-lg bg-white overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-[#f9fafb] border-b border-[#e5e7eb]">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#374151] uppercase tracking-wider">Task</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#374151] uppercase tracking-wider">Company</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">Gold</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">Student</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">Created</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#e5e7eb]">
-              {filteredTasks.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-sm text-[#6b7280]">
-                    No tasks found
-                  </td>
-                </tr>
-              ) : (
-                filteredTasks.map((task) => (
-                  <tr key={task._id} className="hover:bg-[#f9fafb] transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-semibold text-[#111827]">{task.title}</div>
-                      <div className="text-xs text-[#6b7280]">{task.location} • {task.duration}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-[#111827]">{task.companyName}</div>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-sm font-semibold text-[#111827]">{task.gold.toLocaleString()} Gold</span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${getStatusColor(task.status)}`}>
-                        {task.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-sm text-[#111827]">
-                        {task.acceptedStudentId ? task.acceptedStudentId.name : "—"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-xs text-[#6b7280]">
-                        {new Date(task.createdAt).toLocaleDateString()}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <button
-                        onClick={() => handleDeleteTask(task._id)}
-                        className="px-3 py-1.5 rounded-lg bg-[#991b1b] text-white text-xs font-semibold hover:bg-[#7f1d1d] transition-colors"
-                      >
-                        Delete
-                      </button>
-                    </td>
+        {/* Tasks Table */}
+        <section className="browse-panel" style={{ marginTop: "16px" }}>
+          <div className="browse-panel-head">
+            <h2 className="browse-panel-title">Tasks</h2>
+            <div className="browse-panel-subtitle">{filteredTasks.length} found</div>
+          </div>
+          {filteredTasks.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--muted)" }}>
+              No tasks found
+            </div>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                    <th style={{ padding: "12px", textAlign: "left", fontSize: "12px", fontWeight: 800, textTransform: "uppercase", color: "var(--muted)" }}>Task</th>
+                    <th style={{ padding: "12px", textAlign: "left", fontSize: "12px", fontWeight: 800, textTransform: "uppercase", color: "var(--muted)" }}>Company</th>
+                    <th style={{ padding: "12px", textAlign: "center", fontSize: "12px", fontWeight: 800, textTransform: "uppercase", color: "var(--muted)" }}>Gold</th>
+                    <th style={{ padding: "12px", textAlign: "center", fontSize: "12px", fontWeight: 800, textTransform: "uppercase", color: "var(--muted)" }}>Status</th>
+                    <th style={{ padding: "12px", textAlign: "center", fontSize: "12px", fontWeight: 800, textTransform: "uppercase", color: "var(--muted)" }}>Student</th>
+                    <th style={{ padding: "12px", textAlign: "center", fontSize: "12px", fontWeight: 800, textTransform: "uppercase", color: "var(--muted)" }}>Created</th>
+                    <th style={{ padding: "12px", textAlign: "center", fontSize: "12px", fontWeight: 800, textTransform: "uppercase", color: "var(--muted)" }}>Actions</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div className="text-center text-sm text-[#6b7280]">
-        Showing {filteredTasks.length} of {tasks.length} tasks
+                </thead>
+                <tbody>
+                  {filteredTasks.map((task) => {
+                    const badge = getStatusBadge(task.status);
+                    return (
+                      <tr
+                        key={task._id}
+                        style={{
+                          borderBottom: "1px solid var(--border)",
+                          transition: "background 0.2s",
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.03)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                      >
+                        <td style={{ padding: "16px" }}>
+                          <div style={{ fontWeight: 800, fontSize: "14px", marginBottom: "4px" }}>{task.title}</div>
+                          <div style={{ fontSize: "12px", color: "var(--muted)" }}>{task.location} • {task.duration}</div>
+                        </td>
+                        <td style={{ padding: "16px" }}>
+                          <div style={{ fontSize: "14px" }}>{task.companyName}</div>
+                        </td>
+                        <td style={{ padding: "16px", textAlign: "center", fontWeight: 800 }}>
+                          {task.gold.toLocaleString()} Gold
+                        </td>
+                        <td style={{ padding: "16px", textAlign: "center" }}>
+                          <span className="badge" style={badge.style}>
+                            {task.status}
+                          </span>
+                        </td>
+                        <td style={{ padding: "16px", textAlign: "center" }}>
+                          <span style={{ fontSize: "14px" }}>
+                            {task.acceptedStudentId ? task.acceptedStudentId.name : "—"}
+                          </span>
+                        </td>
+                        <td style={{ padding: "16px", textAlign: "center" }}>
+                          <span style={{ fontSize: "12px", color: "var(--muted)" }}>
+                            {new Date(task.createdAt).toLocaleDateString()}
+                          </span>
+                        </td>
+                        <td style={{ padding: "16px", textAlign: "center" }}>
+                          <button
+                            onClick={() => handleDeleteTask(task._id)}
+                            className="browse-btn"
+                            style={{
+                              fontSize: "11px",
+                              padding: "6px 12px",
+                              background: "rgba(239,68,68,.8)",
+                              border: "1px solid rgba(239,68,68,.5)",
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <div style={{ textAlign: "center", padding: "16px", fontSize: "12px", color: "var(--muted)", borderTop: "1px solid var(--border)", marginTop: "12px" }}>
+            Showing {filteredTasks.length} of {tasks.length} tasks
+          </div>
+        </section>
       </div>
     </div>
   );
 }
-
-

@@ -60,7 +60,8 @@ router.post("/:taskId", requireAuth, async (req: any, res) => {
     }
 
     // Allow messages for disputed tasks, but not for completed/cancelled (unless disputed)
-    if ((task.status === "completed" || task.status === "cancelled") && task.submissionStatus !== "disputed") {
+    // Admins can always send messages in dispute chats
+    if ((task.status === "completed" || task.status === "cancelled") && task.submissionStatus !== "disputed" && !isAdmin) {
       return res.status(400).json({
         success: false,
         message: "Cannot send messages to completed/cancelled tasks",

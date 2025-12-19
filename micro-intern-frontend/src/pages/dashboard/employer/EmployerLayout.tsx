@@ -13,6 +13,7 @@ export default function EmployerLayout() {
     { label: "Applications", to: "/dashboard/employer/jobs" },
     { label: "Submissions", to: "/dashboard/employer/submissions" },
     { label: "Messages", to: "/dashboard/employer/messages" },
+    { label: "Reviews", to: "/dashboard/employer/reviews" },
     { label: "Notifications", to: "/dashboard/employer/notifications" },
     { label: "Profile", to: "/dashboard/employer/profile" },
   ];

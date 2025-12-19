@@ -17,7 +17,6 @@ export async function updateStudentStarRating(studentId: string): Promise<void> 
     const student = await User.findById(studentId);
     if (student) {
       const calculatedRating = calculateStarRating(
-        student.xp || 0,
         student.totalTasksCompleted || 0,
         student.averageCompletionTime || 0
       );

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiGet, apiDelete } from "../../../api/client";
+import "../student/css/BrowsePage.css";
 
 type Student = {
   _id: string;
@@ -9,7 +10,6 @@ type Student = {
   starRating?: number;
   totalTasksCompleted?: number;
   averageCompletionTime?: number;
-  xp?: number;
   gold?: number;
   skills?: string[];
   institution?: string;
@@ -29,19 +29,15 @@ export default function StudentsPage() {
       setLoading(true);
       const res = await apiGet<{ success: boolean; data: Student[] }>("/student/all");
       if (res.success && res.data) {
-        // Ensure all students have default values for missing fields
         const studentsWithDefaults = (res.data || []).map((student) => ({
           ...student,
           starRating: student.starRating || 1,
           totalTasksCompleted: student.totalTasksCompleted || 0,
           averageCompletionTime: student.averageCompletionTime || 0,
-          xp: student.xp || 0,
           gold: student.gold || 0,
         }));
         setStudents(studentsWithDefaults);
-        console.log(`Loaded ${studentsWithDefaults.length} students`);
       } else {
-        console.warn("No students data returned:", res);
         setStudents([]);
       }
     } catch (err) {
@@ -72,125 +68,164 @@ export default function StudentsPage() {
     }
   }
 
+  function renderStars(rating: number) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+        {[1, 2, 3, 4, 5].map((star) => (
+          <span
+            key={star}
+            style={{
+              fontSize: "12px",
+              color: star <= rating ? "#fbbf24" : "rgba(255,255,255,0.3)",
+            }}
+          >
+            ★
+          </span>
+        ))}
+        <span style={{ marginLeft: "4px", fontSize: "11px", color: "var(--muted)" }}>
+          ({rating.toFixed(1)})
+        </span>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Loading students…</div>
+      <div className="browse-page">
+        <div className="browse-inner">
+          <div className="browse-loading">Loading students…</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="text-center mb-12">
-        <h1 className="text-3xl font-semibold text-[#111827] mb-3">Student Management</h1>
-        <p className="text-sm text-[#6b7280] max-w-2xl mx-auto">
-          Search and manage all students on the platform. View their profiles, performance metrics, and activity.
-        </p>
-      </div>
+    <div className="browse-page">
+      <div className="browse-inner">
+        {/* Header */}
+        <header className="browse-header">
+          <div className="browse-title-wrap">
+            <div className="browse-eyebrow">Student Management</div>
+            <h1 className="browse-title">All Students</h1>
+            <p className="browse-subtitle">
+              Search and manage all students on the platform. View their profiles, performance metrics, and activity.
+            </p>
+          </div>
+          <div className="browse-actions">
+            <div className="browse-stat">
+              <div className="browse-stat-label">Total Students</div>
+              <div className="browse-stat-value">{students.length}</div>
+            </div>
+          </div>
+        </header>
 
-      {/* Search */}
-      <div className="max-w-md mx-auto mb-8">
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search by name, email, or institution..."
-          className="w-full px-4 py-3 border border-[#d1d5db] rounded-lg text-sm text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent bg-white"
-        />
-      </div>
+        {/* Search */}
+        <section className="browse-panel" style={{ marginTop: "16px" }}>
+          <div className="browse-field">
+            <label className="browse-label">Search</label>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name, email, or institution..."
+              className="browse-input"
+            />
+          </div>
+        </section>
 
-      {/* Students Table */}
-      <div className="border border-[#e5e7eb] rounded-lg bg-white overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-[#f9fafb] border-b border-[#e5e7eb]">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#374151] uppercase tracking-wider">Student</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#374151] uppercase tracking-wider">Rating</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">Tasks</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">Avg. Time</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">XP</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">Gold</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#e5e7eb]">
-              {filteredStudents.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-sm text-[#6b7280]">
-                    {searchQuery ? "No students found matching your search" : "No students found"}
-                  </td>
-                </tr>
-              ) : (
-                filteredStudents.map((student) => (
-                  <tr key={student._id} className="hover:bg-[#f9fafb] transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[#111827] flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
-                          {student.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="text-sm font-semibold text-[#111827]">{student.name}</div>
-                          <div className="text-xs text-[#6b7280]">{student.email}</div>
-                          {student.institution && (
-                            <div className="text-xs text-[#9ca3af]">{student.institution}</div>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-1">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <svg
-                            key={star}
-                            className={`w-3 h-3 ${
-                              star <= (student.starRating || 1) ? "text-yellow-400 fill-current" : "text-[#e5e7eb] fill-current"
-                            }`}
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                          </svg>
-                        ))}
-                        <span className="ml-1 text-xs text-[#374151]">({(student.starRating || 1).toFixed(1)})</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-sm font-semibold text-[#111827]">{student.totalTasksCompleted || 0}</span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-sm font-semibold text-[#111827]">
-                        {student.averageCompletionTime && student.averageCompletionTime > 0 ? `${student.averageCompletionTime.toFixed(1)}d` : "—"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-sm font-semibold text-[#111827]">{student.xp || 0}</span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-sm font-semibold text-[#111827]">{student.gold || 0}</span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <button
-                        onClick={() => handleDeleteStudent(student._id)}
-                        className="px-3 py-1.5 rounded-lg bg-[#991b1b] text-white text-xs font-semibold hover:bg-[#7f1d1d] transition-colors"
-                      >
-                        Delete
-                      </button>
-                    </td>
+        {/* Students Table */}
+        <section className="browse-panel" style={{ marginTop: "16px" }}>
+          <div className="browse-panel-head">
+            <h2 className="browse-panel-title">Students</h2>
+            <div className="browse-panel-subtitle">{filteredStudents.length} found</div>
+          </div>
+          {filteredStudents.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--muted)" }}>
+              {searchQuery ? "No students found matching your search" : "No students found"}
+            </div>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                    <th style={{ padding: "12px", textAlign: "left", fontSize: "12px", fontWeight: 800, textTransform: "uppercase", color: "var(--muted)" }}>Student</th>
+                    <th style={{ padding: "12px", textAlign: "left", fontSize: "12px", fontWeight: 800, textTransform: "uppercase", color: "var(--muted)" }}>Rating</th>
+                    <th style={{ padding: "12px", textAlign: "center", fontSize: "12px", fontWeight: 800, textTransform: "uppercase", color: "var(--muted)" }}>Tasks</th>
+                    <th style={{ padding: "12px", textAlign: "center", fontSize: "12px", fontWeight: 800, textTransform: "uppercase", color: "var(--muted)" }}>Avg. Time</th>
+                    <th style={{ padding: "12px", textAlign: "center", fontSize: "12px", fontWeight: 800, textTransform: "uppercase", color: "var(--muted)" }}>Gold</th>
+                    <th style={{ padding: "12px", textAlign: "center", fontSize: "12px", fontWeight: 800, textTransform: "uppercase", color: "var(--muted)" }}>Actions</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div className="text-center text-sm text-[#6b7280]">
-        Showing {filteredStudents.length} of {students.length} students
+                </thead>
+                <tbody>
+                  {filteredStudents.map((student) => (
+                    <tr
+                      key={student._id}
+                      style={{
+                        borderBottom: "1px solid var(--border)",
+                        transition: "background 0.2s",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.03)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                    >
+                      <td style={{ padding: "16px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                          {student.profilePicture ? (
+                            <img
+                              src={student.profilePicture}
+                              alt={student.name}
+                              style={{ width: "40px", height: "40px", borderRadius: "50%", objectFit: "cover" }}
+                            />
+                          ) : (
+                            <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: "14px" }}>
+                              {student.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div>
+                            <div style={{ fontWeight: 800, fontSize: "14px" }}>{student.name}</div>
+                            <div style={{ fontSize: "12px", color: "var(--muted)" }}>{student.email}</div>
+                            {student.institution && (
+                              <div style={{ fontSize: "11px", color: "var(--muted)" }}>{student.institution}</div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: "16px" }}>
+                        {renderStars(student.starRating || 1)}
+                      </td>
+                      <td style={{ padding: "16px", textAlign: "center", fontWeight: 800 }}>
+                        {student.totalTasksCompleted || 0}
+                      </td>
+                      <td style={{ padding: "16px", textAlign: "center", fontWeight: 800 }}>
+                        {student.averageCompletionTime && student.averageCompletionTime > 0 ? `${student.averageCompletionTime.toFixed(1)}d` : "—"}
+                      </td>
+                      <td style={{ padding: "16px", textAlign: "center", fontWeight: 800 }}>
+                        {student.gold || 0}
+                      </td>
+                      <td style={{ padding: "16px", textAlign: "center" }}>
+                        <button
+                          onClick={() => handleDeleteStudent(student._id)}
+                          className="browse-btn"
+                          style={{
+                            fontSize: "11px",
+                            padding: "6px 12px",
+                            background: "rgba(239,68,68,.8)",
+                            border: "1px solid rgba(239,68,68,.5)",
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <div style={{ textAlign: "center", padding: "16px", fontSize: "12px", color: "var(--muted)", borderTop: "1px solid var(--border)", marginTop: "12px" }}>
+            Showing {filteredStudents.length} of {students.length} students
+          </div>
+        </section>
       </div>
     </div>
   );
 }
-
-
