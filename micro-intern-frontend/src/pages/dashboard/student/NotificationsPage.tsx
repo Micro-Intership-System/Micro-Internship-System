@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiGet, apiPatch } from "../../../api/client";
+import "./NotificationsPage.css";
+
+import "./NotificationsPage.css";
+
+
+
 
 type Notification = {
   _id: string;

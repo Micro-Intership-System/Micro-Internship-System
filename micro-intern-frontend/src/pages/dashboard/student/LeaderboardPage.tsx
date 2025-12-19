@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiGet } from "../../../api/client";
+import "./LeaderboardPage.css";
 
 type LeaderboardEntry = {
   position: number;
