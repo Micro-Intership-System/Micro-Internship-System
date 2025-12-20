@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import "./css/EmployerJobsPage.css";
 import { useParams, Link } from "react-router-dom";
 import { apiGet, apiPatch } from "../../../api/client";
 
@@ -166,7 +167,7 @@ export default function JobApplicationsPage() {
                 </div>
 
                 <div className="flex flex-col gap-2 flex-shrink-0">
-                  {(app.status === "evaluating" || app.status === "applied") && (
+                  {(app.status === "evaluating") && (
                     <>
                       <button
                         onClick={() => updateStatus(app._id, "accepted")}

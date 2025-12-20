@@ -9,6 +9,7 @@ export default function StudentLayout() {
   const nav = [
     { label: "Home", to: "/dashboard/student" },
     { label: "Browse Jobs", to: "/dashboard/student/browse" },
+    { label: "Profile", to: "/dashboard/student/profile" },
     { label: "Applications", to: "/dashboard/student/applications" },
     { label: "Running Jobs", to: "/dashboard/student/running-jobs" },
     { label: "Messages", to: "/dashboard/student/messages" },

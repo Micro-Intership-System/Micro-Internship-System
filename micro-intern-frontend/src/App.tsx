@@ -11,7 +11,6 @@ import OverviewPage from "./pages/dashboard/student/OverviewPage";
 import BrowsePage from "./pages/dashboard/student/BrowsePage";
 import SavedJobsPage from "./pages/dashboard/student/SavedJobsPage";
 import ApplicationsPage from "./pages/dashboard/student/ApplicationsPage";
-import ProfilePage from "./pages/dashboard/student/ProfilePage";
 import MessagesPage from "./pages/dashboard/student/MessagesPage";
 import StudentPortfolioPage from "./pages/dashboard/student/StudentPortfolioPage";
 import CourseShopPage from "./pages/dashboard/student/CourseShopPage";
@@ -38,7 +37,7 @@ import EmployerMessagesPage from "./pages/dashboard/employer/EmployerMessagesPag
 import TaskPaymentPage from "./pages/dashboard/employer/TaskPaymentPage";
 import EmployerSubmitReviewPage from "./pages/dashboard/employer/SubmitReviewPage";
 import JobSubmissionsPage from "./pages/dashboard/employer/JobSubmissionsPage";
-
+import EmployerApplicationsPage from "./pages/dashboard/employer/EmployerApplicationsPage";
 import AdminLayout from "./pages/dashboard/admin/AdminLayout";
 import AdminDashboard from "./pages/dashboard/admin/AdminDashboard";
 import AnomaliesPage from "./pages/dashboard/admin/AnomaliesPage";
@@ -72,7 +71,6 @@ const App: React.FC = () => {
             <Route path="browse" element={<BrowsePage />} />
             <Route path="saved" element={<SavedJobsPage />} />
             <Route path="applications" element={<ApplicationsPage />} />
-            <Route path="profile" element={<ProfilePage />} />
             <Route path="messages" element={<MessagesPage />} />
             <Route path="portfolio" element={<StudentPortfolioPage />} />
             <Route path="courses" element={<CourseShopPage />} />
@@ -107,6 +105,7 @@ const App: React.FC = () => {
             <Route index element={<EmployerDashboard />} />
             <Route path="jobs" element={<EmployerJobsPage />} />
             <Route path="jobs/:id/edit" element={<EditJobPage />} />
+            <Route path="applications" element={<EmployerApplicationsPage />} />
             <Route path="jobs/:id/applications" element={<JobApplicationsPage />} />
             <Route path="submissions" element={<JobSubmissionsPage />} />
             <Route path="profile" element={<EmployerProfile />} />

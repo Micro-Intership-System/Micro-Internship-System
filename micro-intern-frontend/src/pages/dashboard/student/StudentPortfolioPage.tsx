@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
-import { apiGet } from "../../../api/client";
 
 type Props = {
   readonly?: boolean;

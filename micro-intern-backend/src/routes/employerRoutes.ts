@@ -198,6 +198,36 @@ router.get("/jobs", requireAuth, requireEmployer, async (req: any, res) => {
 });
 
 /**
+ * GET /api/employer/applications
+ * Employer views applications across all their jobs
+ */
+router.get(
+  "/applications",
+  requireAuth,
+  requireEmployer,
+  async (req: any, res) => {
+    try {
+      // Find all job ids for this employer
+      const jobs = await Internship.find({ employerId: req.user.id }).select("_id").lean();
+      const jobIds = jobs.map((j: any) => j._id);
+
+      const apps = await Application.find({ internshipId: { $in: jobIds } })
+        .populate(
+          "studentId",
+          "name email institution skills bio profilePicture portfolio"
+        )
+        .populate("internshipId", "title")
+        .sort({ createdAt: -1 });
+
+      res.json({ success: true, data: apps });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ success: false, message: "Failed to load applications" });
+    }
+  }
+);
+
+/**
  * GET /api/employer/jobs/:jobId/applications
  * Employer views applications for a job
  */

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiPost } from "../../../api/client";
+import "./css/PostInternshipPage.css";
 
 const PostInternshipPage = () => {
   const navigate = useNavigate();
@@ -47,7 +48,7 @@ const PostInternshipPage = () => {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="postJob space-y-8">
       {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-[#111827] mb-2">Post a New Internship</h1>

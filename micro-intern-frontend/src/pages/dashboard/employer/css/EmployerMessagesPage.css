@@ -1,17 +1,19 @@
 /* EmployerMessagesPage.css */
 
 :root {
-  --text: #111827;
-  --muted: #6b7280;
-  --border: #e5e7eb;
-  --border2: #d1d5db;
-  --bg: #ffffff;
-  --rowHover: #f9fafb;
+  --text: rgba(255,255,255,.95);
+  --muted: rgba(255,255,255,.72);
+  --border: rgba(255,255,255,.08);
+  --border2: rgba(255,255,255,.12);
+  --panel: rgba(255,255,255,.03);
+  --panel-2: rgba(255,255,255,.05);
+  --rowHover: rgba(255,255,255,.04);
 
-  --btn: #111827;
-  --btnHover: #1f2937;
+  --primary: #7c3aed;
+  --btn: var(--primary);
+  --btnHover: #6d28d9;
 
-  --radius: 10px;
+  --radius: 12px;
 }
 
 /* Loading */
@@ -56,7 +58,7 @@
 .empMsg__empty {
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: var(--bg);
+  background: var(--panel);
   padding: 64px;
   text-align: center;
 }
@@ -92,10 +94,16 @@
 .empMsg__panel {
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: var(--bg);
+  background: var(--panel);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+/* Chat bubble — own */
+.empMsg__bubble--own {
+  background: var(--btn);
+  color: #fff;
 }
 
 /* Panel headers */
@@ -228,11 +236,11 @@
 
 .empMsg__bubble--own {
   background: var(--btn);
-  color: white;
+  color: #fff;
 }
 
 .empMsg__bubble--other {
-  background: var(--rowHover);
+  background: var(--panel-2);
   color: var(--text);
   border: 1px solid var(--border);
 }

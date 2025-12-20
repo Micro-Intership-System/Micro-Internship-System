@@ -1,4 +1,13 @@
 /* Root */
+:root{
+  --bg: #0b1220;
+  --panel: rgba(255,255,255,.03);
+  --border: rgba(255,255,255,.08);
+  --text: rgba(255,255,255,.95);
+  --muted: rgba(255,255,255,.7);
+  --accent: #7c3aed;
+}
+
 .notifications-page {
   display: flex;
   flex-direction: column;
@@ -56,13 +65,13 @@
 }
 
 .btn-outline {
-  border: 1px solid #d1d5db;
-  background-color: #ffffff;
-  color: #111827;
+  border: 1px solid var(--border);
+  background-color: var(--panel);
+  color: var(--text);
 }
 
 .btn-outline:hover {
-  background-color: #f9fafb;
+  background-color: rgba(255,255,255,.05);
 }
 
 /* Error */
@@ -132,27 +141,27 @@
   align-items: flex-start;
   gap: 1rem;
 
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border);
   border-radius: 0.5rem;
   padding: 1rem;
 
-  background-color: #ffffff;
+  background: var(--panel);
   transition: box-shadow 0.2s ease, border-color 0.2s ease,
     background-color 0.2s ease;
 }
 
 .notification-card:hover {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 6px 18px rgba(0,0,0,.35);
 }
 
 .notification-card.unread {
-  border-color: #111827;
-  background-color: #f9fafb;
+  border-color: rgba(255,255,255,.14);
+  background: rgba(255,255,255,.04);
 }
 
 .notification-card.read {
-  border-color: #e5e7eb;
-  background-color: #ffffff;
+  border-color: var(--border);
+  background: var(--panel);
 }
 
 /* Icon */
@@ -218,13 +227,13 @@
 .notification-title {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text);
   margin: 0;
   line-height: 1.25;
 }
 
 .notification-card.read .notification-title {
-  color: #374151;
+  color: var(--muted);
 }
 
 .notification-mark-read {
