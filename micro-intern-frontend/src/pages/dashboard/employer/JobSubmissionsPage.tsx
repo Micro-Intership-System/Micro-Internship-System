@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiGet, apiPost } from "../../../api/client";
 import { useAuth } from "../../../context/AuthContext";
-import "./css/JobSubmissionsPage.css";
+import "../student/css/BrowsePage.css";
 
 type Submission = {
   _id: string;
@@ -101,205 +101,413 @@ export default function JobSubmissionsPage() {
     }
   }
 
+  function getStatusBadge(status: Submission["submissionStatus"]) {
+    const badges = {
+      submitted: {
+        bg: "rgba(59,130,246,.16)",
+        border: "rgba(59,130,246,.35)",
+        color: "rgba(59,130,246,.9)",
+        text: "Submitted",
+      },
+      confirmed: {
+        bg: "rgba(34,197,94,.16)",
+        border: "rgba(34,197,94,.35)",
+        color: "rgba(34,197,94,.9)",
+        text: "Confirmed",
+      },
+      rejected: {
+        bg: "rgba(239,68,68,.16)",
+        border: "rgba(239,68,68,.35)",
+        color: "rgba(239,68,68,.9)",
+        text: "Rejected",
+      },
+      disputed: {
+        bg: "rgba(251,191,36,.16)",
+        border: "rgba(251,191,36,.35)",
+        color: "rgba(251,191,36,.9)",
+        text: "Disputed",
+      },
+    };
+    return badges[status];
+  }
+
   if (loading) {
     return (
-      <div className="empSub__loadingWrap">
-        <div className="empSub__loadingText">Loading submissions…</div>
+      <div className="browse-page">
+        <div className="browse-inner">
+          <div className="browse-loading">Loading submissions…</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="empSub">
-      {/* Page Header */}
-      <div className="empSub__header">
-        <h1 className="empSub__title">Job Submissions</h1>
-        <p className="empSub__subtitle">Review and confirm or reject student submissions</p>
-      </div>
+    <div className="browse-page">
+      <div className="browse-inner">
+        {/* Header */}
+        <header className="browse-header">
+          <div className="browse-title-wrap">
+            <div className="browse-eyebrow">Job Submissions</div>
+            <h1 className="browse-title">Review Submissions</h1>
+            <p className="browse-subtitle">Review and confirm or reject student submissions</p>
+          </div>
+        </header>
 
-      {/* Error */}
-      {error && <div className="empSub__error">{error}</div>}
+        {/* Error */}
+        {error && (
+          <section className="browse-panel" style={{ marginTop: "16px", borderColor: "rgba(239,68,68,.5)", background: "rgba(239,68,68,.1)" }}>
+            <div style={{ color: "rgba(239,68,68,.9)", fontSize: "14px" }}>{error}</div>
+          </section>
+        )}
 
-      {/* Submissions List */}
-      {submissions.length === 0 ? (
-        <div className="empSub__empty">
-          <h3 className="empSub__emptyTitle">No Submissions</h3>
-          <p className="empSub__emptyText">No jobs have been submitted for review yet.</p>
-        </div>
-      ) : (
-        <div className="empSub__list">
-          {submissions.map((sub) => (
-            <div key={sub._id} className="empSub__card">
-              <div className="empSub__cardTop">
-                <div className="empSub__left">
-                  <div className="empSub__titleRow">
-                    <div className="empSub__icon">{sub.title.charAt(0)}</div>
+        {/* Submissions List */}
+        {submissions.length === 0 ? (
+          <section className="browse-results" style={{ marginTop: "16px" }}>
+            <div className="browse-empty">
+              <div className="browse-empty-title">No Submissions</div>
+              <div className="browse-empty-sub">No jobs have been submitted for review yet.</div>
+            </div>
+          </section>
+        ) : (
+          <section className="browse-results" style={{ marginTop: "16px" }}>
+            <div className="browse-results-head">
+              <h2 className="browse-results-title">Submissions</h2>
+              <div className="browse-results-count">{submissions.length} found</div>
+            </div>
+            <div className="browse-cards">
+              {submissions.map((sub) => {
+                const badge = getStatusBadge(sub.submissionStatus);
+                return (
+                  <article key={sub._id} className="job-card">
+                    <div className="job-card-top">
+                      <div className="job-card-main" style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+                          <div
+                            style={{
+                              width: "48px",
+                              height: "48px",
+                              borderRadius: "50%",
+                              background: "linear-gradient(135deg, rgba(124,58,237,.5), rgba(59,130,246,.4))",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              color: "white",
+                              fontSize: "18px",
+                              fontWeight: "bold",
+                              flexShrink: 0,
+                            }}
+                          >
+                            {sub.title.charAt(0).toUpperCase()}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div className="job-title" style={{ marginBottom: "4px" }}>
+                              {sub.title}
+                            </div>
+                            {sub.acceptedStudentId && (
+                              <div className="job-sub">
+                                Submitted by: {sub.acceptedStudentId.name} ({sub.acceptedStudentId.email})
+                              </div>
+                            )}
+                          </div>
+                        </div>
 
-                    <div className="empSub__jobTitleWrap">
-                      <h3 className="empSub__jobTitle">{sub.title}</h3>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "12px" }}>
+                          <span
+                            className="badge"
+                            style={{
+                              background: "rgba(255,255,255,.1)",
+                              borderColor: "rgba(255,255,255,.2)",
+                              color: "var(--text)",
+                            }}
+                          >
+                            {sub.gold} Gold
+                          </span>
+                          <span
+                            className="badge"
+                            style={{
+                              background: badge.bg,
+                              borderColor: badge.border,
+                              color: badge.color,
+                            }}
+                          >
+                            {badge.text}
+                          </span>
+                          {sub.submissionReport?.submittedAt && (
+                            <span
+                              className="badge"
+                              style={{
+                                background: "rgba(255,255,255,.06)",
+                                borderColor: "rgba(255,255,255,.12)",
+                                color: "var(--muted)",
+                                fontSize: "11px",
+                              }}
+                            >
+                              Submitted: {new Date(sub.submissionReport.submittedAt).toLocaleString()}
+                            </span>
+                          )}
+                        </div>
 
-                      {sub.acceptedStudentId && (
-                        <p className="empSub__submitter">
-                          Submitted by: {sub.acceptedStudentId.name} ({sub.acceptedStudentId.email})
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="empSub__badges">
-                    <span className="empSub__badge">{sub.gold} Gold</span>
-
-                    <span className="empSub__badge empSub__badge--info">
-                      {sub.submissionStatus === "submitted"
-                        ? "Submitted"
-                        : sub.submissionStatus === "confirmed"
-                        ? "Confirmed"
-                        : sub.submissionStatus === "rejected"
-                        ? "Rejected"
-                        : "Disputed"}
-                    </span>
-
-                    {sub.submissionReport?.submittedAt && (
-                      <span className="empSub__badge empSub__badge--muted">
-                        Submitted: {new Date(sub.submissionReport.submittedAt).toLocaleString()}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Submission Report */}
-                  {sub.submissionReport && (
-                    <div className="empSub__report">
-                      <div className="empSub__reportTitle">Completion Report</div>
-                      <div className="empSub__reportBody">
-                        {sub.submissionReport.timeTaken && (
-                          <div>Time Taken: {sub.submissionReport.timeTaken} hours</div>
+                        {/* Submission Report */}
+                        {sub.submissionReport && (
+                          <div
+                            style={{
+                              marginTop: "12px",
+                              padding: "12px",
+                              background: "rgba(255,255,255,.04)",
+                              border: "1px solid rgba(255,255,255,.08)",
+                              borderRadius: "12px",
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: "12px",
+                                fontWeight: "600",
+                                color: "var(--muted)",
+                                marginBottom: "8px",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.05em",
+                              }}
+                            >
+                              Completion Report
+                            </div>
+                            <div style={{ fontSize: "13px", color: "var(--text)", lineHeight: "1.6" }}>
+                              {sub.submissionReport.timeTaken && (
+                                <div style={{ marginBottom: "6px" }}>
+                                  <strong>Time Taken:</strong> {sub.submissionReport.timeTaken} hours
+                                </div>
+                              )}
+                              {sub.submissionReport.completionNotes && (
+                                <div>
+                                  <strong>Notes:</strong> {sub.submissionReport.completionNotes}
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         )}
-                        {sub.submissionReport.completionNotes && (
-                          <div>Notes: {sub.submissionReport.completionNotes}</div>
+
+                        {/* Proof URL */}
+                        {sub.submissionProofUrl && (
+                          <div style={{ marginTop: "12px" }}>
+                            <a
+                              href={sub.submissionProofUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="browse-link"
+                              style={{ fontSize: "13px" }}
+                            >
+                              View Proof Document →
+                            </a>
+                          </div>
+                        )}
+
+                        {/* Rejection Reason */}
+                        {sub.submissionStatus === "rejected" && sub.rejectionReason && (
+                          <div
+                            style={{
+                              marginTop: "12px",
+                              padding: "12px",
+                              background: "rgba(239,68,68,.1)",
+                              border: "1px solid rgba(239,68,68,.3)",
+                              borderRadius: "12px",
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: "12px",
+                                fontWeight: "600",
+                                color: "rgba(239,68,68,.9)",
+                                marginBottom: "6px",
+                              }}
+                            >
+                              Rejection Reason
+                            </div>
+                            <div style={{ fontSize: "13px", color: "rgba(239,68,68,.9)" }}>
+                              {sub.rejectionReason}
+                            </div>
+                          </div>
                         )}
                       </div>
+                      <div className="job-badges">
+                        <span
+                          className="badge"
+                          style={{
+                            background: badge.bg,
+                            borderColor: badge.border,
+                            color: badge.color,
+                          }}
+                        >
+                          {badge.text}
+                        </span>
+                      </div>
                     </div>
-                  )}
-
-                  {/* Proof URL */}
-                  {sub.submissionProofUrl && (
-                    <div className="empSub__proof">
-                      <a
-                        href={sub.submissionProofUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="empSub__proofLink"
-                      >
-                        View Proof Document →
-                      </a>
+                    <div className="job-card-bottom">
+                      <div className="job-meta">
+                        <span className="meta-dot" />
+                        {sub.submissionStatus === "submitted" ? "Awaiting review" : sub.submissionStatus}
+                      </div>
+                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                        {sub.submissionStatus === "submitted" && (
+                          <>
+                            <button
+                              onClick={() => handleConfirm(sub._id)}
+                              disabled={confirming === sub._id}
+                              className="browse-btn browse-btn--primary"
+                              style={{
+                                background: "rgba(34,197,94,.2)",
+                                borderColor: "rgba(34,197,94,.5)",
+                                color: "rgba(34,197,94,.9)",
+                                minWidth: "140px",
+                              }}
+                            >
+                              {confirming === sub._id ? "Confirming..." : "Confirm & Pay"}
+                            </button>
+                            <button
+                              onClick={() => setShowRejectModal(sub._id)}
+                              disabled={rejecting === sub._id}
+                              className="browse-btn browse-btn--ghost"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                        {sub.submissionStatus === "confirmed" && (
+                          <span
+                            className="badge"
+                            style={{
+                              background: badge.bg,
+                              borderColor: badge.border,
+                              color: badge.color,
+                              padding: "8px 16px",
+                            }}
+                          >
+                            Confirmed ✓
+                          </span>
+                        )}
+                        {sub.submissionStatus === "disputed" && (
+                          <Link
+                            to={`/dashboard/employer/messages?taskId=${sub._id}`}
+                            className="browse-btn browse-btn--primary"
+                          >
+                            View Dispute →
+                          </Link>
+                        )}
+                        <Link
+                          to={`/dashboard/employer/messages?taskId=${sub._id}`}
+                          className="browse-btn browse-btn--ghost"
+                        >
+                          Messages →
+                        </Link>
+                      </div>
                     </div>
-                  )}
-                </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
-                <div className="empSub__actions">
-                  {sub.submissionStatus === "submitted" && (
-                    <>
-                      <button
-                        onClick={() => handleConfirm(sub._id)}
-                        disabled={confirming === sub._id}
-                        className="empSub__btnSuccess"
-                      >
-                        {confirming === sub._id ? "Confirming..." : "Confirm & Pay"}
-                      </button>
-
-                      <button
-                        onClick={() => setShowRejectModal(sub._id)}
-                        disabled={rejecting === sub._id}
-                        className="empSub__btnOutline"
-                      >
-                        Reject
-                      </button>
-                    </>
-                  )}
-
-                  {sub.submissionStatus === "confirmed" && (
-                    <span className="empSub__statusPill empSub__statusPill--confirmed">
-                      Confirmed ✓
-                    </span>
-                  )}
-
-                  {sub.submissionStatus === "rejected" && (
-                    <div>
-                      <span className="empSub__statusPill empSub__statusPill--rejected">
-                        Rejected
-                      </span>
-
-                      {sub.rejectionReason && (
-                        <div className="empSub__rejectReason">Reason: {sub.rejectionReason}</div>
-                      )}
-                    </div>
-                  )}
-
-                  {sub.submissionStatus === "disputed" && (
-                    <Link
-                      to={`/dashboard/employer/messages?taskId=${sub._id}`}
-                      className="empSub__btnDispute"
-                    >
-                      View Dispute
-                    </Link>
-                  )}
-
-                  <Link
-                    to={`/dashboard/employer/messages?taskId=${sub._id}`}
-                    className="empSub__btnOutline"
-                  >
-                    Messages
-                  </Link>
-                </div>
+        {/* Reject Modal */}
+        {showRejectModal && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(0,0,0,.75)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1000,
+              padding: "20px",
+            }}
+            onClick={() => {
+              setShowRejectModal(null);
+              setRejectReason("");
+            }}
+          >
+            <div
+              className="browse-panel"
+              style={{
+                maxWidth: "500px",
+                width: "100%",
+                background: "var(--panel)",
+                border: "1px solid var(--border)",
+                borderRadius: "var(--r-lg)",
+                padding: "24px",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2
+                style={{
+                  margin: "0 0 12px",
+                  fontSize: "20px",
+                  fontWeight: "700",
+                  color: "var(--text)",
+                }}
+              >
+                Reject Submission
+              </h2>
+              <p
+                style={{
+                  margin: "0 0 16px",
+                  fontSize: "13px",
+                  color: "var(--muted)",
+                  lineHeight: "1.5",
+                }}
+              >
+                Please provide a detailed reason for rejection (minimum 10 characters). This reason will be sent to the student.
+              </p>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                style={{
+                  width: "100%",
+                  minHeight: "120px",
+                  padding: "12px",
+                  background: "rgba(255,255,255,.05)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--r-md)",
+                  color: "var(--text)",
+                  fontSize: "14px",
+                  fontFamily: "inherit",
+                  resize: "vertical",
+                  marginBottom: "16px",
+                }}
+                rows={4}
+                placeholder="Enter rejection reason..."
+              />
+              <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+                <button
+                  onClick={() => {
+                    setShowRejectModal(null);
+                    setRejectReason("");
+                  }}
+                  className="browse-btn browse-btn--ghost"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleReject(showRejectModal)}
+                  disabled={
+                    rejecting === showRejectModal || !rejectReason.trim() || rejectReason.trim().length < 10
+                  }
+                  className="browse-btn"
+                  style={{
+                    background: "rgba(239,68,68,.2)",
+                    borderColor: "rgba(239,68,68,.5)",
+                    color: "rgba(239,68,68,.9)",
+                    opacity: rejecting === showRejectModal || !rejectReason.trim() || rejectReason.trim().length < 10 ? 0.5 : 1,
+                  }}
+                >
+                  {rejecting === showRejectModal ? "Rejecting..." : "Reject"}
+                </button>
               </div>
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Reject Modal */}
-      {showRejectModal && (
-        <div className="empSub__modalOverlay">
-          <div className="empSub__modal">
-            <h2 className="empSub__modalTitle">Reject Submission</h2>
-
-            <p className="empSub__modalText">
-              Please provide a detailed reason for rejection (minimum 10 characters). This reason
-              will be sent to the student.
-            </p>
-
-            <textarea
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              className="empSub__textarea"
-              rows={4}
-              placeholder="Enter rejection reason..."
-            />
-
-            <div className="empSub__modalActions">
-              <button
-                onClick={() => {
-                  setShowRejectModal(null);
-                  setRejectReason("");
-                }}
-                className="empSub__btnOutline empSub__modalBtn"
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={() => handleReject(showRejectModal)}
-                disabled={
-                  rejecting === showRejectModal || !rejectReason.trim() || rejectReason.trim().length < 10
-                }
-                className="empSub__btnDanger empSub__modalBtn"
-              >
-                {rejecting === showRejectModal ? "Rejecting..." : "Reject"}
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

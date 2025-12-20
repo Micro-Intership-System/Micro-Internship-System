@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { apiGet, apiPost } from "../api/client";
+import "./dashboard/student/css/BrowsePage.css";
 
 type Internship = {
   _id: string;
@@ -74,94 +75,139 @@ export default function InternshipDetailsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Loading job details…</div>
+      <div className="browse-page">
+        <div className="browse-inner">
+          <div className="browse-loading">Loading job details…</div>
+        </div>
       </div>
     );
   }
 
   if (!job) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#991b1b]">Job not found.</div>
+      <div className="browse-page">
+        <div className="browse-inner">
+          <div className="browse-loading" style={{ color: "rgba(239,68,68,.9)" }}>Job not found.</div>
+        </div>
       </div>
     );
   }
 
-  return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-        <h1 className="text-3xl font-semibold text-[#111827] mb-2">
-          {job.title}
-        </h1>
-        <p className="text-sm text-[#6b7280]">
-          {job.companyName} · Updated {timeAgo(job.updatedAt)}
-        </p>
-      </div>
+  function getGoldRange(g: number): string {
+    if (g < 500) return "<500";
+    if (g < 1000) return "500-1000";
+    if (g < 2000) return "1000-2000";
+    if (g < 5000) return "2000-5000";
+    return "5000+";
+  }
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Description */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-            <h2 className="text-xl font-semibold text-[#111827] mb-4">Description</h2>
-            <p className="text-sm text-[#374151] whitespace-pre-line leading-relaxed">
-              {job.description || "No description provided."}
+  function getDurationRange(d: string): string {
+    const lower = d.toLowerCase();
+    if (lower.includes("week") || /\d/.test(lower)) {
+      const weeks = parseInt(lower.match(/\d+/)?.[0] || "0", 10);
+      if (weeks <= 1) return "1 week";
+      if (weeks <= 2) return "2 weeks";
+      if (weeks <= 4) return "3-4 weeks";
+      return "1+ month";
+    }
+    if (lower.includes("month")) {
+      const months = parseInt(lower.match(/\d+/)?.[0] || "0", 10);
+      if (months <= 1) return "1 month";
+      if (months <= 3) return "2-3 months";
+      return "3+ months";
+    }
+    return d;
+  }
+
+  return (
+    <div className="browse-page">
+      <div className="browse-inner">
+        {/* Header */}
+        <header className="browse-header">
+          <div className="browse-title-wrap">
+            <div className="browse-eyebrow">Job Details</div>
+            <h1 className="browse-title">{job.title}</h1>
+            <p className="browse-subtitle">
+              {job.companyName} · Updated {timeAgo(job.updatedAt)}
             </p>
           </div>
-
-          {job.skills && job.skills.length > 0 && (
-            <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-              <h2 className="text-xl font-semibold text-[#111827] mb-4">Required Skills</h2>
-              <div className="flex flex-wrap gap-2">
-                {job.skills.map((skill, index) => (
-                  <span
-                    key={index}
-                    className="px-3 py-1 rounded-full bg-[#f9fafb] text-xs text-[#374151] border border-[#e5e7eb]"
-                  >
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Right Column - Details & Actions */}
-        <div className="lg:col-span-1 space-y-6">
-          <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-            <h2 className="text-lg font-semibold text-[#111827] mb-4">Job Details</h2>
-            <div className="space-y-4 text-sm">
-              <div>
-                <div className="text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-1">Location</div>
-                <div className="text-[#111827] font-medium">{job.location}</div>
-              </div>
-              <div>
-                <div className="text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-1">Duration</div>
-                <div className="text-[#111827] font-medium">{job.duration}</div>
-              </div>
-              <div>
-                <div className="text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-1">Gold Reward</div>
-                <div className="text-[#111827] font-medium text-lg">{job.gold.toLocaleString()} Gold</div>
-              </div>
+          <div className="browse-actions">
+            <div className="browse-stat">
+              <div className="browse-stat-label">Gold Reward</div>
+              <div className="browse-stat-value">{job.gold.toLocaleString()}</div>
             </div>
           </div>
+        </header>
 
-          <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-            <h2 className="text-lg font-semibold text-[#111827] mb-4">Apply Now</h2>
-            {error && (
-              <div className="mb-4 border border-[#fecaca] bg-[#fee2e2] rounded-lg px-3 py-2 text-xs text-[#991b1b]">
-                {error}
+        {/* Main Content Grid */}
+        <div style={{ marginTop: "16px", display: "grid", gridTemplateColumns: "2fr 1fr", gap: "16px" }}>
+          {/* Left Column - Description */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <section className="browse-panel">
+              <div className="browse-panel-head">
+                <h2 className="browse-panel-title">Description</h2>
               </div>
+              <p style={{ fontSize: "14px", color: "rgba(255,255,255,.85)", lineHeight: "1.7", whiteSpace: "pre-line", margin: 0 }}>
+                {job.description || "No description provided."}
+              </p>
+            </section>
+
+            {job.skills && job.skills.length > 0 && (
+              <section className="browse-panel">
+                <div className="browse-panel-head">
+                  <h2 className="browse-panel-title">Required Skills</h2>
+                </div>
+                <div className="browse-chips">
+                  {job.skills.map((skill, index) => (
+                    <span key={index} className="browse-chip" style={{ cursor: "default" }}>
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </section>
             )}
-            <button
-              onClick={apply}
-              disabled={applied || applying}
-              className="w-full rounded-lg bg-[#111827] px-6 py-3 text-sm font-semibold text-white hover:bg-[#1f2937] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {applied ? "Applied ✓" : applying ? "Applying…" : "Apply Now"}
-            </button>
+          </div>
+
+          {/* Right Column - Details & Actions */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <section className="browse-panel">
+              <div className="browse-panel-head">
+                <h2 className="browse-panel-title">Job Details</h2>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div>
+                  <div className="browse-stat-label" style={{ marginBottom: "4px" }}>Location</div>
+                  <div style={{ fontSize: "14px", fontWeight: "700", color: "var(--text)" }}>{job.location}</div>
+                </div>
+                <div>
+                  <div className="browse-stat-label" style={{ marginBottom: "4px" }}>Duration</div>
+                  <div style={{ fontSize: "14px", fontWeight: "700", color: "var(--text)" }}>{job.duration}</div>
+                </div>
+                <div>
+                  <div className="browse-stat-label" style={{ marginBottom: "4px" }}>Gold Reward</div>
+                  <div style={{ fontSize: "20px", fontWeight: "800", color: "var(--text)" }}>
+                    {job.gold.toLocaleString()} Gold
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="browse-panel">
+              <div className="browse-panel-head">
+                <h2 className="browse-panel-title">Apply Now</h2>
+              </div>
+              {error && (
+                <div className="browse-alert" style={{ marginBottom: "16px" }}>{error}</div>
+              )}
+              <button
+                onClick={apply}
+                disabled={applied || applying}
+                className="browse-btn browse-btn--primary"
+                style={{ width: "100%", opacity: (applied || applying) ? 0.5 : 1 }}
+              >
+                {applied ? "Applied ✓" : applying ? "Applying…" : "Apply Now →"}
+              </button>
+            </section>
           </div>
         </div>
       </div>

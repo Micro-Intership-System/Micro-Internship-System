@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { apiGet, apiPost, apiPatch } from "../../../api/client";
+import "../student/css/BrowsePage.css";
 
 type Anomaly = {
   _id: string;
@@ -11,7 +13,7 @@ type Anomaly = {
   resolvedAt?: string;
   resolvedBy?: { name: string; email: string };
   notes?: string;
-  taskId?: { _id: string; title: string };
+  taskId?: { _id: string; title: string; priorityLevel?: "high" | "medium" | "low" };
   userId?: { _id: string; name: string; email: string };
   employerId?: { _id: string; name: string; email: string; companyName: string };
   studentId?: { _id: string; name: string; email: string };
@@ -69,195 +71,389 @@ export default function AnomaliesPage() {
     }
   }
 
-  async function resolveDispute(taskId: string, winner: "student" | "employer", reason: string) {
-    if (!confirm(`Resolve dispute in favor of ${winner}?`)) {
-      return;
-    }
+  const [showResolveModal, setShowResolveModal] = useState<{ taskId: string; anomalyId: string } | null>(null);
+  const [resolveWinner, setResolveWinner] = useState<"student" | "employer" | "">("");
+  const [resolveReason, setResolveReason] = useState("");
+  const [resolving, setResolving] = useState(false);
 
+  async function resolveDispute(taskId: string, anomalyId: string, winner: "student" | "employer", reason: string) {
     try {
+      setResolving(true);
       await apiPost(`/jobs/${taskId}/resolve-dispute`, { winner, reason });
       alert("Dispute resolved successfully!");
+      setShowResolveModal(null);
+      setResolveWinner("");
+      setResolveReason("");
       await loadAnomalies();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to resolve dispute");
+    } finally {
+      setResolving(false);
+    }
+  }
+
+  function handleResolveClick(anomaly: Anomaly) {
+    if (anomaly.taskId) {
+      setShowResolveModal({ taskId: anomaly.taskId._id, anomalyId: anomaly._id });
     }
   }
 
   function getTypeLabel(type: Anomaly["type"]) {
-    const labels = {
+    const labels: Record<string, string> = {
       employer_inactivity: "Employer Inactivity",
       student_overwork: "Student Overwork",
       missed_deadline: "Missed Deadline",
       delayed_payment: "Delayed Payment",
       task_stalled: "Task Stalled",
+      company_name_change: "Company Name Change",
     };
-    return labels[type];
+    return labels[type] || type;
   }
 
   function getSeverityColor(severity: Anomaly["severity"]) {
-    const colors = {
-      low: "bg-[#dbeafe] text-[#1e40af] border-[#bfdbfe]",
-      medium: "bg-[#fef3c7] text-[#92400e] border-[#fde68a]",
-      high: "bg-[#fee2e2] text-[#991b1b] border-[#fecaca]",
-      critical: "bg-[#fecaca] text-[#7f1d1d] border-[#fca5a5]",
+    const colors: Record<string, { bg: string; border: string; color: string }> = {
+      low: { bg: "rgba(59,130,246,.16)", border: "rgba(59,130,246,.35)", color: "rgba(59,130,246,.9)" },
+      medium: { bg: "rgba(251,191,36,.16)", border: "rgba(251,191,36,.35)", color: "rgba(251,191,36,.9)" },
+      high: { bg: "rgba(239,68,68,.16)", border: "rgba(239,68,68,.35)", color: "rgba(239,68,68,.9)" },
+      critical: { bg: "rgba(239,68,68,.25)", border: "rgba(239,68,68,.5)", color: "rgba(239,68,68,1)" },
     };
-    return colors[severity];
+    return colors[severity] || colors.low;
   }
 
   function getStatusColor(status: Anomaly["status"]) {
-    const colors = {
-      open: "bg-[#fee2e2] text-[#991b1b] border-[#fecaca]",
-      investigating: "bg-[#fef3c7] text-[#92400e] border-[#fde68a]",
-      resolved: "bg-[#d1fae5] text-[#065f46] border-[#a7f3d0]",
-      dismissed: "bg-[#f3f4f6] text-[#374151] border-[#e5e7eb]",
+    const colors: Record<string, { bg: string; border: string; color: string }> = {
+      open: { bg: "rgba(239,68,68,.16)", border: "rgba(239,68,68,.35)", color: "rgba(239,68,68,.9)" },
+      investigating: { bg: "rgba(251,191,36,.16)", border: "rgba(251,191,36,.35)", color: "rgba(251,191,36,.9)" },
+      resolved: { bg: "rgba(34,197,94,.16)", border: "rgba(34,197,94,.35)", color: "rgba(34,197,94,.9)" },
+      dismissed: { bg: "rgba(255,255,255,.1)", border: "var(--border)", color: "var(--muted)" },
     };
-    return colors[status];
+    return colors[status] || colors.open;
+  }
+
+  function getPriorityColor(priority?: "high" | "medium" | "low") {
+    const colors: Record<string, { bg: string; border: string; color: string }> = {
+      high: { bg: "rgba(239,68,68,.16)", border: "rgba(239,68,68,.35)", color: "rgba(239,68,68,.9)" },
+      medium: { bg: "rgba(251,191,36,.16)", border: "rgba(251,191,36,.35)", color: "rgba(251,191,36,.9)" },
+      low: { bg: "rgba(59,130,246,.16)", border: "rgba(59,130,246,.35)", color: "rgba(59,130,246,.9)" },
+    };
+    return colors[priority || "medium"] || colors.medium;
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Loading anomalies…</div>
+      <div className="browse-page">
+        <div className="browse-inner">
+          <div className="browse-loading">Loading anomalies…</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="text-center mb-12">
-        <h1 className="text-3xl font-semibold text-[#111827] mb-3">Anomaly Detection</h1>
-        <p className="text-sm text-[#6b7280] max-w-2xl mx-auto">
-          Monitor and resolve system anomalies including missed deadlines, delayed payments, and user activity issues.
-        </p>
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center justify-between mb-6">
-        <button
-          onClick={runDetection}
-          disabled={detecting}
-          className="px-6 py-2.5 rounded-lg bg-[#111827] text-white text-sm font-semibold hover:bg-[#1f2937] transition-colors disabled:opacity-50"
-        >
-          {detecting ? "Detecting..." : "Run Detection"}
-        </button>
+    <div className="browse-page">
+      <div className="browse-inner">
+        {/* Header */}
+        <header className="browse-header">
+          <div className="browse-title-wrap">
+            <div className="browse-eyebrow">Admin</div>
+            <h1 className="browse-title">Anomaly Detection</h1>
+            <p className="browse-subtitle">Monitor and resolve system anomalies</p>
+          </div>
+          <div className="browse-actions">
+            <button
+              onClick={runDetection}
+              disabled={detecting}
+              className="browse-btn browse-btn--primary"
+              style={{ opacity: detecting ? 0.5 : 1 }}
+            >
+              {detecting ? "Detecting..." : "Run Detection"}
+            </button>
+          </div>
+        </header>
 
         {/* Filters */}
-        <div className="flex items-center gap-3">
-          <select
-            value={filter.status || ""}
-            onChange={(e) => setFilter({ ...filter, status: e.target.value || undefined })}
-            className="px-3 py-2 border border-[#d1d5db] rounded-lg text-sm text-[#111827] bg-white focus:outline-none focus:ring-2 focus:ring-[#111827]"
-          >
-            <option value="">All Status</option>
-            <option value="open">Open</option>
-            <option value="investigating">Investigating</option>
-            <option value="resolved">Resolved</option>
-            <option value="dismissed">Dismissed</option>
-          </select>
-
-          <select
-            value={filter.type || ""}
-            onChange={(e) => setFilter({ ...filter, type: e.target.value || undefined })}
-            className="px-3 py-2 border border-[#d1d5db] rounded-lg text-sm text-[#111827] bg-white focus:outline-none focus:ring-2 focus:ring-[#111827]"
-          >
-            <option value="">All Types</option>
-            <option value="missed_deadline">Missed Deadline</option>
-            <option value="delayed_payment">Delayed Payment</option>
-            <option value="employer_inactivity">Employer Inactivity</option>
-            <option value="student_overwork">Student Overwork</option>
-            <option value="task_stalled">Task Stalled</option>
-          </select>
-
-          <select
-            value={filter.severity || ""}
-            onChange={(e) => setFilter({ ...filter, severity: e.target.value || undefined })}
-            className="px-3 py-2 border border-[#d1d5db] rounded-lg text-sm text-[#111827] bg-white focus:outline-none focus:ring-2 focus:ring-[#111827]"
-          >
-            <option value="">All Severities</option>
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-            <option value="critical">Critical</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Anomalies List */}
-      <div className="space-y-4">
-        {anomalies.length === 0 ? (
-          <div className="border border-[#e5e7eb] rounded-lg bg-white p-12 text-center">
-            <p className="text-sm text-[#6b7280]">No anomalies found</p>
-          </div>
-        ) : (
-          anomalies.map((anomaly) => (
-            <div
-              key={anomaly._id}
-              className="border border-[#e5e7eb] rounded-lg bg-white p-6 hover:shadow-md transition-shadow"
+        <section className="browse-panel" style={{ marginTop: "16px" }}>
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <select
+              value={filter.status || ""}
+              onChange={(e) => setFilter({ ...filter, status: e.target.value || undefined })}
+              className="browse-input"
+              style={{ flex: "1", minWidth: "150px" }}
             >
-              <div className="flex items-start justify-between gap-6 mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${getTypeLabel(anomaly.type).includes("Deadline") || getTypeLabel(anomaly.type).includes("Payment") ? "bg-[#fee2e2] text-[#991b1b] border-[#fecaca]" : "bg-[#f3f4f6] text-[#374151] border-[#e5e7eb]"}`}>
-                      {getTypeLabel(anomaly.type)}
-                    </span>
-                    <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${getSeverityColor(anomaly.severity)}`}>
-                      {anomaly.severity.toUpperCase()}
-                    </span>
-                    <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${getStatusColor(anomaly.status)}`}>
-                      {anomaly.status}
-                    </span>
-                  </div>
-                  <p className="text-sm text-[#111827] mb-3">{anomaly.description}</p>
-                  <div className="text-xs text-[#6b7280] space-y-1">
-                    {anomaly.taskId && (
-                      <div>Task: <span className="font-medium">{anomaly.taskId.title}</span></div>
-                    )}
-                    {anomaly.employerId && (
-                      <div>Employer: <span className="font-medium">{anomaly.employerId.companyName || anomaly.employerId.name}</span></div>
-                    )}
-                    {anomaly.studentId && (
-                      <div>Student: <span className="font-medium">{anomaly.studentId.name}</span></div>
-                    )}
-                    <div>Detected: {new Date(anomaly.detectedAt).toLocaleString()}</div>
-                    {anomaly.resolvedAt && (
-                      <div>Resolved: {new Date(anomaly.resolvedAt).toLocaleString()}</div>
-                    )}
-                  </div>
+              <option value="">All Status</option>
+              <option value="open">Open</option>
+              <option value="investigating">Investigating</option>
+              <option value="resolved">Resolved</option>
+              <option value="dismissed">Dismissed</option>
+            </select>
+
+            <select
+              value={filter.type || ""}
+              onChange={(e) => setFilter({ ...filter, type: e.target.value || undefined })}
+              className="browse-input"
+              style={{ flex: "1", minWidth: "150px" }}
+            >
+              <option value="">All Types</option>
+              <option value="missed_deadline">Missed Deadline</option>
+              <option value="delayed_payment">Delayed Payment</option>
+              <option value="employer_inactivity">Employer Inactivity</option>
+              <option value="student_overwork">Student Overwork</option>
+              <option value="task_stalled">Task Stalled</option>
+            </select>
+
+            <select
+              value={filter.severity || ""}
+              onChange={(e) => setFilter({ ...filter, severity: e.target.value || undefined })}
+              className="browse-input"
+              style={{ flex: "1", minWidth: "150px" }}
+            >
+              <option value="">All Severities</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="critical">Critical</option>
+            </select>
+          </div>
+        </section>
+
+        {/* Anomalies List */}
+        {anomalies.length === 0 ? (
+          <section className="browse-results" style={{ marginTop: "16px" }}>
+            <div className="browse-empty">
+              <div className="browse-empty-title">No anomalies found</div>
+            </div>
+          </section>
+        ) : (
+          <section className="browse-results" style={{ marginTop: "16px" }}>
+            <div className="browse-results-head">
+              <h2 className="browse-results-title">Anomalies</h2>
+              <div className="browse-results-count">{anomalies.length} found</div>
+            </div>
+            <div className="browse-cards">
+              {anomalies.map((anomaly) => {
+                const severityColors = getSeverityColor(anomaly.severity);
+                const statusColors = getStatusColor(anomaly.status);
+                return (
+                  <article key={anomaly._id} className="job-card">
+                    <div className="job-card-top">
+                      <div className="job-card-main">
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "12px" }}>
+                          <span className="badge" style={{ background: "var(--panel)", borderColor: "var(--border)", color: "var(--text)" }}>
+                            {getTypeLabel(anomaly.type)}
+                          </span>
+                          <span
+                            className="badge"
+                            style={{
+                              backgroundColor: severityColors.bg,
+                              borderColor: severityColors.border,
+                              color: severityColors.color,
+                            }}
+                          >
+                            {anomaly.severity.toUpperCase()}
+                          </span>
+                          <span
+                            className="badge"
+                            style={{
+                              backgroundColor: statusColors.bg,
+                              borderColor: statusColors.border,
+                              color: statusColors.color,
+                            }}
+                          >
+                            {anomaly.status}
+                          </span>
+                          {anomaly.taskId?.priorityLevel && (() => {
+                            const priorityColors = getPriorityColor(anomaly.taskId.priorityLevel);
+                            return (
+                              <span
+                                className="badge"
+                                style={{
+                                  backgroundColor: priorityColors.bg,
+                                  borderColor: priorityColors.border,
+                                  color: priorityColors.color,
+                                }}
+                              >
+                                Priority: {anomaly.taskId.priorityLevel.toUpperCase()}
+                              </span>
+                            );
+                          })()}
+                        </div>
+                        <p style={{ fontSize: "14px", color: "var(--text)", marginBottom: "12px", lineHeight: "1.6" }}>
+                          {anomaly.description}
+                        </p>
+                        <div style={{ fontSize: "12px", color: "var(--muted)", display: "flex", flexDirection: "column", gap: "4px" }}>
+                          {anomaly.taskId && (
+                            <div>Task: <span style={{ fontWeight: "600", color: "var(--text)" }}>{anomaly.taskId.title}</span></div>
+                          )}
+                          {anomaly.employerId && (
+                            <div>Employer: <span style={{ fontWeight: "600", color: "var(--text)" }}>{anomaly.employerId.companyName || anomaly.employerId.name}</span></div>
+                          )}
+                          {anomaly.studentId && (
+                            <div>Student: <span style={{ fontWeight: "600", color: "var(--text)" }}>{anomaly.studentId.name}</span></div>
+                          )}
+                          <div>Detected: {new Date(anomaly.detectedAt).toLocaleString()}</div>
+                          {anomaly.resolvedAt && (
+                            <div>Resolved: {new Date(anomaly.resolvedAt).toLocaleString()}</div>
+                          )}
+                        </div>
+                      </div>
+                      {anomaly.status !== "resolved" && anomaly.status !== "dismissed" && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "10px", flexShrink: 0 }}>
+                          {anomaly.taskId && (
+                            <>
+                              <Link
+                                to={`/dashboard/admin/chats?taskId=${anomaly.taskId._id}`}
+                                className="browse-btn browse-btn--ghost"
+                                style={{ textAlign: "center", textDecoration: "none" }}
+                              >
+                                Chat
+                              </Link>
+                              <button
+                                onClick={() => handleResolveClick(anomaly)}
+                                className="browse-btn browse-btn--primary"
+                              >
+                                Resolve
+                              </button>
+                            </>
+                          )}
+                          {!anomaly.taskId && (
+                            <button
+                              onClick={() => resolveAnomaly(anomaly._id)}
+                              className="browse-btn browse-btn--primary"
+                            >
+                              Resolve
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* Resolve Modal */}
+        {showResolveModal && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.7)",
+              zIndex: 50,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "16px",
+              backdropFilter: "blur(4px)",
+            }}
+            onClick={() => {
+              if (!resolving) {
+                setShowResolveModal(null);
+                setResolveWinner("");
+                setResolveReason("");
+              }
+            }}
+          >
+            <div
+              className="browse-panel"
+              style={{
+                maxWidth: "500px",
+                width: "100%",
+                margin: 0,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "16px" }}>
+                Resolve Dispute
+              </h2>
+              <p style={{ fontSize: "14px", color: "var(--muted)", marginBottom: "20px" }}>
+                Choose the winner of this dispute. The student will receive 150% payment if they win, or lose 50% if they lose. The employer will receive a 7-day restriction if the student wins.
+              </p>
+
+              {/* Winner Selection */}
+              <div style={{ marginBottom: "20px" }}>
+                <label className="browse-label" style={{ marginBottom: "12px" }}>
+                  Winner <span style={{ color: "rgba(239,68,68,.9)" }}>*</span>
+                </label>
+                <div style={{ display: "flex", gap: "12px" }}>
+                  <button
+                    type="button"
+                    onClick={() => setResolveWinner("student")}
+                    className="browse-btn"
+                    style={{
+                      flex: 1,
+                      background: resolveWinner === "student" ? "rgba(34,197,94,.2)" : "rgba(255,255,255,.05)",
+                      borderColor: resolveWinner === "student" ? "rgba(34,197,94,.5)" : "var(--border)",
+                      color: resolveWinner === "student" ? "rgba(34,197,94,.9)" : "var(--text)",
+                    }}
+                  >
+                    Student
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setResolveWinner("employer")}
+                    className="browse-btn"
+                    style={{
+                      flex: 1,
+                      background: resolveWinner === "employer" ? "rgba(239,68,68,.2)" : "rgba(255,255,255,.05)",
+                      borderColor: resolveWinner === "employer" ? "rgba(239,68,68,.5)" : "var(--border)",
+                      color: resolveWinner === "employer" ? "rgba(239,68,68,.9)" : "var(--text)",
+                    }}
+                  >
+                    Employer
+                  </button>
                 </div>
-                {anomaly.status !== "resolved" && anomaly.status !== "dismissed" && (
-                  <div className="flex flex-col gap-2">
-                    <button
-                      onClick={() => resolveAnomaly(anomaly._id)}
-                      className="px-4 py-2 rounded-lg bg-[#111827] text-white text-sm font-semibold hover:bg-[#1f2937] transition-colors whitespace-nowrap"
-                    >
-                      Resolve Anomaly
-                    </button>
-                    {anomaly.taskId && (
-                      <button
-                        onClick={() => {
-                          const winner = prompt("Resolve dispute in favor of (student/employer):");
-                          if (winner === "student" || winner === "employer") {
-                            const reason = prompt("Reason for resolution:");
-                            if (reason) {
-                              resolveDispute(anomaly.taskId!._id, winner, reason);
-                            }
-                          }
-                        }}
-                        className="px-4 py-2 rounded-lg bg-[#065f46] text-white text-sm font-semibold hover:bg-[#047857] transition-colors whitespace-nowrap"
-                      >
-                        Resolve Dispute
-                      </button>
-                    )}
-                  </div>
-                )}
+              </div>
+
+              {/* Reason */}
+              <div style={{ marginBottom: "20px" }}>
+                <label className="browse-label" style={{ marginBottom: "12px" }}>
+                  Reason <span style={{ color: "rgba(239,68,68,.9)" }}>*</span>
+                </label>
+                <textarea
+                  value={resolveReason}
+                  onChange={(e) => setResolveReason(e.target.value)}
+                  placeholder="Enter reason for resolution..."
+                  rows={4}
+                  className="browse-input"
+                  style={{ width: "100%", resize: "vertical", fontFamily: "inherit" }}
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: "flex", gap: "12px" }}>
+                <button
+                  onClick={() => {
+                    setShowResolveModal(null);
+                    setResolveWinner("");
+                    setResolveReason("");
+                  }}
+                  className="browse-btn browse-btn--ghost"
+                  style={{ flex: 1 }}
+                  disabled={resolving}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (!resolveWinner || !resolveReason.trim()) {
+                      alert("Please select a winner and provide a reason");
+                      return;
+                    }
+                    resolveDispute(showResolveModal.taskId, showResolveModal.anomalyId, resolveWinner as "student" | "employer", resolveReason.trim());
+                  }}
+                  className="browse-btn browse-btn--primary"
+                  style={{ flex: 1, opacity: (!resolveWinner || !resolveReason.trim() || resolving) ? 0.5 : 1 }}
+                  disabled={!resolveWinner || !resolveReason.trim() || resolving}
+                >
+                  {resolving ? "Resolving..." : "Confirm Resolution"}
+                </button>
               </div>
             </div>
-          ))
+          </div>
         )}
       </div>
     </div>
   );
 }
-
-

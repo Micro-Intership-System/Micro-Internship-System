@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiGet } from "../../../api/client";
+import "./css/BrowsePage.css";
 
 type Application = {
   _id: string;
@@ -12,6 +13,7 @@ type Application = {
     status?: string;
   };
   createdAt: string;
+  rejectionReason?: string;
 };
 
 type ApplicationsResponse = {
@@ -21,16 +23,17 @@ type ApplicationsResponse = {
 
 function getStatusBadge(status: string) {
   const badges = {
-    accepted: { text: "Accepted", bg: "bg-[#d1fae5]", textColor: "text-[#065f46]", border: "border-[#a7f3d0]" },
-    rejected: { text: "Rejected", bg: "bg-[#fee2e2]", textColor: "text-[#991b1b]", border: "border-[#fecaca]" },
-    evaluating: { text: "Under Review", bg: "bg-[#fef3c7]", textColor: "text-[#92400e]", border: "border-[#fde68a]" },
-    applied: { text: "Applied", bg: "bg-[#dbeafe]", textColor: "text-[#1e40af]", border: "border-[#bfdbfe]" },
+    accepted: { text: "Accepted", color: "rgba(34,197,94,.9)", bg: "rgba(34,197,94,.16)", border: "rgba(34,197,94,.35)" },
+    rejected: { text: "Rejected", color: "rgba(239,68,68,.9)", bg: "rgba(239,68,68,.12)", border: "rgba(239,68,68,.35)" },
+    evaluating: { text: "Under Review", color: "rgba(251,191,36,.9)", bg: "rgba(251,191,36,.16)", border: "rgba(251,191,36,.35)" },
+    applied: { text: "Applied", color: "rgba(59,130,246,.9)", bg: "rgba(59,130,246,.16)", border: "rgba(59,130,246,.35)" },
   };
   return badges[status as keyof typeof badges] || badges.applied;
 }
 
 export default function ApplicationsPage() {
   const [apps, setApps] = useState<Application[]>([]);
+  const [rejectedApps, setRejectedApps] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -44,7 +47,14 @@ export default function ApplicationsPage() {
       setError("");
       const res = await apiGet<ApplicationsResponse>("/applications/me");
       if (res.success) {
-        setApps(res.data || []);
+        // Separate active and rejected applications
+        const allApps = res.data || [];
+        const active = allApps.filter(
+          (app) => app.status !== "accepted" && app.status !== "rejected"
+        );
+        const rejected = allApps.filter((app) => app.status === "rejected");
+        setApps(active);
+        setRejectedApps(rejected);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load applications");
@@ -55,88 +65,173 @@ export default function ApplicationsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Loading applications…</div>
+      <div className="browse-page">
+        <div className="browse-inner">
+          <div className="browse-loading">Loading applications…</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-[#111827] mb-2">My Applications</h1>
-        <p className="text-sm text-[#6b7280]">Track the status of your job applications</p>
-      </div>
+    <div className="browse-page">
+      <div className="browse-inner">
+        {/* Header */}
+        <header className="browse-header">
+          <div className="browse-title-wrap">
+            <div className="browse-eyebrow">My Applications</div>
+            <h1 className="browse-title">Track the status of your job applications</h1>
+            <p className="browse-subtitle">Monitor your application progress and manage your opportunities</p>
+          </div>
+          <div className="browse-actions">
+            <div className="browse-stat">
+              <div className="browse-stat-label">Total</div>
+              <div className="browse-stat-value">{apps.length}</div>
+            </div>
+          </div>
+        </header>
 
-      {/* Error */}
-      {error && (
-        <div className="border border-[#fecaca] bg-[#fee2e2] rounded-lg px-4 py-3 text-sm text-[#991b1b]">
-          {error}
-        </div>
-      )}
+        {/* Error */}
+        {error && <div className="browse-alert" style={{ marginTop: "16px" }}>{error}</div>}
 
-      {/* Applications List */}
-      {apps.length === 0 ? (
-        <div className="border border-[#e5e7eb] rounded-lg bg-white p-16 text-center">
-          <h3 className="text-lg font-semibold text-[#111827] mb-2">No Applications Yet</h3>
-          <p className="text-sm text-[#6b7280] mb-6">
-            You haven't applied to any jobs yet. Start browsing opportunities!
-          </p>
-          <Link to="/dashboard/student/browse" className="inline-block px-6 py-3 rounded-lg bg-[#111827] text-white text-sm font-semibold hover:bg-[#1f2937] transition-colors">
-            Browse Jobs
-          </Link>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {apps.map((app) => {
-            const badge = getStatusBadge(app.status);
-            return (
-              <div key={app._id} className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-                <div className="flex items-start justify-between gap-6">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-12 h-12 rounded-lg bg-[#111827] flex items-center justify-center text-white font-bold flex-shrink-0">
-                        {app.internshipId.title.charAt(0)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-semibold text-[#111827] mb-1 truncate">
-                          {app.internshipId.title}
-                        </h3>
-                        <p className="text-sm text-[#6b7280]">{app.internshipId.companyName}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <span className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${badge.bg} ${badge.textColor} ${badge.border}`}>
-                        {badge.text}
-                      </span>
-                      <span className="text-xs text-[#9ca3af]">
-                        Applied on {new Date(app.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 flex-shrink-0">
-                    <Link
-                      to={`/internships/${app.internshipId._id}`}
-                      className="px-6 py-2.5 rounded-lg border border-[#d1d5db] text-[#111827] text-sm font-semibold hover:bg-[#f9fafb] transition-colors whitespace-nowrap"
-                    >
-                      View Job
-                    </Link>
-                    {app.status === "accepted" && app.internshipId.status === "completed" && (
-                      <Link
-                        to={`/dashboard/student/reviews/submit/${app.internshipId._id}`}
-                        className="px-6 py-2.5 rounded-lg bg-[#111827] text-white text-sm font-semibold hover:bg-[#1f2937] transition-colors whitespace-nowrap"
-                      >
-                        Review
-                      </Link>
-                    )}
-                  </div>
-                </div>
+        {/* Applications List */}
+        {apps.length === 0 ? (
+          <section className="browse-results" style={{ marginTop: "16px" }}>
+            <div className="browse-empty">
+              <div className="browse-empty-title">No Applications Yet</div>
+              <div className="browse-empty-sub">
+                You haven't applied to any jobs yet. Start browsing opportunities!
               </div>
-            );
-          })}
-        </div>
-      )}
+              <Link
+                to="/dashboard/student/browse"
+                className="browse-btn browse-btn--primary"
+                style={{ marginTop: "16px" }}
+              >
+                Browse Jobs →
+              </Link>
+            </div>
+          </section>
+        ) : (
+          <section className="browse-results" style={{ marginTop: "16px" }}>
+            <div className="browse-results-head">
+              <h2 className="browse-results-title">Applications</h2>
+              <div className="browse-results-count">{apps.length} found</div>
+            </div>
+            <div className="browse-cards">
+              {apps.map((app) => {
+                const badge = getStatusBadge(app.status);
+                return (
+                  <article key={app._id} className="job-card">
+                    <div className="job-card-top">
+                      <div className="job-card-main">
+                        <div className="job-title">{app.internshipId.title}</div>
+                        <div className="job-sub">
+                          {app.internshipId.companyName} · <span className="job-loc">Applied {new Date(app.createdAt).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                      <div className="job-badges">
+                        <span
+                          className="badge"
+                          style={{
+                            backgroundColor: badge.bg,
+                            borderColor: badge.border,
+                            color: badge.color,
+                          }}
+                        >
+                          {badge.text}
+                        </span>
+                      </div>
+                    </div>
+                    {app.status === "rejected" && app.rejectionReason && (
+                      <div style={{ marginTop: "12px", padding: "12px", background: "rgba(239,68,68,.1)", borderRadius: "12px", border: "1px solid rgba(239,68,68,.35)" }}>
+                        <div style={{ fontSize: "13px", fontWeight: "700", color: "rgba(239,68,68,.9)", marginBottom: "6px" }}>Rejection Reason</div>
+                        <div style={{ fontSize: "13px", color: "rgba(239,68,68,.8)", lineHeight: "1.5" }}>
+                          {app.rejectionReason}
+                        </div>
+                      </div>
+                    )}
+                    <div className="job-card-bottom">
+                      <div className="job-meta">
+                        <span className="meta-dot" />
+                        Application status
+                      </div>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <Link
+                          to={`/internships/${app.internshipId._id}`}
+                          className="browse-btn browse-btn--ghost"
+                        >
+                          View Job
+                        </Link>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* Rejected Applications Section */}
+        {rejectedApps.length > 0 && (
+          <section className="browse-results" style={{ marginTop: "24px" }}>
+            <div className="browse-results-head">
+              <h2 className="browse-results-title">Rejected Applications</h2>
+              <div className="browse-results-count">{rejectedApps.length} found</div>
+            </div>
+            <div className="browse-cards">
+              {rejectedApps.map((app) => {
+                const badge = getStatusBadge(app.status);
+                return (
+                  <article key={app._id} className="job-card">
+                    <div className="job-card-top">
+                      <div className="job-card-main">
+                        <div className="job-title">{app.internshipId.title}</div>
+                        <div className="job-sub">
+                          {app.internshipId.companyName} · <span className="job-loc">Applied {new Date(app.createdAt).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                      <div className="job-badges">
+                        <span
+                          className="badge"
+                          style={{
+                            backgroundColor: badge.bg,
+                            borderColor: badge.border,
+                            color: badge.color,
+                          }}
+                        >
+                          {badge.text}
+                        </span>
+                      </div>
+                    </div>
+                    {app.rejectionReason && (
+                      <div style={{ marginTop: "12px", padding: "12px", background: "rgba(239,68,68,.1)", borderRadius: "12px", border: "1px solid rgba(239,68,68,.35)" }}>
+                        <div style={{ fontSize: "13px", fontWeight: "700", color: "rgba(239,68,68,.9)", marginBottom: "6px" }}>Rejection Reason</div>
+                        <div style={{ fontSize: "13px", color: "rgba(239,68,68,.8)", lineHeight: "1.5" }}>
+                          {app.rejectionReason}
+                        </div>
+                      </div>
+                    )}
+                    <div className="job-card-bottom">
+                      <div className="job-meta">
+                        <span className="meta-dot" />
+                        Application rejected
+                      </div>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <Link
+                          to={`/internships/${app.internshipId._id}`}
+                          className="browse-btn browse-btn--ghost"
+                        >
+                          View Job
+                        </Link>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiGet, apiDelete } from "../../../api/client";
+import "../student/css/BrowsePage.css";
 
 type Student = {
   _id: string;
@@ -29,7 +30,6 @@ export default function StudentsPage() {
       setLoading(true);
       const res = await apiGet<{ success: boolean; data: Student[] }>("/student/all");
       if (res.success && res.data) {
-        // Ensure all students have default values for missing fields
         const studentsWithDefaults = (res.data || []).map((student) => ({
           ...student,
           starRating: student.starRating || 1,
@@ -39,9 +39,7 @@ export default function StudentsPage() {
           gold: student.gold || 0,
         }));
         setStudents(studentsWithDefaults);
-        console.log(`Loaded ${studentsWithDefaults.length} students`);
       } else {
-        console.warn("No students data returned:", res);
         setStudents([]);
       }
     } catch (err) {
@@ -74,123 +72,152 @@ export default function StudentsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Loading students…</div>
+      <div className="browse-page">
+        <div className="browse-inner">
+          <div className="browse-loading">Loading students…</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="text-center mb-12">
-        <h1 className="text-3xl font-semibold text-[#111827] mb-3">Student Management</h1>
-        <p className="text-sm text-[#6b7280] max-w-2xl mx-auto">
-          Search and manage all students on the platform. View their profiles, performance metrics, and activity.
-        </p>
-      </div>
+    <div className="browse-page">
+      <div className="browse-inner">
+        {/* Header */}
+        <header className="browse-header">
+          <div className="browse-title-wrap">
+            <div className="browse-eyebrow">Admin</div>
+            <h1 className="browse-title">Student Management</h1>
+            <p className="browse-subtitle">Search and manage all students on the platform</p>
+          </div>
+        </header>
 
-      {/* Search */}
-      <div className="max-w-md mx-auto mb-8">
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search by name, email, or institution..."
-          className="w-full px-4 py-3 border border-[#d1d5db] rounded-lg text-sm text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent bg-white"
-        />
-      </div>
+        {/* Search */}
+        <section className="browse-panel" style={{ marginTop: "16px" }}>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by name, email, or institution..."
+            className="browse-input"
+            style={{ width: "100%", maxWidth: "500px" }}
+          />
+        </section>
 
-      {/* Students Table */}
-      <div className="border border-[#e5e7eb] rounded-lg bg-white overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-[#f9fafb] border-b border-[#e5e7eb]">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#374151] uppercase tracking-wider">Student</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#374151] uppercase tracking-wider">Rating</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">Tasks</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">Avg. Time</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">XP</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">Gold</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#e5e7eb]">
-              {filteredStudents.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-sm text-[#6b7280]">
-                    {searchQuery ? "No students found matching your search" : "No students found"}
-                  </td>
-                </tr>
-              ) : (
-                filteredStudents.map((student) => (
-                  <tr key={student._id} className="hover:bg-[#f9fafb] transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[#111827] flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
-                          {student.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="text-sm font-semibold text-[#111827]">{student.name}</div>
-                          <div className="text-xs text-[#6b7280]">{student.email}</div>
+        {/* Students List */}
+        {filteredStudents.length === 0 ? (
+          <section className="browse-results" style={{ marginTop: "16px" }}>
+            <div className="browse-empty">
+              <div className="browse-empty-title">
+                {searchQuery ? "No students found matching your search" : "No students found"}
+              </div>
+            </div>
+          </section>
+        ) : (
+          <section className="browse-results" style={{ marginTop: "16px" }}>
+            <div className="browse-results-head">
+              <h2 className="browse-results-title">Students</h2>
+              <div className="browse-results-count">{filteredStudents.length} found</div>
+            </div>
+            <div className="browse-cards">
+              {filteredStudents.map((student) => (
+                <article key={student._id} className="job-card">
+                  <div className="job-card-top">
+                    <div className="job-card-main">
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+                        {student.profilePicture ? (
+                          <img
+                            src={student.profilePicture}
+                            alt={student.name}
+                            style={{
+                              width: "48px",
+                              height: "48px",
+                              borderRadius: "50%",
+                              objectFit: "cover",
+                              flexShrink: 0,
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: "48px",
+                              height: "48px",
+                              borderRadius: "50%",
+                              background: "linear-gradient(135deg, rgba(124,58,237,.5), rgba(59,130,246,.4))",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              color: "white",
+                              fontSize: "18px",
+                              fontWeight: "bold",
+                              flexShrink: 0,
+                            }}
+                          >
+                            {student.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div className="job-title" style={{ marginBottom: "4px" }}>
+                            {student.name}
+                          </div>
+                          <div className="job-sub">{student.email}</div>
                           {student.institution && (
-                            <div className="text-xs text-[#9ca3af]">{student.institution}</div>
+                            <div className="job-sub" style={{ fontSize: "12px", marginTop: "4px" }}>
+                              {student.institution}
+                            </div>
                           )}
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-1">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <svg
-                            key={star}
-                            className={`w-3 h-3 ${
-                              star <= (student.starRating || 1) ? "text-yellow-400 fill-current" : "text-[#e5e7eb] fill-current"
-                            }`}
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                          </svg>
-                        ))}
-                        <span className="ml-1 text-xs text-[#374151]">({(student.starRating || 1).toFixed(1)})</span>
+
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginTop: "12px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <svg
+                              key={star}
+                              width="14"
+                              height="14"
+                              viewBox="0 0 20 20"
+                              fill={star <= Math.round(student.starRating || 1) ? "rgba(251,191,36,.9)" : "rgba(255,255,255,.2)"}
+                            >
+                              <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                            </svg>
+                          ))}
+                          <span style={{ fontSize: "12px", color: "var(--muted)", marginLeft: "4px" }}>
+                            {(student.starRating || 1).toFixed(1)}
+                          </span>
+                        </div>
+                        <span className="badge" style={{ background: "var(--panel)", borderColor: "var(--border)", color: "var(--text)" }}>
+                          {student.totalTasksCompleted || 0} tasks
+                        </span>
+                        <span className="badge" style={{ background: "var(--panel)", borderColor: "var(--border)", color: "var(--text)" }}>
+                          {student.gold || 0} gold
+                        </span>
+                        {student.averageCompletionTime && student.averageCompletionTime > 0 && (
+                          <span className="badge" style={{ background: "var(--panel)", borderColor: "var(--border)", color: "var(--text)" }}>
+                            {student.averageCompletionTime.toFixed(1)}d avg
+                          </span>
+                        )}
                       </div>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-sm font-semibold text-[#111827]">{student.totalTasksCompleted || 0}</span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-sm font-semibold text-[#111827]">
-                        {student.averageCompletionTime && student.averageCompletionTime > 0 ? `${student.averageCompletionTime.toFixed(1)}d` : "—"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-sm font-semibold text-[#111827]">{student.xp || 0}</span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-sm font-semibold text-[#111827]">{student.gold || 0}</span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px", flexShrink: 0 }}>
                       <button
                         onClick={() => handleDeleteStudent(student._id)}
-                        className="px-3 py-1.5 rounded-lg bg-[#991b1b] text-white text-xs font-semibold hover:bg-[#7f1d1d] transition-colors"
+                        className="browse-btn browse-btn--danger"
                       >
                         Delete
                       </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
 
-      <div className="text-center text-sm text-[#6b7280]">
-        Showing {filteredStudents.length} of {students.length} students
+        <div style={{ textAlign: "center", marginTop: "16px", fontSize: "13px", color: "var(--muted)" }}>
+          Showing {filteredStudents.length} of {students.length} students
+        </div>
       </div>
     </div>
   );
 }
-
-

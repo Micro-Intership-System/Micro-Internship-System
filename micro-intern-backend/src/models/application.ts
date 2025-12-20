@@ -7,6 +7,7 @@ export interface IApplication extends Document {
   status: "evaluating" | "accepted" | "rejected" | "applied";
   message?: string;
   cvUrl?: string;
+  rejectionReason?: string; // Reason provided by employer when rejecting
 }
 
 const applicationSchema = new Schema<IApplication>(
@@ -32,6 +33,7 @@ const applicationSchema = new Schema<IApplication>(
     },
     message: { type: String },
     cvUrl: { type: String },
+    rejectionReason: { type: String }, // Reason provided by employer when rejecting
   },
   { timestamps: true }
 );

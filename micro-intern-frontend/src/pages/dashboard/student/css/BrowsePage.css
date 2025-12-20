@@ -178,14 +178,57 @@
   transition: 180ms ease;
 }
 
+/* Style all select elements (including those with browse-input class) */
+.browse-select,
+select.browse-input,
+select.browse-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
+  padding-right: 36px;
+  background-color: rgba(255,255,255,.06);
+}
+
 .browse-input::placeholder{
   color: rgba(255,255,255,.45);
 }
 
 .browse-input:focus,
-.browse-select:focus{
+.browse-select:focus,
+select.browse-input:focus,
+select.browse-select:focus {
   border-color: rgba(124,58,237,.55);
   box-shadow: 0 0 0 4px rgba(124,58,237,.18);
+}
+
+/* Style option elements for dark theme - apply to all selects */
+.browse-select option,
+.browse-input option,
+select.browse-input option,
+select.browse-select option {
+  background: #0b1220 !important;
+  color: var(--text) !important;
+  padding: 8px 12px;
+}
+
+.browse-select option:hover,
+.browse-select option:checked,
+.browse-select option:focus,
+.browse-input option:hover,
+.browse-input option:checked,
+.browse-input option:focus,
+select.browse-input option:hover,
+select.browse-input option:checked,
+select.browse-input option:focus,
+select.browse-select option:hover,
+select.browse-select option:checked,
+select.browse-select option:focus {
+  background: rgba(124,58,237,.3) !important;
+  color: white !important;
 }
 
 /* Skills chips */
@@ -451,6 +494,18 @@
 
 .browse-btn--ghost:hover{
   background: rgba(255,255,255,.09);
+  transform: translateY(-1px);
+  text-decoration: none;
+}
+
+.browse-btn--danger{
+  color: white;
+  background: rgba(239,68,68,.9);
+  border: 1px solid rgba(239,68,68,1);
+}
+
+.browse-btn--danger:hover{
+  background: rgba(239,68,68,1);
   transform: translateY(-1px);
   text-decoration: none;
 }

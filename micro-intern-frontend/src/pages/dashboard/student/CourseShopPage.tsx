@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { apiGet, apiPost, apiPatch } from "../../../api/client";
 import { useAuth } from "../../../context/AuthContext";
+import "./css/BrowsePage.css";
 
 type Course = {
   _id: string;
@@ -148,6 +149,69 @@ const PREDEFINED_COURSES: Course[] = [
   { _id: "db-6", title: "PostgreSQL: Advanced SQL Queries", description: "Master advanced PostgreSQL queries", cost: 140, category: "Database", duration: "14 hours", instructor: "Jon Avis" },
   { _id: "block-5", title: "NFT (Non-Fungible Tokens) Course", description: "Create, Buy, Sell and Invest in NFTs", cost: 185, category: "Blockchain", duration: "12 hours", instructor: "Henri Arslan" },
   { _id: "test-5", title: "Playwright End-to-End Testing", description: "Master Playwright for web automation", cost: 145, category: "Testing", duration: "11 hours", instructor: "Dilpreet Johal" },
+  
+  // Additional courses to reach 100+
+  { _id: "web-16", title: "Express.js & Node.js - Complete Guide", description: "Build RESTful APIs and web applications with Express", cost: 125, category: "Web Development", duration: "18 hours", instructor: "Maximilian Schwarzmüller" },
+  { _id: "web-17", title: "Svelte.js - The Complete Guide", description: "Build fast, reactive web applications with Svelte", cost: 120, category: "Web Development", duration: "16 hours", instructor: "Maximilian Schwarzmüller" },
+  { _id: "web-18", title: "Nuxt.js 3 - Vue.js Framework", description: "Build server-side rendered Vue.js applications", cost: 135, category: "Web Development", duration: "20 hours", instructor: "Maximilian Schwarzmüller" },
+  { _id: "web-19", title: "Gatsby.js - Build Static Sites", description: "Create blazing fast static websites with Gatsby", cost: 130, category: "Web Development", duration: "14 hours", instructor: "Andrew Mead" },
+  { _id: "web-20", title: "WebSocket & Socket.io", description: "Real-time web applications with WebSocket and Socket.io", cost: 115, category: "Web Development", duration: "12 hours", instructor: "Stephen Grider" },
+  
+  { _id: "ds-13", title: "Computer Vision with Python", description: "OpenCV, Image Processing, Object Detection", cost: 185, category: "Data Science", duration: "15 hours", instructor: "Jose Portilla" },
+  { _id: "ds-14", title: "Time Series Analysis with Python", description: "Forecasting, ARIMA, LSTM, Prophet", cost: 175, category: "Data Science", duration: "13 hours", instructor: "Jose Portilla" },
+  { _id: "ds-15", title: "Reinforcement Learning A-Z", description: "Q-Learning, Deep Q-Learning, Policy Gradient", cost: 200, category: "Data Science", duration: "17 hours", instructor: "Kirill Eremenko" },
+  { _id: "ds-16", title: "Data Engineering Bootcamp", description: "ETL, Data Pipelines, Apache Airflow, Spark", cost: 190, category: "Data Science", duration: "22 hours", instructor: "Jose Portilla" },
+  { _id: "ds-17", title: "Power BI Desktop Complete Course", description: "Data visualization and business intelligence", cost: 160, category: "Data Science", duration: "11 hours", instructor: "Maven Analytics" },
+  
+  { _id: "mobile-11", title: "Kotlin Multiplatform Mobile Development", description: "Build iOS and Android apps with Kotlin", cost: 165, category: "Mobile Development", duration: "26 hours", instructor: "Philipp Lackner" },
+  { _id: "mobile-12", title: "Swift 5 Programming Masterclass", description: "Learn Swift 5 from scratch", cost: 155, category: "Mobile Development", duration: "24 hours", instructor: "Nick Walter" },
+  { _id: "mobile-13", title: "React Native with TypeScript", description: "Build type-safe mobile apps with React Native", cost: 150, category: "Mobile Development", duration: "30 hours", instructor: "Stephen Grider" },
+  { _id: "mobile-14", title: "Flutter Firebase App Development", description: "Build full-stack mobile apps with Flutter and Firebase", cost: 160, category: "Mobile Development", duration: "35 hours", instructor: "Maximilian Schwarzmüller" },
+  
+  { _id: "lang-11", title: "Python for Finance", description: "Financial Analysis, Trading, Algorithmic Trading", cost: 170, category: "Programming", duration: "19 hours", instructor: "Jose Portilla" },
+  { _id: "lang-12", title: "JavaScript Algorithms and Data Structures", description: "Master JavaScript algorithms and problem solving", cost: 125, category: "Programming", duration: "21 hours", instructor: "Colt Steele" },
+  { _id: "lang-13", title: "Advanced Python Programming", description: "Decorators, Generators, Metaclasses, Async Programming", cost: 145, category: "Programming", duration: "16 hours", instructor: "Jose Portilla" },
+  { _id: "lang-14", title: "Functional Programming in JavaScript", description: "Learn functional programming concepts and patterns", cost: 130, category: "Programming", duration: "14 hours", instructor: "Stephen Grider" },
+  
+  { _id: "cloud-11", title: "AWS Certified Developer Associate", description: "DVA-C02 - Complete Certification Course", cost: 195, category: "Cloud & DevOps", duration: "22 hours", instructor: "Stephane Maarek" },
+  { _id: "cloud-12", title: "Kubernetes for the Absolute Beginner", description: "Hands-on Kubernetes tutorial", cost: 175, category: "Cloud & DevOps", duration: "16 hours", instructor: "Mumshad Mannambeth" },
+  { _id: "cloud-13", title: "CI/CD with Jenkins and Docker", description: "Build automated CI/CD pipelines", cost: 160, category: "Cloud & DevOps", duration: "13 hours", instructor: "Ricardo Andre Gonzalez" },
+  { _id: "cloud-14", title: "AWS CloudFormation Masterclass", description: "Infrastructure as Code with CloudFormation", cost: 180, category: "Cloud & DevOps", duration: "15 hours", instructor: "Stephane Maarek" },
+  
+  { _id: "sec-7", title: "Kali Linux for Ethical Hacking", description: "Learn ethical hacking with Kali Linux", cost: 210, category: "Cybersecurity", duration: "16 hours", instructor: "Zaid Sabih" },
+  { _id: "sec-8", title: "Certified Ethical Hacker (CEH)", description: "Complete CEH certification course", cost: 225, category: "Cybersecurity", duration: "25 hours", instructor: "Nathan House" },
+  { _id: "sec-9", title: "Penetration Testing with Metasploit", description: "Learn penetration testing techniques", cost: 200, category: "Cybersecurity", duration: "12 hours", instructor: "Zaid Sabih" },
+  
+  { _id: "game-7", title: "Unity Multiplayer Game Development", description: "Build multiplayer games with Unity and Photon", cost: 190, category: "Game Development", duration: "38 hours", instructor: "Tom Weiland" },
+  { _id: "game-8", title: "Unreal Engine Blueprint Visual Scripting", description: "Create games without coding using Blueprints", cost: 170, category: "Game Development", duration: "28 hours", instructor: "Rob Brooks" },
+  { _id: "game-9", title: "Game Design and Development", description: "Learn game design principles and mechanics", cost: 165, category: "Game Development", duration: "32 hours", instructor: "James Portnow" },
+  
+  { _id: "design-8", title: "Adobe Premiere Pro CC", description: "Complete Video Editing Course", cost: 150, category: "Design", duration: "20 hours", instructor: "Daniel Walter Scott" },
+  { _id: "design-9", title: "Adobe InDesign CC", description: "Master InDesign for print and digital publishing", cost: 140, category: "Design", duration: "17 hours", instructor: "Daniel Walter Scott" },
+  { _id: "design-10", title: "Motion Graphics with After Effects", description: "Create stunning motion graphics and animations", cost: 155, category: "Design", duration: "22 hours", instructor: "Louay Zambarakji" },
+  
+  { _id: "biz-7", title: "Facebook Ads & Instagram Ads Mastery", description: "Complete social media advertising course", cost: 150, category: "Business", duration: "14 hours", instructor: "Isaac Rudansky" },
+  { _id: "biz-8", title: "Email Marketing Mastery", description: "Build and grow your email list", cost: 135, category: "Business", duration: "10 hours", instructor: "Ben Silverstein" },
+  { _id: "biz-9", title: "Affiliate Marketing Masterclass", description: "Learn affiliate marketing strategies", cost: 145, category: "Business", duration: "12 hours", instructor: "Paulette Ensign" },
+  { _id: "biz-10", title: "E-commerce Marketing", description: "Drive sales with e-commerce marketing strategies", cost: 155, category: "Business", duration: "16 hours", instructor: "Brad Merrill" },
+  
+  { _id: "db-7", title: "MySQL Database Administration", description: "Master MySQL database management", cost: 145, category: "Database", duration: "15 hours", instructor: "Jason Cannon" },
+  { _id: "db-8", title: "Oracle Database 19c Administration", description: "Complete Oracle DBA course", cost: 180, category: "Database", duration: "28 hours", instructor: "Bob Bryla" },
+  { _id: "db-9", title: "Cassandra NoSQL Database", description: "Learn Apache Cassandra for big data", cost: 165, category: "Database", duration: "13 hours", instructor: "Edward Viaene" },
+  
+  { _id: "block-6", title: "Smart Contracts Development", description: "Build and deploy smart contracts", cost: 195, category: "Blockchain", duration: "20 hours", instructor: "Stephen Grider" },
+  { _id: "block-7", title: "Web3 Development with Solidity", description: "Build decentralized applications", cost: 200, category: "Blockchain", duration: "22 hours", instructor: "Stephen Grider" },
+  
+  { _id: "test-6", title: "Test Automation with Selenium", description: "Master Selenium WebDriver automation", cost: 150, category: "Testing", duration: "35 hours", instructor: "Rahul Shetty" },
+  { _id: "test-7", title: "API Testing with REST Assured", description: "Automate API testing with REST Assured", cost: 140, category: "Testing", duration: "14 hours", instructor: "Rahul Shetty" },
+  { _id: "test-8", title: "Mobile App Testing", description: "Test iOS and Android applications", cost: 145, category: "Testing", duration: "16 hours", instructor: "Rahul Shetty" },
+  
+  // Additional specialized courses
+  { _id: "spec-1", title: "Microservices with Node.js and React", description: "Build scalable microservices architecture", cost: 175, category: "Web Development", duration: "42 hours", instructor: "Stephen Grider" },
+  { _id: "spec-2", title: "System Design Interview Prep", description: "Master system design for technical interviews", cost: 160, category: "Programming", duration: "18 hours", instructor: "Gaurav Sen" },
+  { _id: "spec-3", title: "Docker Swarm Orchestration", description: "Container orchestration with Docker Swarm", cost: 155, category: "Cloud & DevOps", duration: "11 hours", instructor: "Mumshad Mannambeth" },
+  { _id: "spec-4", title: "Prometheus & Grafana", description: "Monitoring and observability with Prometheus", cost: 165, category: "Cloud & DevOps", duration: "12 hours", instructor: "Mumshad Mannambeth" },
+  { _id: "spec-5", title: "Elastic Stack (ELK)", description: "Elasticsearch, Logstash, and Kibana", cost: 170, category: "Cloud & DevOps", duration: "14 hours", instructor: "Frank Kane" },
 ];
 
 export default function CourseShopPage() {
@@ -162,29 +226,48 @@ export default function CourseShopPage() {
 
   useEffect(() => {
     loadData();
-    // Refresh user data to get latest gold balance
     refreshUser();
   }, []);
 
   async function loadData() {
     try {
       setLoading(true);
-      // Try to load from API, but fallback to predefined courses
       try {
         const [coursesRes, myCoursesRes] = await Promise.all([
           apiGet<{ success: boolean; data: Course[] }>("/shop/courses"),
           apiGet<{ success: boolean; data: Enrollment[] }>("/shop/my-courses"),
         ]);
+        
+        // Always use PREDEFINED_COURSES to ensure all 146 courses are available
+        // If API returns courses, we'll merge them (API courses take precedence for enrolled courses)
+        // But we always show the full predefined list
+        let finalCourses = [...PREDEFINED_COURSES];
+        
         if (coursesRes.success && coursesRes.data && coursesRes.data.length > 0) {
-          setCourses(coursesRes.data);
-        } else {
-          setCourses(PREDEFINED_COURSES);
+          // Create a map of API courses by ID for quick lookup
+          const apiCoursesMap = new Map(coursesRes.data.map((c: Course) => [c._id, c]));
+          
+          // Replace predefined courses with API versions if they exist (for enrolled courses)
+          finalCourses = PREDEFINED_COURSES.map((predefinedCourse) => {
+            const apiCourse = apiCoursesMap.get(predefinedCourse._id);
+            return apiCourse || predefinedCourse;
+          });
+          
+          // Add any API courses that aren't in predefined list (shouldn't happen, but just in case)
+          const predefinedIds = new Set(PREDEFINED_COURSES.map((c) => c._id));
+          const additionalApiCourses = coursesRes.data.filter((c: Course) => !predefinedIds.has(c._id));
+          if (additionalApiCourses.length > 0) {
+            finalCourses = [...finalCourses, ...additionalApiCourses];
+          }
         }
+        
+        setCourses(finalCourses);
+        
         if (myCoursesRes.success) {
           setMyCourses(myCoursesRes.data || []);
         }
       } catch {
-        // Fallback to predefined courses if API fails
+        // On error, use predefined courses
         setCourses(PREDEFINED_COURSES);
       }
     } catch (err) {
@@ -197,10 +280,32 @@ export default function CourseShopPage() {
   async function handleEnroll(courseId: string) {
     try {
       setError("");
-      await apiPost(`/shop/courses/${courseId}/enroll`, {});
-      await loadData();
+      // Find the course data from predefined courses or loaded courses
+      const courseData = courses.find((c) => c._id === courseId);
+      
+      if (!courseData) {
+        setError("Course data not found. Please refresh the page.");
+        return;
+      }
+      
+      // Always send course data for predefined courses (those with string IDs like "web-1")
+      // Check if it's a predefined course (not a MongoDB ObjectId format)
+      const isPredefinedCourse = !/^[0-9a-fA-F]{24}$/.test(courseId);
+      const payload = isPredefinedCourse ? { courseData } : {};
+      
+      console.log("Enrolling in course:", { courseId, isPredefinedCourse, hasCourseData: !!courseData });
+      
+      const response = await apiPost(`/shop/courses/${courseId}/enroll`, payload);
+      if (response) {
+        await loadData();
+        await refreshUser(); // Refresh user to update gold
+        // Clear any previous errors on success
+        setError("");
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to enroll");
+      const errorMessage = err instanceof Error ? err.message : "Failed to enroll";
+      setError(errorMessage);
+      console.error("Enrollment error:", err);
     }
   }
 
@@ -209,6 +314,7 @@ export default function CourseShopPage() {
       setError("");
       await apiPatch(`/shop/courses/${courseId}/complete`, {});
       await loadData();
+      await refreshUser(); // Refresh user to update completed courses
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to complete course");
     }
@@ -229,222 +335,262 @@ export default function CourseShopPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Loading courses…</div>
+      <div className="browse-page">
+        <div className="browse-inner">
+          <div className="browse-loading">Loading courses…</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="mb-8">
-        <div className="flex items-start justify-between gap-4 mb-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-[#111827] mb-2">Course Shop</h1>
-            <p className="text-sm text-[#6b7280]">
-              Enhance your skills with professional courses. Earn gold from completed tasks to enroll.
-            </p>
+    <div className="browse-page">
+      <div className="browse-inner">
+        {/* Header */}
+        <header className="browse-header">
+          <div className="browse-title-wrap">
+            <div className="browse-eyebrow">Course Shop</div>
+            <h1 className="browse-title">Enhance your skills with professional courses</h1>
+            <p className="browse-subtitle">Earn gold from completed tasks to enroll in courses</p>
           </div>
-          <div className="text-right border border-[#e5e7eb] rounded-lg bg-white px-4 py-3">
-            <div className="text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-1">Your Gold</div>
-            <div className="text-2xl font-bold text-[#111827]">{studentGold}</div>
+          <div className="browse-actions">
+            <div className="browse-stat">
+              <div className="browse-stat-label">Your Gold</div>
+              <div className="browse-stat-value">{studentGold}</div>
+            </div>
           </div>
-        </div>
-      </div>
+        </header>
 
-      {/* Error */}
-      {error && (
-        <div className="border border-[#fecaca] bg-[#fee2e2] rounded-lg px-4 py-3 text-sm text-[#991b1b]">
-          {error}
-        </div>
-      )}
+        {/* Error */}
+        {error && <div className="browse-alert" style={{ marginTop: "16px" }}>{error}</div>}
 
-      {/* Tabs */}
-      <div className="flex gap-2 border-b border-[#e5e7eb]">
-        <button
-          onClick={() => setActiveTab("shop")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === "shop"
-              ? "border-[#111827] text-[#111827]"
-              : "border-transparent text-[#6b7280] hover:text-[#111827]"
-          }`}
-        >
-          Browse Courses ({courses.length})
-        </button>
-        <button
-          onClick={() => setActiveTab("my-courses")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === "my-courses"
-              ? "border-[#111827] text-[#111827]"
-              : "border-transparent text-[#6b7280] hover:text-[#111827]"
-          }`}
-        >
-          My Courses ({myCourses.length})
-        </button>
-      </div>
-
-      {/* Shop Tab */}
-      {activeTab === "shop" && (
-        <div className="space-y-6">
-          {/* Search and Filter */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search courses..."
-              className="flex-1 px-4 py-2 border border-[#d1d5db] rounded-lg text-sm text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent"
-            />
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-4 py-2 border border-[#d1d5db] rounded-lg text-sm text-[#111827] bg-white focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent"
+        {/* Tabs */}
+        <section className="browse-panel" style={{ marginTop: "16px", padding: 0, overflow: "hidden" }}>
+          <div style={{ display: "flex", gap: 0, borderBottom: "1px solid var(--border)" }}>
+            <button
+              onClick={() => setActiveTab("shop")}
+              style={{
+                padding: "12px 20px",
+                fontSize: "13px",
+                fontWeight: "700",
+                background: activeTab === "shop" ? "rgba(255,255,255,.08)" : "transparent",
+                borderBottom: activeTab === "shop" ? "2px solid var(--primary)" : "2px solid transparent",
+                color: activeTab === "shop" ? "var(--text)" : "var(--muted)",
+                cursor: "pointer",
+                transition: "all 160ms ease",
+              }}
             >
-              <option value="">All Categories</option>
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
+              Browse Courses ({courses.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("my-courses")}
+              style={{
+                padding: "12px 20px",
+                fontSize: "13px",
+                fontWeight: "700",
+                background: activeTab === "my-courses" ? "rgba(255,255,255,.08)" : "transparent",
+                borderBottom: activeTab === "my-courses" ? "2px solid var(--primary)" : "2px solid transparent",
+                color: activeTab === "my-courses" ? "var(--text)" : "var(--muted)",
+                cursor: "pointer",
+                transition: "all 160ms ease",
+              }}
+            >
+              My Courses ({myCourses.length})
+            </button>
           </div>
+        </section>
 
-          {/* Courses Table */}
-          <div className="border border-[#e5e7eb] rounded-lg bg-white overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-[#f9fafb] border-b border-[#e5e7eb]">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-[#374151] uppercase tracking-wider">Course</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-[#374151] uppercase tracking-wider">Category</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-[#374151] uppercase tracking-wider">Duration</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-[#374151] uppercase tracking-wider">Instructor</th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold text-[#374151] uppercase tracking-wider">Cost</th>
-                    <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#e5e7eb]">
-                  {filteredCourses.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="px-6 py-12 text-center text-sm text-[#6b7280]">
-                        No courses found matching your search.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredCourses.map((course) => {
-                      const isEnrolled = myCourses.some((e) => e.courseId._id === course._id);
-                      const canAfford = studentGold >= course.cost;
-
-                      return (
-                        <tr key={course._id} className="hover:bg-[#f9fafb] transition-colors">
-                          <td className="px-6 py-4">
-                            <div className="text-sm font-semibold text-[#111827]">{course.title}</div>
-                            <div className="text-xs text-[#6b7280] mt-1 line-clamp-1">{course.description}</div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="px-2 py-1 rounded bg-[#f9fafb] text-xs text-[#374151] border border-[#e5e7eb]">
-                              {course.category}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-[#6b7280]">{course.duration}</td>
-                          <td className="px-6 py-4 text-sm text-[#6b7280]">{course.instructor || "N/A"}</td>
-                          <td className="px-6 py-4 text-right">
-                            <div className="text-sm font-bold text-[#111827]">{course.cost} gold</div>
-                          </td>
-                          <td className="px-6 py-4 text-center">
-                            {isEnrolled ? (
-                              <span className="text-xs font-medium text-[#6b7280]">Enrolled</span>
-                            ) : (
-                              <button
-                                onClick={() => handleEnroll(course._id)}
-                                disabled={!canAfford}
-                                className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                                  canAfford
-                                    ? "bg-[#111827] text-white hover:bg-[#1f2937]"
-                                    : "bg-[#f3f4f6] text-[#9ca3af] cursor-not-allowed"
-                                }`}
-                              >
-                                Buy
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* My Courses Tab */}
-      {activeTab === "my-courses" && (
-        <div className="space-y-6">
-          {myCourses.length === 0 ? (
-            <div className="text-center py-12 border border-[#e5e7eb] rounded-lg bg-white">
-              <p className="text-sm text-[#6b7280]">You haven't enrolled in any courses yet.</p>
-            </div>
-          ) : (
-            myCourses.map((enrollment) => {
-              const course = enrollment.courseId as any;
-              const isCompleted = enrollment.completedAt !== undefined;
-
-              return (
-                <div
-                  key={enrollment._id}
-                  className="border border-[#e5e7eb] rounded-lg bg-white p-6"
-                >
-                  <div className="flex items-start justify-between gap-6">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-3">
-                        <h3 className="text-lg font-semibold text-[#111827]">
-                          {course.title}
-                        </h3>
-                        {isCompleted && (
-                          <span className="rounded-full bg-[#d1fae5] text-[#065f46] px-2.5 py-1 text-xs font-medium border border-[#a7f3d0]">
-                            Completed
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-[#6b7280] mb-4">
-                        {course.description}
-                      </p>
-                      <div className="flex items-center gap-4 text-xs text-[#9ca3af] mb-4">
-                        <span>Enrolled {new Date(enrollment.enrolledAt).toLocaleDateString()}</span>
-                        {isCompleted && (
-                          <span>
-                            Completed {new Date(enrollment.completedAt!).toLocaleDateString()}
-                          </span>
-                        )}
-                      </div>
-                      <div className="w-full bg-[#f3f4f6] rounded-full h-2 mb-1">
-                        <div
-                          className="bg-[#111827] h-2 rounded-full transition-all"
-                          style={{ width: `${enrollment.progress}%` }}
-                        />
-                      </div>
-                      <div className="text-xs text-[#9ca3af]">
-                        {enrollment.progress}% complete
-                      </div>
-                    </div>
-                    {!isCompleted && (
-                      <button
-                        onClick={() => handleComplete(course._id)}
-                        className="rounded-lg bg-[#111827] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1f2937] whitespace-nowrap flex-shrink-0"
-                      >
-                        Mark Complete
-                      </button>
-                    )}
-                  </div>
+        {/* Shop Tab */}
+        {activeTab === "shop" && (
+          <div style={{ marginTop: "16px" }}>
+            {/* Search and Filter */}
+            <section className="browse-panel">
+              <div className="browse-search-row">
+                <div className="browse-field">
+                  <label className="browse-label">Search</label>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="browse-input"
+                    placeholder="Search courses..."
+                  />
                 </div>
-              );
-            })
-          )}
-        </div>
-      )}
+              </div>
+              <div className="browse-field">
+                <label className="browse-label">Category</label>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="browse-select"
+                >
+                  <option value="">All Categories</option>
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </section>
+
+            {/* Courses Grid */}
+            <section className="browse-results" style={{ marginTop: "16px" }}>
+              <div className="browse-results-head">
+                <h2 className="browse-results-title">Available Courses</h2>
+                <div className="browse-results-count">{filteredCourses.length} found</div>
+              </div>
+
+              {filteredCourses.length === 0 ? (
+                <div className="browse-empty">
+                  <div className="browse-empty-title">No courses found</div>
+                  <div className="browse-empty-sub">Try adjusting your search or filters.</div>
+                </div>
+              ) : (
+                <div className="browse-cards">
+                  {filteredCourses.map((course) => {
+                    const isEnrolled = myCourses.some((e) => e.courseId._id === course._id);
+                    const canAfford = studentGold >= course.cost;
+
+                    return (
+                      <article key={course._id} className="job-card">
+                        <div className="job-card-top">
+                          <div className="job-card-main">
+                            <div className="job-title">{course.title}</div>
+                            <div className="job-sub">
+                              {course.category} · <span className="job-loc">{course.duration}</span>
+                            </div>
+                          </div>
+                          <div className="job-badges">
+                            <span className="badge badge--gold">{course.cost} Gold</span>
+                            {course.instructor && (
+                              <span className="badge badge--muted">{course.instructor}</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div style={{ marginTop: "12px", fontSize: "13px", color: "rgba(255,255,255,.85)", lineHeight: "1.5" }}>
+                          {course.description}
+                        </div>
+
+                        <div className="job-card-bottom">
+                          <div className="job-meta">
+                            <span className="meta-dot" />
+                            {course.duration}
+                          </div>
+                          {isEnrolled ? (
+                            <span className="badge" style={{ background: "rgba(34,197,94,.16)", borderColor: "rgba(34,197,94,.35)", color: "rgba(34,197,94,.9)" }}>
+                              Enrolled
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleEnroll(course._id)}
+                              disabled={!canAfford}
+                              className="browse-btn browse-btn--primary"
+                              style={{ opacity: !canAfford ? 0.5 : 1, fontSize: "12px", padding: "8px 14px" }}
+                            >
+                              {canAfford ? "Buy Course →" : "Insufficient Gold"}
+                            </button>
+                          )}
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          </div>
+        )}
+
+        {/* My Courses Tab */}
+        {activeTab === "my-courses" && (
+          <section className="browse-results" style={{ marginTop: "16px" }}>
+            <div className="browse-results-head">
+              <h2 className="browse-results-title">My Courses</h2>
+              <div className="browse-results-count">{myCourses.length} enrolled</div>
+            </div>
+
+            {myCourses.length === 0 ? (
+              <div className="browse-empty">
+                <div className="browse-empty-title">No Enrolled Courses</div>
+                <div className="browse-empty-sub">You haven't enrolled in any courses yet.</div>
+              </div>
+            ) : (
+              <div className="browse-cards">
+                {myCourses.map((enrollment) => {
+                  const course = enrollment.courseId as any;
+                  const isCompleted = enrollment.completedAt !== undefined;
+
+                  return (
+                    <article key={enrollment._id} className="job-card">
+                      <div className="job-card-top">
+                        <div className="job-card-main">
+                          <div className="job-title">{course.title}</div>
+                          <div className="job-sub">
+                            {course.category} · <span className="job-loc">{course.duration}</span>
+                          </div>
+                        </div>
+                        <div className="job-badges">
+                          {isCompleted && (
+                            <span className="badge" style={{ background: "rgba(34,197,94,.16)", borderColor: "rgba(34,197,94,.35)", color: "rgba(34,197,94,.9)" }}>
+                              Completed
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: "12px", fontSize: "13px", color: "rgba(255,255,255,.85)", lineHeight: "1.5", marginBottom: "12px" }}>
+                        {course.description}
+                      </div>
+
+                      <div style={{ marginTop: "12px", marginBottom: "12px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                          <span style={{ fontSize: "12px", color: "var(--muted)" }}>Progress</span>
+                          <span style={{ fontSize: "12px", color: "var(--muted)", fontWeight: "600" }}>
+                            {enrollment.progress}%
+                          </span>
+                        </div>
+                        <div style={{ width: "100%", height: "6px", background: "rgba(255,255,255,.1)", borderRadius: "999px", overflow: "hidden" }}>
+                          <div
+                            style={{
+                              height: "100%",
+                              background: "linear-gradient(135deg, var(--primary), var(--blue))",
+                              borderRadius: "999px",
+                              width: `${enrollment.progress}%`,
+                              transition: "width 300ms ease",
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ fontSize: "11px", color: "var(--muted)", marginBottom: "12px" }}>
+                        Enrolled {new Date(enrollment.enrolledAt).toLocaleDateString()}
+                        {isCompleted && ` · Completed ${new Date(enrollment.completedAt!).toLocaleDateString()}`}
+                      </div>
+
+                      <div className="job-card-bottom">
+                        <div className="job-meta">
+                          <span className="meta-dot" />
+                          {isCompleted ? "Course completed" : "In progress"}
+                        </div>
+                        {!isCompleted && (
+                          <button
+                            onClick={() => handleComplete(course._id)}
+                            className="browse-btn browse-btn--primary"
+                            style={{ fontSize: "12px", padding: "8px 14px" }}
+                          >
+                            Mark Complete →
+                          </button>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        )}
+      </div>
     </div>
   );
 }

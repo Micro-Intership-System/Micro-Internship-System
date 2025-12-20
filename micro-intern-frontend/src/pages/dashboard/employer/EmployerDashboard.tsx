@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
+import EmployerReviewsDisplay from "../../../components/EmployerReviewsDisplay";
 import "./css/EmployerDashboard.css";
 
 export default function EmployerDashboard() {
@@ -14,6 +15,13 @@ export default function EmployerDashboard() {
           Welcome back, {user?.name || "Employer"}! Manage your micro-internships.
         </p>
       </div>
+
+      {/* Reviews Section */}
+      {user?.id && (
+        <div style={{ marginBottom: "28px" }}>
+          <EmployerReviewsDisplay employerId={user.id} />
+        </div>
+      )}
 
       {/* Action Cards */}
       <div className="action-grid">

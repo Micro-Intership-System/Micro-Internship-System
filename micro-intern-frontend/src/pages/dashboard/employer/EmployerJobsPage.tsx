@@ -173,15 +173,6 @@ export default function EmployerJobsPage() {
                     </Link>
                   )}
 
-                  {j.status === "completed" && (
-                    <Link
-                      to={`/dashboard/employer/reviews/submit/${j._id}`}
-                      className="empJobs__btnOutline"
-                    >
-                      Review
-                    </Link>
-                  )}
-
                   <Link
                     to={`/dashboard/employer/jobs/${j._id}/edit`}
                     className="empJobs__btnPrimary"

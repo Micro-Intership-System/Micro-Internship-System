@@ -10,7 +10,8 @@ import crypto from "crypto";
  */
 export async function generateCourseCertificate(
   studentId: string,
-  courseId: string
+  courseId: string,
+  completedAt?: Date
 ): Promise<string> {
   const student = await User.findById(studentId);
   const course = await CourseShopItem.findById(courseId);
@@ -19,13 +20,17 @@ export async function generateCourseCertificate(
     throw new Error("Student or course not found");
   }
 
+  // Use provided completedAt or current date
+  const completionDate = completedAt || new Date();
+  const completionDateISO = completionDate.toISOString();
+
   // Generate unique certificate ID
   const certificateData = {
     studentId: student._id.toString(),
     studentName: student.name,
     courseId: course._id.toString(),
     courseTitle: course.title,
-    completedAt: new Date().toISOString(),
+    completedAt: completionDateISO,
   };
 
   // Create a hash for verification
@@ -67,7 +72,7 @@ export async function verifyCertificate(certificateId: string): Promise<{
 
     const [studentIdPrefix, courseIdPrefix, hash] = parts;
 
-    // Find enrollment by matching prefixes
+    // Find enrollment by matching prefixes - more efficient query
     const enrollments = await StudentCourse.find({
       completedAt: { $exists: true },
     })
@@ -78,17 +83,25 @@ export async function verifyCertificate(certificateId: string): Promise<{
       const student = enrollment.studentId as any;
       const course = enrollment.courseId as any;
 
+      if (!student || !course || !enrollment.completedAt) {
+        continue;
+      }
+
+      const studentIdStr = student._id.toString();
+      const courseIdStr = course._id.toString();
+
       if (
-        student._id.toString().startsWith(studentIdPrefix) &&
-        course._id.toString().startsWith(courseIdPrefix)
+        studentIdStr.startsWith(studentIdPrefix) &&
+        courseIdStr.startsWith(courseIdPrefix)
       ) {
-        // Verify hash
+        // Verify hash - use the exact completedAt from enrollment
+        const completedAtISO = enrollment.completedAt.toISOString();
         const certificateData = {
-          studentId: student._id.toString(),
+          studentId: studentIdStr,
           studentName: student.name,
-          courseId: course._id.toString(),
+          courseId: courseIdStr,
           courseTitle: course.title,
-          completedAt: enrollment.completedAt?.toISOString(),
+          completedAt: completedAtISO,
         };
 
         const expectedHash = crypto
@@ -132,6 +145,9 @@ export function generateCertificateHTML(
   completedAt: Date,
   certificateId: string
 ): string {
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+  const signatureUrl = `${frontendUrl}/sign.png`;
+  
   return `
 <!DOCTYPE html>
 <html>
@@ -153,6 +169,14 @@ export function generateCertificateHTML(
       text-align: center;
       max-width: 800px;
       margin: 0 auto;
+      position: relative;
+      min-height: 600px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .certificate-content {
+      flex: 1;
     }
     .certificate h1 {
       font-size: 48px;
@@ -183,10 +207,15 @@ export function generateCertificateHTML(
       color: #333;
       margin: 20px 0;
     }
-    .date {
-      font-size: 16px;
-      color: #999;
-      margin-top: 40px;
+    .signature-section {
+      margin-top: 60px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .signature-image {
+      max-width: 200px;
+      height: auto;
     }
     .certificate-id {
       font-size: 12px;
@@ -198,12 +227,16 @@ export function generateCertificateHTML(
 </head>
 <body>
   <div class="certificate">
-    <h1>CERTIFICATE OF COMPLETION</h1>
-    <p>This is to certify that</p>
-    <div class="student-name">${studentName}</div>
-    <p>has successfully completed the course</p>
-    <div class="course-title">${courseTitle}</div>
-    <p class="date">Completed on ${completedAt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+    <div class="certificate-content">
+      <h1>CERTIFICATE OF COMPLETION</h1>
+      <p>This is to certify that</p>
+      <div class="student-name">${studentName}</div>
+      <p>has successfully completed the course</p>
+      <div class="course-title">${courseTitle}</div>
+    </div>
+    <div class="signature-section">
+      <img src="${signatureUrl}" alt="Authorized Signature" class="signature-image" />
+    </div>
     <div class="certificate-id">Certificate ID: ${certificateId}</div>
   </div>
 </body>

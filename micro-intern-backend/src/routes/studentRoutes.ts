@@ -105,12 +105,12 @@ router.get("/all", requireAuth, async (req: any, res) => {
 
 /**
  * GET /api/student/:id
- * Public student profile (for employers)
+ * Public student profile (for employers) - includes gamification fields
  */
 router.get("/:id", async (req, res) => {
   try {
     const student = await User.findById(req.params.id).select(
-      "name email institution skills bio profilePicture role"
+      "name email institution skills bio profilePicture role gold starRating totalTasksCompleted completedCourses createdAt"
     );
 
     if (!student || student.role !== "student") {

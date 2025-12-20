@@ -28,7 +28,7 @@ router.get("/", requireAuth, async (req: any, res) => {
     }
 
     const anomalies = await Anomaly.find(query)
-      .populate("taskId", "title")
+      .populate("taskId", "title priorityLevel")
       .populate("userId", "name email")
       .populate("employerId", "name email companyName")
       .populate("studentId", "name email")

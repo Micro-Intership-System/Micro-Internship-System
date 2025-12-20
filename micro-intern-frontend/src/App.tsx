@@ -11,6 +11,7 @@ import OverviewPage from "./pages/dashboard/student/OverviewPage";
 import BrowsePage from "./pages/dashboard/student/BrowsePage";
 import SavedJobsPage from "./pages/dashboard/student/SavedJobsPage";
 import ApplicationsPage from "./pages/dashboard/student/ApplicationsPage";
+import ProfilePage from "./pages/dashboard/student/ProfilePage";
 import MessagesPage from "./pages/dashboard/student/MessagesPage";
 import StudentPortfolioPage from "./pages/dashboard/student/StudentPortfolioPage";
 import CourseShopPage from "./pages/dashboard/student/CourseShopPage";
@@ -36,13 +37,16 @@ import EmployerNotificationsPage from "./pages/dashboard/employer/EmployerNotifi
 import EmployerMessagesPage from "./pages/dashboard/employer/EmployerMessagesPage";
 import TaskPaymentPage from "./pages/dashboard/employer/TaskPaymentPage";
 import EmployerSubmitReviewPage from "./pages/dashboard/employer/SubmitReviewPage";
+import EmployerReviewsPage from "./pages/dashboard/employer/EmployerReviewsPage";
 import JobSubmissionsPage from "./pages/dashboard/employer/JobSubmissionsPage";
-import EmployerApplicationsPage from "./pages/dashboard/employer/EmployerApplicationsPage";
+import CompanyReviewsPage from "./pages/dashboard/student/CompanyReviewsPage";
+
 import AdminLayout from "./pages/dashboard/admin/AdminLayout";
 import AdminDashboard from "./pages/dashboard/admin/AdminDashboard";
 import AnomaliesPage from "./pages/dashboard/admin/AnomaliesPage";
 import StudentsPage from "./pages/dashboard/admin/StudentsPage";
 import EmployersPage from "./pages/dashboard/admin/EmployersPage";
+import AdminEmployerReviewsPage from "./pages/dashboard/admin/EmployerReviewsPage";
 import AllChatsPage from "./pages/dashboard/admin/AllChatsPage";
 import AllTasksPage from "./pages/dashboard/admin/AllTasksPage";
 
@@ -71,12 +75,14 @@ const App: React.FC = () => {
             <Route path="browse" element={<BrowsePage />} />
             <Route path="saved" element={<SavedJobsPage />} />
             <Route path="applications" element={<ApplicationsPage />} />
+            <Route path="profile" element={<ProfilePage />} />
             <Route path="messages" element={<MessagesPage />} />
             <Route path="portfolio" element={<StudentPortfolioPage />} />
             <Route path="courses" element={<CourseShopPage />} />
             <Route path="leaderboard" element={<LeaderboardPage />} />
             <Route path="notifications" element={<NotificationsPage />} />
             <Route path="payments" element={<PaymentsPage />} />
+            <Route path="reviews" element={<CompanyReviewsPage />} />
             <Route path="reviews/submit/:taskId" element={<SubmitReviewPage />} />
             <Route path="reviews/:studentId" element={<ViewReviewsPage />} />
             <Route path="certificates" element={<CertificatesPage />} />
@@ -105,7 +111,6 @@ const App: React.FC = () => {
             <Route index element={<EmployerDashboard />} />
             <Route path="jobs" element={<EmployerJobsPage />} />
             <Route path="jobs/:id/edit" element={<EditJobPage />} />
-            <Route path="applications" element={<EmployerApplicationsPage />} />
             <Route path="jobs/:id/applications" element={<JobApplicationsPage />} />
             <Route path="submissions" element={<JobSubmissionsPage />} />
             <Route path="profile" element={<EmployerProfile />} />
@@ -113,6 +118,7 @@ const App: React.FC = () => {
             <Route path="notifications" element={<EmployerNotificationsPage />} />
             <Route path="messages" element={<EmployerMessagesPage />} />
             <Route path="jobs/:id/payment" element={<TaskPaymentPage />} />
+            <Route path="reviews" element={<EmployerReviewsPage />} />
             <Route path="reviews/submit/:taskId" element={<EmployerSubmitReviewPage />} />
 
             {/* 👇 Employer views student portfolio (read-only) */}
@@ -135,6 +141,7 @@ const App: React.FC = () => {
             <Route path="anomalies" element={<AnomaliesPage />} />
             <Route path="students" element={<StudentsPage />} />
             <Route path="employers" element={<EmployersPage />} />
+            <Route path="employers/:employerId/reviews" element={<AdminEmployerReviewsPage />} />
             <Route path="chats" element={<AllChatsPage />} />
             <Route path="tasks" element={<AllTasksPage />} />
           </Route>

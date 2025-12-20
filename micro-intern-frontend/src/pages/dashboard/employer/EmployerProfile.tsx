@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { apiGet, apiPut } from "../../../api/client";
+import EmployerReviewsDisplay from "../../../components/EmployerReviewsDisplay";
 import "./css/EmployerProfile.css";
 
 export default function EmployerProfile() {
@@ -203,6 +204,13 @@ export default function EmployerProfile() {
             You have updated your company name more than once. This will be
             reported as an anomaly to the admin for review.
           </div>
+        </div>
+      )}
+
+      {/* Reviews Section */}
+      {user?.id && !editing && (
+        <div className="card" style={{ marginBottom: "24px" }}>
+          <EmployerReviewsDisplay employerId={user.id} />
         </div>
       )}
 

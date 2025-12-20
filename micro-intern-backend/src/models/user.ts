@@ -29,6 +29,8 @@ export interface IUser extends Document {
   companyDescription?: string;
   companyLogo?: string;
   isVerified?: boolean;    // Employer verification status
+  restrictionUntil?: Date; // Date until which employer has restrictions
+  canOnlyPostLowPriority?: boolean; // If true, employer can only post low priority jobs
 
   comparePassword: (input: string) => Promise<boolean>;
 }
@@ -67,6 +69,8 @@ const UserSchema = new Schema<IUser>(
     companyDescription: { type: String },
     companyLogo: { type: String },
     isVerified: { type: Boolean, default: false },
+    restrictionUntil: { type: Date }, // Date until which employer has restrictions
+    canOnlyPostLowPriority: { type: Boolean, default: false }, // If true, employer can only post low priority jobs
   },
   { timestamps: true }
 );
