@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { apiGet, apiPost, apiPatch } from "../../../api/client";
 import { useAuth } from "../../../context/AuthContext";
+import "./css/CourseShopPage.css";
 
 type Course = {
   _id: string;
@@ -258,106 +259,73 @@ export default function CourseShopPage() {
       </div>
     );
   }
-
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="mb-8">
-        <div className="flex items-start justify-between gap-4 mb-4">
+    <div className="course-shop">
+      <div className="course-shop-inner">
+
+        {/* Header */}
+        <div className="course-shop-header">
           <div>
-            <h1 className="text-2xl font-semibold text-[#111827] mb-2">Course Shop</h1>
-            <p className="text-sm text-[#6b7280]">
+            <h1 className="course-shop-title">Course Shop</h1>
+            <p className="course-shop-subtitle">
               Enhance your skills with professional courses. Earn gold from completed tasks to enroll.
             </p>
           </div>
-          <div className="text-right border border-[#e5e7eb] rounded-lg bg-white px-4 py-3">
-            <div className="text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-1">Your Gold</div>
-            <div className="text-2xl font-bold text-[#111827]">{studentGold}</div>
+
+          <div className="course-shop-gold">
+            <div className="course-shop-gold-label">Your Gold</div>
+            <div className="course-shop-gold-value">{studentGold}</div>
           </div>
         </div>
-      </div>
 
-      {/* Error */}
-      {error && (
-        <div className="border border-[#fecaca] bg-[#fee2e2] rounded-lg px-4 py-3 text-sm text-[#991b1b]">
-          {error}
+        {error && <div className="course-shop-error">{error}</div>}
+
+        {/* Tabs */}
+        <div className="course-tabs">
+          <button
+            onClick={() => setActiveTab("shop")}
+            className={`course-tab ${activeTab === "shop" ? "is-active" : ""}`}
+          >
+            Browse Courses ({courses.length})
+          </button>
+
+          <button
+            onClick={() => setActiveTab("my-courses")}
+            className={`course-tab ${activeTab === "my-courses" ? "is-active" : ""}`}
+          >
+            My Courses ({myCourses.length})
+          </button>
         </div>
-      )}
 
-      {/* Tabs */}
-      <div className="flex gap-2 border-b border-[#e5e7eb]">
-        <button
-          onClick={() => setActiveTab("shop")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === "shop"
-              ? "border-[#111827] text-[#111827]"
-              : "border-transparent text-[#6b7280] hover:text-[#111827]"
-          }`}
-        >
-          Browse Courses ({courses.length})
-        </button>
-        <button
-          onClick={() => setActiveTab("my-courses")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === "my-courses"
-              ? "border-[#111827] text-[#111827]"
-              : "border-transparent text-[#6b7280] hover:text-[#111827]"
-          }`}
-        >
-          My Courses ({myCourses.length})
-        </button>
-      </div>
+        {/* Panel */}
+        {activeTab === "shop" && (
+          <div className="course-panel">
+            <div className="course-filters">
+              <input
+                className="course-input"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search courses..."
+              />
 
-      {/* Shop Tab */}
-      {activeTab === "shop" && (
-        <div className="space-y-6">
-          {/* Search and Filter */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search courses..."
-              className="flex-1 px-4 py-2 border border-[#d1d5db] rounded-lg text-sm text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent"
-            />
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-4 py-2 border border-[#d1d5db] rounded-lg text-sm text-[#111827] bg-white focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent"
-            >
-              <option value="">All Categories</option>
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-          </div>
+              <select
+                className="course-select"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              >
+                <option value="">All Categories</option>
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
 
-          {/* Courses Table */}
-          <div className="border border-[#e5e7eb] rounded-lg bg-white overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-[#f9fafb] border-b border-[#e5e7eb]">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-[#374151] uppercase tracking-wider">Course</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-[#374151] uppercase tracking-wider">Category</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-[#374151] uppercase tracking-wider">Duration</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-[#374151] uppercase tracking-wider">Instructor</th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold text-[#374151] uppercase tracking-wider">Cost</th>
-                    <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#e5e7eb]">
-                  {filteredCourses.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="px-6 py-12 text-center text-sm text-[#6b7280]">
-                        No courses found matching your search.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredCourses.map((course) => {
-                      // Check enrollment by both ID and title (since DB courses have different IDs than predefined)
+            <div className="course-table-wrap">
+              <div className="course-table-scroll">
+                <table className="course-table">
+                  {/* ... keep your thead ... */}
+                  <tbody>
+                    {filteredCourses.map((course) => {
                       const isEnrolled = myCourses.some((e) => {
                         const enrolledCourse = e.courseId as any;
                         return enrolledCourse._id === course._id || enrolledCourse.title === course.title;
@@ -365,33 +333,35 @@ export default function CourseShopPage() {
                       const canAfford = studentGold >= course.cost;
 
                       return (
-                        <tr key={course._id} className="hover:bg-[#f9fafb] transition-colors">
-                          <td className="px-6 py-4">
-                            <div className="text-sm font-semibold text-[#111827]">{course.title}</div>
-                            <div className="text-xs text-[#6b7280] mt-1 line-clamp-1">{course.description}</div>
+                        <tr key={course._id} className="course-row">
+                          <td>
+                            <div className="course-name">{course.title}</div>
+                            <div className="course-desc">{course.description}</div>
                           </td>
-                          <td className="px-6 py-4">
-                            <span className="px-2 py-1 rounded bg-[#f9fafb] text-xs text-[#374151] border border-[#e5e7eb]">
-                              {course.category}
-                            </span>
+
+                          <td>
+                            <span className="course-chip">{course.category}</span>
                           </td>
-                          <td className="px-6 py-4 text-sm text-[#6b7280]">{course.duration}</td>
-                          <td className="px-6 py-4 text-sm text-[#6b7280]">{course.instructor || "N/A"}</td>
-                          <td className="px-6 py-4 text-right">
-                            <div className="text-sm font-bold text-[#111827]">{course.cost} gold</div>
+
+                          <td className="course-muted">{course.duration}</td>
+                          <td className="course-muted">{course.instructor || "N/A"}</td>
+
+                          <td style={{ textAlign: "right" }}>
+                            <span className="course-cost">{course.cost} gold</span>
                           </td>
-                          <td className="px-6 py-4 text-center">
+
+                          <td style={{ textAlign: "center" }}>
                             {isEnrolled ? (
-                              <span className="text-xs font-medium text-[#6b7280]">Enrolled</span>
+                              <span className="course-muted">Enrolled</span>
                             ) : (
                               <button
                                 onClick={() => handleEnroll(course._id)}
                                 disabled={!canAfford}
-                                className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                                className={
                                   canAfford
-                                    ? "bg-[#111827] text-white hover:bg-[#1f2937]"
-                                    : "bg-[#f3f4f6] text-[#9ca3af] cursor-not-allowed"
-                                }`}
+                                    ? "course-btn course-btn--primary"
+                                    : "course-btn course-btn--disabled"
+                                }
                               >
                                 Buy
                               </button>
@@ -399,69 +369,52 @@ export default function CourseShopPage() {
                           </td>
                         </tr>
                       );
-                    })
-                  )}
-                </tbody>
-              </table>
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* My Courses Tab */}
-      {activeTab === "my-courses" && (
-        <div className="space-y-6">
-          {myCourses.length === 0 ? (
-            <div className="text-center py-12 border border-[#e5e7eb] rounded-lg bg-white">
-              <p className="text-sm text-[#6b7280]">You haven't enrolled in any courses yet.</p>
-            </div>
-          ) : (
-            myCourses.map((enrollment) => {
+        {/* My Courses */}
+        {activeTab === "my-courses" && (
+          <div className="mycourses-list">
+            {myCourses.map((enrollment) => {
               const course = enrollment.courseId as any;
               const isCompleted = enrollment.completedAt !== undefined;
 
               return (
-                <div
-                  key={enrollment._id}
-                  className="border border-[#e5e7eb] rounded-lg bg-white p-6"
-                >
-                  <div className="flex items-start justify-between gap-6">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-3">
-                        <h3 className="text-lg font-semibold text-[#111827]">
-                          {course.title}
-                        </h3>
-                        {isCompleted && (
-                          <span className="rounded-full bg-[#d1fae5] text-[#065f46] px-2.5 py-1 text-xs font-medium border border-[#a7f3d0]">
-                            Completed
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-[#6b7280] mb-4">
-                        {course.description}
-                      </p>
-                      <div className="flex items-center gap-4 text-xs text-[#9ca3af] mb-4">
+                <div key={enrollment._id} className="mycourse-card">
+                  <div className="mycourse-top">
+                    <div>
+                      <h3 className="mycourse-title">{course.title}</h3>
+                      <p className="mycourse-desc">{course.description}</p>
+
+                      <div className="mycourse-meta">
                         <span>Enrolled {new Date(enrollment.enrolledAt).toLocaleDateString()}</span>
                         {isCompleted && (
-                          <span>
-                            Completed {new Date(enrollment.completedAt!).toLocaleDateString()}
-                          </span>
+                          <span>Completed {new Date(enrollment.completedAt!).toLocaleDateString()}</span>
                         )}
                       </div>
-                      <div className="w-full bg-[#f3f4f6] rounded-full h-2 mb-1">
-                        <div
-                          className="bg-[#111827] h-2 rounded-full transition-all"
-                          style={{ width: `${enrollment.progress}%` }}
-                        />
-                      </div>
-                      <div className="text-xs text-[#9ca3af]">
-                        {enrollment.progress}% complete
+
+                      <div className="progress-wrap">
+                        <div className="progress-track">
+                          <div
+                            className="progress-fill"
+                            style={{ width: `${enrollment.progress}%` }}
+                          />
+                        </div>
+                        <div className="progress-text">{enrollment.progress}% complete</div>
                       </div>
                     </div>
-                    {!isCompleted && (
+
+                    {isCompleted ? (
+                      <span className="mycourse-badge">Completed</span>
+                    ) : (
                       <button
                         onClick={() => handleComplete(course._id)}
-                        className="rounded-lg bg-[#111827] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1f2937] whitespace-nowrap flex-shrink-0"
+                        className="course-btn course-btn--primary"
                       >
                         Mark Complete
                       </button>
@@ -469,10 +422,11 @@ export default function CourseShopPage() {
                   </div>
                 </div>
               );
-            })
-          )}
-        </div>
-      )}
+            })}
+          </div>
+        )}
+
+      </div>
     </div>
   );
 }

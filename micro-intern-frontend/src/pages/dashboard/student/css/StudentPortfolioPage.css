@@ -1,0 +1,240 @@
+/* StudentPortfolioPage.css */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap");
+
+:root{
+  --bg: #0b1220;
+  --panel: rgba(255,255,255,.06);
+  --panel2: rgba(255,255,255,.08);
+  --border: rgba(255,255,255,.12);
+  --text: rgba(255,255,255,.92);
+  --muted: rgba(255,255,255,.65);
+
+  --primary: #7c3aed;
+  --blue: #3b82f6;
+  --green: #22c55e;
+  --shadow: 0 16px 40px rgba(0,0,0,.35);
+
+  --r-lg: 18px;
+  --r-md: 14px;
+  --r-sm: 12px;
+}
+
+/* Page shell */
+.portfolio-page{
+  min-height: 100vh;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(900px 500px at 10% 10%, rgba(124,58,237,.35), transparent 60%),
+    radial-gradient(900px 500px at 90% 20%, rgba(34,197,94,.18), transparent 60%),
+    linear-gradient(180deg, #070b14, var(--bg));
+  padding: 22px;
+}
+
+.portfolio-inner{
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+/* Loading / empty */
+.portfolio-state{
+  padding: 80px 12px;
+  text-align: center;
+  color: var(--muted);
+}
+
+/* Header */
+.portfolio-header{
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+.portfolio-title{
+  margin: 0 0 8px;
+  font-size: 28px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-weight: 900;
+}
+
+.portfolio-subtitle{
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+  max-width: 680px;
+}
+
+/* Card */
+.portfolio-card{
+  margin-top: 16px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.05);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+  padding: 16px;
+}
+
+/* Profile layout */
+.profile-row{
+  display:flex;
+  gap: 16px;
+  align-items:flex-start;
+}
+
+@media (max-width: 720px){
+  .profile-row{ flex-direction: column; }
+}
+
+/* Avatar */
+.profile-avatar{
+  width: 92px;
+  height: 92px;
+  border-radius: 999px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  box-shadow: 0 12px 28px rgba(0,0,0,.25);
+}
+
+.profile-avatar img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display:block;
+}
+
+.profile-avatar-fallback{
+  width: 100%;
+  height: 100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight: 900;
+  font-size: 30px;
+  color: rgba(255,255,255,.92);
+  background: linear-gradient(135deg, rgba(124,58,237,.8), rgba(59,130,246,.75));
+}
+
+/* Main info */
+.profile-main{
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.profile-name{
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.profile-institution{
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.profile-bio{
+  margin-top: 10px;
+  color: rgba(255,255,255,.82);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* Stats */
+.profile-stats{
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,.10);
+  display:grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 520px){
+  .profile-stats{ grid-template-columns: 1fr; }
+}
+
+.stat-box{
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.04);
+  border-radius: 16px;
+  padding: 12px 14px;
+}
+
+.stat-label{
+  font-size: 12px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.70);
+}
+
+.stat-value{
+  margin-top: 4px;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+/* Section head */
+.section-title{
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+/* Skills chips */
+.skills-wrap{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.skill-chip{
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.05);
+  color: rgba(255,255,255,.85);
+  border-radius: 999px;
+  padding: 9px 12px;
+  font-size: 12px;
+  cursor: default;
+  transition: 160ms ease;
+}
+
+.skill-chip:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,.08);
+}
+
+/* Contact */
+.contact-email{
+  color: rgba(255,255,255,.80);
+  font-size: 13px;
+  word-break: break-word;
+}
+
+/* Small "badge" (optional if you later show rating, etc.) */
+.badge-soft{
+  display:inline-flex;
+  align-items:center;
+  gap: 8px;
+  border: 1px solid rgba(34,197,94,.35);
+  background: rgba(34,197,94,.16);
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(255,255,255,.92);
+}
+.badge-soft svg{
+  width: 12px;
+  height: 12px;
+  fill: rgba(34,197,94,.92);
+}

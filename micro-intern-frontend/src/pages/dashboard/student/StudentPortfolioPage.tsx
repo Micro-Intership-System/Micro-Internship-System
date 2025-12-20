@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { apiGet } from "../../../api/client";
+import "./css/StudentPortfolioPage.css";
 
 type Props = {
   readonly?: boolean;
@@ -53,106 +54,103 @@ export default function StudentPortfolioPage({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Loading portfolio…</div>
+      <div className="portfolio-page">
+        <div className="portfolio-inner">
+          <div className="portfolio-state">Loading portfolio…</div>
+        </div>
       </div>
     );
   }
 
   if (!portfolioData) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Portfolio not found</div>
+      <div className="portfolio-page">
+        <div className="portfolio-inner">
+          <div className="portfolio-state">Portfolio not found</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-[#111827] mb-2">
-          {readonly ? "Student Portfolio" : "My Portfolio"}
-        </h1>
-        <p className="text-sm text-[#6b7280]">
-          {readonly
-            ? "View student profile and achievements"
-            : "Showcase your skills, experience, and accomplishments"}
-        </p>
-      </div>
+    <div className="portfolio-page">
+      <div className="portfolio-inner">
 
-      {/* Profile Card */}
-      <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-        <div className="flex items-start gap-6">
-          {portfolioData.profilePicture ? (
-            <img
-              src={portfolioData.profilePicture}
-              alt={portfolioData.name}
-              className="w-24 h-24 rounded-full object-cover"
-            />
-          ) : (
-            <div className="w-24 h-24 rounded-full bg-[#111827] flex items-center justify-center text-white text-2xl font-semibold flex-shrink-0">
-              {portfolioData.name.charAt(0).toUpperCase()}
-            </div>
-          )}
+        {/* Header */}
+        <div className="portfolio-header">
+          <h1 className="portfolio-title">
+            {readonly ? "Student Portfolio" : "My Portfolio"}
+          </h1>
+          <p className="portfolio-subtitle">
+            {readonly
+              ? "View student profile and achievements"
+              : "Showcase your skills, experience, and accomplishments"}
+          </p>
+        </div>
 
-          <div className="flex-1 space-y-4">
-            <div>
-              <h2 className="text-2xl font-semibold text-[#111827] mb-1">
-                {portfolioData.name}
-              </h2>
-              {portfolioData.institution && (
-                <p className="text-sm text-[#6b7280]">{portfolioData.institution}</p>
+        {/* Profile Card */}
+        <div className="portfolio-card">
+          <div className="profile-row">
+            <div className="profile-avatar">
+              {portfolioData.profilePicture ? (
+                <img src={portfolioData.profilePicture} alt={portfolioData.name} />
+              ) : (
+                <div className="profile-avatar-fallback">
+                  {portfolioData.name.charAt(0).toUpperCase()}
+                </div>
               )}
             </div>
 
-            {portfolioData.bio && (
-              <p className="text-sm text-[#374151] leading-relaxed">{portfolioData.bio}</p>
-            )}
+            <div className="profile-main">
+              <h2 className="profile-name">{portfolioData.name}</h2>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[#e5e7eb]">
-              <div>
-                <div className="text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-2">Tasks Completed</div>
-                <div className="text-lg font-bold text-[#111827]">
-                  {portfolioData.totalTasksCompleted || 0}
+              {portfolioData.institution && (
+                <p className="profile-institution">{portfolioData.institution}</p>
+              )}
+
+              {portfolioData.bio && (
+                <p className="profile-bio">{portfolioData.bio}</p>
+              )}
+
+              <div className="profile-stats">
+                <div className="stat-box">
+                  <div className="stat-label">Tasks Completed</div>
+                  <div className="stat-value">{portfolioData.totalTasksCompleted || 0}</div>
                 </div>
-              </div>
-              <div>
-                <div className="text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-2">Gold</div>
-                <div className="text-lg font-bold text-[#111827]">
-                  {portfolioData.gold || 0}
+
+                <div className="stat-box">
+                  <div className="stat-label">Gold</div>
+                  <div className="stat-value">{portfolioData.gold || 0}</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Skills */}
-      {portfolioData.skills && portfolioData.skills.length > 0 && (
-        <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-          <h3 className="text-lg font-semibold text-[#111827] mb-4">Skills</h3>
-          <div className="flex flex-wrap gap-2">
-            {portfolioData.skills.map((skill: string, index: number) => (
-              <span
-                key={index}
-                className="px-3 py-1 rounded-full bg-[#f9fafb] text-xs text-[#374151] border border-[#e5e7eb]"
-              >
-                {skill}
-              </span>
-            ))}
+        {/* Skills */}
+        {portfolioData.skills && portfolioData.skills.length > 0 && (
+          <div className="portfolio-card">
+            <h3 className="section-title">Skills</h3>
+            <div className="skills-wrap">
+              {portfolioData.skills.map((skill: string, index: number) => (
+                <span key={index} className="skill-chip">
+                  {skill}
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Contact Info */}
-      {!readonly && (
-        <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-          <h3 className="text-lg font-semibold text-[#111827] mb-4">Contact</h3>
-          <p className="text-sm text-[#6b7280]">{portfolioData.email}</p>
-        </div>
-      )}
+        {/* Contact */}
+        {!readonly && (
+          <div className="portfolio-card">
+            <h3 className="section-title">Contact</h3>
+            <div className="contact-email">{portfolioData.email}</div>
+          </div>
+        )}
+
+      </div>
     </div>
   );
+
 }
