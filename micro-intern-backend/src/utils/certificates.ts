@@ -2,11 +2,12 @@ import { StudentCourse } from "../models/studentCourse";
 import { CourseShopItem } from "../models/courseShop";
 import { User } from "../models/user";
 import crypto from "crypto";
+import PDFDocument from "pdfkit";
+import { uploadPDF } from "./storage";
 
 /**
  * Generate a certificate URL/ID for a completed course
- * In production, this would generate an actual PDF certificate
- * For now, we'll create a unique certificate ID that can be used to verify completion
+ * Generates a PDF certificate and uploads it to Supabase Storage
  */
 export async function generateCourseCertificate(
   studentId: string,
@@ -42,16 +43,155 @@ export async function generateCourseCertificate(
 
   const certificateId = `CERT-${student._id.toString().substring(0, 8)}-${course._id.toString().substring(0, 8)}-${hash}`;
 
-  // In production, you would:
-  // 1. Generate a PDF certificate using a library like pdfkit or puppeteer
-  // 2. Upload it to cloud storage (S3, Supabase, etc.)
-  // 3. Return the public URL
+  // Generate PDF certificate
+  const pdfBuffer = await generateCertificatePDF(
+    student.name,
+    course.title,
+    completionDate,
+    certificateId
+  );
 
-  // For now, we'll return a URL that can be used to verify the certificate
-  const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-  const certificateUrl = `${baseUrl}/certificates/${certificateId}`;
+  // Upload to Supabase Storage
+  const filename = `${certificateId}.pdf`;
+  const uploadResult = await uploadPDF(pdfBuffer, "certificates", filename);
 
-  return certificateUrl;
+  if (!uploadResult.success || !uploadResult.url) {
+    console.error("Failed to upload certificate to Supabase:", uploadResult.error);
+    // Fallback to URL-based certificate if upload fails
+    const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    return `${baseUrl}/certificates/${certificateId}`;
+  }
+
+  return uploadResult.url;
+}
+
+/**
+ * Generate a PDF certificate using PDFKit
+ */
+async function generateCertificatePDF(
+  studentName: string,
+  courseTitle: string,
+  completedAt: Date,
+  certificateId: string
+): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({
+        size: "LETTER",
+        margin: 50,
+      });
+
+      const chunks: Buffer[] = [];
+
+      doc.on("data", (chunk) => {
+        chunks.push(chunk);
+      });
+
+      doc.on("end", () => {
+        resolve(Buffer.concat(chunks));
+      });
+
+      doc.on("error", (err) => {
+        reject(err);
+      });
+
+      // Background gradient effect (simulated with rectangles)
+      doc.rect(0, 0, doc.page.width, doc.page.height).fillColor("#667eea").fill();
+
+      // White certificate area
+      const margin = 50;
+      doc
+        .rect(margin, margin, doc.page.width - margin * 2, doc.page.height - margin * 2)
+        .fillColor("#ffffff")
+        .fill();
+
+      // Title
+      doc
+        .fontSize(48)
+        .fillColor("#667eea")
+        .font("Helvetica-Bold")
+        .text("CERTIFICATE OF COMPLETION", margin + 50, 150, {
+          align: "center",
+          width: doc.page.width - (margin + 50) * 2,
+        });
+
+      // Body text
+      doc
+        .fontSize(18)
+        .fillColor("#333333")
+        .font("Helvetica")
+        .text("This is to certify that", margin + 50, 250, {
+          align: "center",
+          width: doc.page.width - (margin + 50) * 2,
+        });
+
+      // Student name
+      doc
+        .fontSize(36)
+        .fillColor("#667eea")
+        .font("Helvetica-Bold")
+        .text(studentName, margin + 50, 300, {
+          align: "center",
+          width: doc.page.width - (margin + 50) * 2,
+        });
+
+      // Course completion text
+      doc
+        .fontSize(18)
+        .fillColor("#333333")
+        .font("Helvetica")
+        .text("has successfully completed the course", margin + 50, 380, {
+          align: "center",
+          width: doc.page.width - (margin + 50) * 2,
+        });
+
+      // Course title
+      doc
+        .fontSize(24)
+        .fillColor("#333333")
+        .font("Helvetica-Bold")
+        .text(courseTitle, margin + 50, 430, {
+          align: "center",
+          width: doc.page.width - (margin + 50) * 2,
+        });
+
+      // Date
+      const dateStr = completedAt.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+      doc
+        .fontSize(14)
+        .fillColor("#666666")
+        .font("Helvetica")
+        .text(`Completed on ${dateStr}`, margin + 50, 520, {
+          align: "center",
+          width: doc.page.width - (margin + 50) * 2,
+        });
+
+      // Certificate ID (small, at bottom)
+      doc
+        .fontSize(10)
+        .fillColor("#cccccc")
+        .font("Courier")
+        .text(`Certificate ID: ${certificateId}`, margin + 50, doc.page.height - 100, {
+          align: "center",
+          width: doc.page.width - (margin + 50) * 2,
+        });
+
+      // Signature line (optional)
+      doc
+        .fontSize(12)
+        .fillColor("#333333")
+        .font("Helvetica")
+        .text("Authorized Signature", doc.page.width - 200, doc.page.height - 150);
+
+      doc.end();
+    } catch (err) {
+      reject(err);
+    }
+  });
 }
 
 /**

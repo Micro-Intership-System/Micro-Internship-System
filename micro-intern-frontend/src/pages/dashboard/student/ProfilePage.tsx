@@ -34,7 +34,7 @@ const ProfilePage: React.FC = () => {
       setLoading(true);
       setError("");
       setSuccess("");
-      await apiPatch("/student/profile", form);
+      await apiPut("/student/me", form);
       setSuccess("Profile updated successfully");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update profile");

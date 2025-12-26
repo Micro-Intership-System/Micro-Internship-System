@@ -20,6 +20,17 @@ function isJwtPayload(v: unknown): v is JwtPayload {
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   try {
     const authHeader = req.headers.authorization;
+    
+    // Debug logging for upload requests
+    if (req.path?.includes("/upload")) {
+      console.log("Auth middleware - Upload request:", {
+        hasAuthHeader: !!authHeader,
+        authHeaderStart: authHeader?.substring(0, 20),
+        contentType: req.headers["content-type"],
+        method: req.method,
+      });
+    }
+
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
         success: false,
@@ -27,11 +38,24 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
       });
     }
 
-    const token = authHeader.split(" ")[1];
+    let token = authHeader.split(" ")[1];
     if (!token) {
       return res.status(401).json({
         success: false,
         message: "No token provided",
+      });
+    }
+
+    // Trim whitespace and newlines from token
+    token = token.trim();
+
+    // Validate token format before attempting to verify
+    const tokenParts = token.split(".");
+    if (tokenParts.length !== 3) {
+      console.error("Invalid JWT token format - expected 3 parts, got:", tokenParts.length, "Token preview:", token.substring(0, 50));
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token format",
       });
     }
 
@@ -53,9 +77,10 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
     next();
   } catch (err) {
     if (err instanceof jwt.JsonWebTokenError) {
+      console.error("JWT verification error:", err.message);
       return res.status(401).json({
         success: false,
-        message: "Invalid token",
+        message: `Invalid token: ${err.message}`,
       });
     }
     if (err instanceof jwt.TokenExpiredError) {

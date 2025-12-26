@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { apiGet, apiPut } from "../../../api/client";
+import { uploadCompanyLogo } from "../../../api/upload";
 import EmployerReviewsDisplay from "../../../components/EmployerReviewsDisplay";
 import "./css/EmployerProfile.css";
 
@@ -20,6 +21,9 @@ export default function EmployerProfile() {
   const [companyNameChangeCount, setCompanyNameChangeCount] = useState(0);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [logoUploadError, setLogoUploadError] = useState<string | null>(null);
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadProfile();
@@ -127,6 +131,57 @@ export default function EmployerProfile() {
     }
   }
 
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      setLogoUploadError("Please select an image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setLogoUploadError("File size must be less than 5MB");
+      return;
+    }
+
+    try {
+      setUploadingLogo(true);
+      setLogoUploadError(null);
+
+      const result = await uploadCompanyLogo(file);
+      
+      if (result.success && result.data) {
+        // Update form data with new logo URL
+        setFormData((prev) => ({
+          ...prev,
+          companyLogo: result.data!.url,
+        }));
+
+        // Auto-save the logo URL
+        await apiPut("/employer/me", {
+          ...formData,
+          companyLogo: result.data.url,
+        });
+
+        setSuccess("Company logo uploaded successfully");
+        await loadProfile();
+      } else {
+        setLogoUploadError(result.message || "Failed to upload logo");
+      }
+    } catch (err) {
+      setLogoUploadError(err instanceof Error ? err.message : "Failed to upload logo");
+    } finally {
+      setUploadingLogo(false);
+      // Reset file input
+      if (logoFileInputRef.current) {
+        logoFileInputRef.current.value = "";
+      }
+    }
+  }
+
   if (loading) {
     return (
       <div className="employer-profile">
@@ -219,18 +274,57 @@ export default function EmployerProfile() {
         {/* Company Logo */}
         <div className="section">
           <label>
-            Company Logo URL <span className="muted">(Optional)</span>
+            Company Logo <span className="muted">(Optional)</span>
           </label>
 
           {editing ? (
-            <input
-              type="text"
-              value={formData.companyLogo}
-              onChange={(e) =>
-                setFormData({ ...formData, companyLogo: e.target.value })
-              }
-              placeholder="https://example.com/logo.png"
-            />
+            <div>
+              <div style={{ display: "flex", gap: "12px", alignItems: "flex-start", marginBottom: "12px" }}>
+                <input
+                  ref={logoFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  style={{ display: "none" }}
+                  disabled={uploadingLogo}
+                />
+                <button
+                  type="button"
+                  onClick={() => logoFileInputRef.current?.click()}
+                  disabled={uploadingLogo}
+                  className="btn btn-secondary"
+                  style={{ whiteSpace: "nowrap" }}
+                >
+                  {uploadingLogo ? "Uploading..." : "Upload Logo"}
+                </button>
+                <div style={{ flex: 1 }}>
+                  <input
+                    type="text"
+                    value={formData.companyLogo}
+                    onChange={(e) =>
+                      setFormData({ ...formData, companyLogo: e.target.value })
+                    }
+                    placeholder="Or enter logo URL: https://example.com/logo.png"
+                    style={{ width: "100%" }}
+                  />
+                </div>
+              </div>
+              {logoUploadError && (
+                <div className="alert error" style={{ marginTop: "8px" }}>
+                  {logoUploadError}
+                </div>
+              )}
+              {formData.companyLogo && (
+                <div className="logo-row" style={{ marginTop: "12px" }}>
+                  <img
+                    src={formData.companyLogo}
+                    alt="Company logo preview"
+                    className="logo-img"
+                    style={{ maxWidth: "200px", maxHeight: "200px", objectFit: "contain" }}
+                  />
+                </div>
+              )}
+            </div>
           ) : (
             <div className="logo-row">
               {formData.companyLogo ? (

@@ -5,6 +5,8 @@ import { Internship } from "../models/internship";
 import { User } from "../models/user";
 import { createNotification } from "../utils/notifications";
 import { calculateTaskGold, calculateTaskXP, calculateStarRating } from "../utils/gamification";
+import { sendEmail } from "../utils/emailService";
+import { paymentReleasedEmail } from "../utils/emailTemplates";
 
 const router = Router();
 
@@ -150,6 +152,25 @@ router.post("/release/:paymentId", requireAuth, async (req: any, res) => {
         payment.employerId.toString(),
         { goldEarned, xpEarned }
       );
+
+      // Send email to student
+      const employer = await User.findById(payment.employerId);
+      if (employer) {
+        try {
+          await sendEmail(
+            student.email,
+            paymentReleasedEmail(
+              student.name,
+              payment.amount,
+              task.title,
+              employer.companyName || employer.name
+            )
+          );
+        } catch (emailError) {
+          console.error("Failed to send payment email to student:", emailError);
+          // Don't fail the request if email fails
+        }
+      }
     }
 
     res.json({ success: true, data: payment });

@@ -119,7 +119,12 @@ export default function LoginPage() {
           </div>
 
           <div className="login-field">
-            <label>Password</label>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+              <label>Password</label>
+              <Link to="/forgot-password" className="forgot-password-link">
+                Forgot password?
+              </Link>
+            </div>
             <input
               type="password"
               placeholder="••••••••"

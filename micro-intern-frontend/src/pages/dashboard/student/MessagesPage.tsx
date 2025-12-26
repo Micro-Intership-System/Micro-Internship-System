@@ -230,16 +230,16 @@ export default function MessagesPage() {
             <div className="browse-eyebrow">Messages</div>
             <h1 className="browse-title">Chat with employers about your active tasks</h1>
             <p className="browse-subtitle">Communicate with employers for your running jobs</p>
-          </div>
+      </div>
         </header>
 
-        {tasks.length === 0 ? (
+      {tasks.length === 0 ? (
           <section className="browse-results" style={{ marginTop: "16px" }}>
             <div className="browse-empty">
               <div className="browse-empty-title">No Active Tasks</div>
               <div className="browse-empty-sub">
-                You need to have an accepted application to start chatting.
-              </div>
+            You need to have an accepted application to start chatting.
+        </div>
             </div>
           </section>
         ) : (
@@ -250,10 +250,10 @@ export default function MessagesPage() {
                 <h2 style={{ fontSize: "14px", fontWeight: "800", margin: 0 }}>Active Tasks</h2>
               </div>
               <div style={{ flex: 1, overflowY: "auto" }}>
-                {tasks.map((task) => (
-                  <button
-                    key={task._id}
-                    onClick={() => setSelectedTaskId(task._id)}
+              {tasks.map((task) => (
+                <button
+                  key={task._id}
+                  onClick={() => setSelectedTaskId(task._id)}
                     style={{
                       width: "100%",
                       textAlign: "left",
@@ -327,7 +327,7 @@ export default function MessagesPage() {
                                 transition: "transform 200ms ease",
                                 color: "var(--muted)",
                               }}
-                            >
+                >
                               <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
                           </button>
@@ -376,8 +376,8 @@ export default function MessagesPage() {
                                       <span>{new Date(task.completionDate).toLocaleDateString()}</span>
                                     )}
                                   </div>
-                                </button>
-                              ))}
+                </button>
+              ))}
                             </div>
                           )}
                         </div>
@@ -385,33 +385,33 @@ export default function MessagesPage() {
                     })}
                   </>
                 )}
-              </div>
             </div>
+          </div>
 
-            {/* Chat Area */}
+          {/* Chat Area */}
             <div className="browse-panel" style={{ margin: 0, padding: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-              {selectedTask ? (
-                <>
-                  {/* Chat Header */}
+            {selectedTask ? (
+              <>
+                {/* Chat Header */}
                   <div style={{ padding: "16px", borderBottom: "1px solid var(--border)" }}>
                     <div style={{ fontSize: "14px", fontWeight: "700", marginBottom: "4px" }}>{selectedTask.title}</div>
                     <div style={{ fontSize: "12px", color: "var(--muted)" }}>{selectedTask.companyName}</div>
-                  </div>
+                </div>
 
-                  {/* Messages */}
+                {/* Messages */}
                   <div style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "16px" }}>
-                    {messages.length === 0 ? (
+                  {messages.length === 0 ? (
                       <div style={{ textAlign: "center", fontSize: "13px", color: "var(--muted)", padding: "32px 0" }}>
-                        No messages yet. Start the conversation!
-                      </div>
-                    ) : (
-                      messages.map((msg) => {
-                        const isOwn = msg.senderId._id === user?.id;
-                        return (
-                          <div
-                            key={msg._id}
+                      No messages yet. Start the conversation!
+                    </div>
+                  ) : (
+                    messages.map((msg) => {
+                      const isOwn = msg.senderId._id === user?.id;
+                      return (
+                        <div
+                          key={msg._id}
                             style={{ display: "flex", gap: "12px", flexDirection: isOwn ? "row-reverse" : "row" }}
-                          >
+                        >
                             <div style={{
                               width: "32px",
                               height: "32px",
@@ -425,13 +425,13 @@ export default function MessagesPage() {
                               fontWeight: "700",
                               flexShrink: 0,
                             }}>
-                              {msg.senderId.name.charAt(0).toUpperCase()}
-                            </div>
+                            {msg.senderId.name.charAt(0).toUpperCase()}
+                          </div>
                             <div style={{ flex: 1, textAlign: isOwn ? "right" : "left" }}>
                               <div style={{ fontSize: "11px", color: "var(--muted)", marginBottom: "4px" }}>
-                                {msg.senderId.name} • {new Date(msg.createdAt).toLocaleTimeString()}
-                              </div>
-                              <div
+                              {msg.senderId.name} • {new Date(msg.createdAt).toLocaleTimeString()}
+                            </div>
+                            <div
                                 style={{
                                   display: "inline-block",
                                   padding: "10px 14px",
@@ -443,18 +443,18 @@ export default function MessagesPage() {
                                   color: isOwn ? "white" : "var(--text)",
                                   border: isOwn ? "none" : "1px solid var(--border)",
                                 }}
-                              >
-                                {msg.text}
-                              </div>
+                            >
+                              {msg.text}
                             </div>
                           </div>
-                        );
-                      })
-                    )}
-                    <div ref={messagesEndRef} />
-                  </div>
+                        </div>
+                      );
+                    })
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
 
-                  {/* Message Input */}
+                {/* Message Input */}
                   {isCompletedTask ? (
                     <div style={{ padding: "16px", borderTop: "1px solid var(--border)", textAlign: "center" }}>
                       <div style={{ fontSize: "12px", color: "var(--muted)", padding: "8px" }}>
@@ -463,42 +463,42 @@ export default function MessagesPage() {
                     </div>
                   ) : (
                     <div style={{ padding: "16px", borderTop: "1px solid var(--border)" }}>
-                      <form
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          sendMessage();
-                        }}
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      sendMessage();
+                    }}
                         style={{ display: "flex", gap: "8px" }}
-                      >
-                        <input
-                          type="text"
-                          value={newMessage}
-                          onChange={(e) => setNewMessage(e.target.value)}
-                          placeholder="Type a message..."
+                  >
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder="Type a message..."
                           className="browse-input"
                           style={{ flex: 1 }}
-                          disabled={sending}
-                        />
-                        <button
-                          type="submit"
-                          disabled={!newMessage.trim() || sending}
+                      disabled={sending}
+                    />
+                    <button
+                      type="submit"
+                      disabled={!newMessage.trim() || sending}
                           className="browse-btn browse-btn--primary"
                           style={{ opacity: (!newMessage.trim() || sending) ? 0.5 : 1 }}
-                        >
-                          {sending ? "Sending..." : "Send"}
-                        </button>
-                      </form>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "13px", color: "var(--muted)" }}>
-                  Select a task to view messages
+                    >
+                      {sending ? "Sending..." : "Send"}
+                    </button>
+                  </form>
                 </div>
-              )}
-            </div>
+                  )}
+              </>
+            ) : (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "13px", color: "var(--muted)" }}>
+                Select a task to view messages
+              </div>
+            )}
           </div>
-        )}
+        </div>
+      )}
       </div>
     </div>
   );

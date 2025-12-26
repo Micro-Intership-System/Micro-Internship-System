@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "../../../context/AuthContext";
-import { apiGet } from "../../../api/client";
+import { apiGet, apiPut } from "../../../api/client";
+import { uploadProfilePicture } from "../../../api/upload";
 import "./css/BrowsePage.css";
 
 type Props = {
@@ -26,13 +27,17 @@ export default function StudentPortfolioPage({
   readonly = false,
   studentId,
 }: Props) {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [portfolioData, setPortfolioData] = useState<any>(null);
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [studentData, setStudentData] = useState<any>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const displayStudentId = studentId || user?.id;
+  const isOwnProfile = !readonly && !studentId;
 
   useEffect(() => {
     if (displayStudentId) {
@@ -159,6 +164,61 @@ export default function StudentPortfolioPage({
     window.open(`/api/certificates/${certificateId}/html`, "_blank");
   }
 
+  async function handleProfilePictureUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Please select an image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError("File size must be less than 5MB");
+      return;
+    }
+
+    try {
+      setUploading(true);
+      setUploadError(null);
+
+      const result = await uploadProfilePicture(file);
+      
+      if (result.success && result.data) {
+        // Update profile with new picture URL
+        await apiPut("/student/me", {
+          profilePicture: result.data.url,
+        });
+
+        // Update local state
+        setPortfolioData((prev: any) => ({
+          ...prev,
+          profilePicture: result.data!.url,
+        }));
+
+        // Refresh user data
+        if (user?.id === displayStudentId) {
+          await refreshUser();
+        }
+
+        // Reload portfolio
+        await loadPortfolio();
+      } else {
+        setUploadError(result.message || "Failed to upload profile picture");
+      }
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Failed to upload profile picture");
+    } finally {
+      setUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  }
+
   if (loading) {
     return (
       <div className="browse-page">
@@ -200,39 +260,105 @@ export default function StudentPortfolioPage({
         {/* Profile Card */}
         <section className="browse-panel" style={{ marginTop: "16px" }}>
           <div style={{ display: "flex", alignItems: "flex-start", gap: "20px" }}>
-            {portfolioData.profilePicture ? (
-              <img
-                src={portfolioData.profilePicture}
-                alt={portfolioData.name}
-                style={{
-                  width: "80px",
-                  height: "80px",
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                  flexShrink: 0,
-                }}
-              />
-            ) : (
-              <div
-                style={{
-                  width: "80px",
-                  height: "80px",
-                  borderRadius: "50%",
-                  background: "rgba(124,58,237,.3)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "white",
-                  fontSize: "28px",
-                  fontWeight: "bold",
-                  flexShrink: 0,
-                }}
-              >
-                {portfolioData.name.charAt(0).toUpperCase()}
-              </div>
-            )}
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              {portfolioData.profilePicture ? (
+                <img
+                  src={portfolioData.profilePicture}
+                  alt={portfolioData.name}
+                  style={{
+                    width: "80px",
+                    height: "80px",
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: "80px",
+                    height: "80px",
+                    borderRadius: "50%",
+                    background: "rgba(124,58,237,.3)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    fontSize: "28px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  {portfolioData.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              
+              {isOwnProfile && (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleProfilePictureUpload}
+                    style={{ display: "none" }}
+                    disabled={uploading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    style={{
+                      position: "absolute",
+                      bottom: 0,
+                      right: 0,
+                      width: "28px",
+                      height: "28px",
+                      borderRadius: "50%",
+                      background: "linear-gradient(135deg, var(--lav2), var(--blue))",
+                      border: "2px solid var(--bg)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: uploading ? "not-allowed" : "pointer",
+                      opacity: uploading ? 0.6 : 1,
+                      transition: "all 0.2s",
+                    }}
+                    title="Update profile picture"
+                  >
+                    {uploading ? (
+                      <div style={{ 
+                        width: "12px", 
+                        height: "12px", 
+                        border: "2px solid white", 
+                        borderTopColor: "transparent", 
+                        borderRadius: "50%", 
+                        animation: "spin 0.6s linear infinite",
+                        display: "inline-block"
+                      }} />
+                    ) : (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                      </svg>
+                    )}
+                  </button>
+                </>
+              )}
+            </div>
 
             <div style={{ flex: 1 }}>
+              {uploadError && (
+                <div style={{ 
+                  marginBottom: "12px", 
+                  padding: "8px 12px", 
+                  background: "rgba(239,68,68,.15)", 
+                  border: "1px solid rgba(239,68,68,.3)", 
+                  borderRadius: "8px", 
+                  color: "rgba(255,255,255,.9)", 
+                  fontSize: "13px" 
+                }}>
+                  {uploadError}
+                </div>
+              )}
               <h2 style={{ margin: "0 0 8px", fontSize: "24px", fontWeight: "900" }}>
                 {portfolioData.name}
               </h2>

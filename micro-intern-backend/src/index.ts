@@ -21,6 +21,7 @@ import reviewRoutes from "./routes/reviewRoutes";
 import certificateRoutes from "./routes/certificateRoutes";
 import jobManagementRoutes from "./routes/jobManagementRoutes";
 import adminRoutes from "./routes/adminRoutes";
+import uploadRoutes from "./routes/uploadRoutes";
 
 
 
@@ -64,14 +65,88 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/certificates", certificateRoutes);
 app.use("/api/jobs", jobManagementRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/upload", uploadRoutes);
 
 
 const PORT = process.env.PORT || 1547;
 
-mongoose
-  .connect(process.env.MONGO_URI!)
-  .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => console.error("MongoDB error:", err));
+// MongoDB connection with improved error handling
+const connectDB = async () => {
+  try {
+    if (!process.env.MONGO_URI) {
+      console.error("❌ MONGO_URI is not defined in environment variables");
+      console.error("Please create a .env file with MONGO_URI=your_connection_string");
+      process.exit(1);
+    }
+
+    const mongoUri = process.env.MONGO_URI.trim();
+    
+    // Connection options for better reliability
+    const options = {
+      serverSelectionTimeoutMS: 15000, // 15 seconds
+      socketTimeoutMS: 45000, // 45 seconds
+      connectTimeoutMS: 15000, // 15 seconds
+      maxPoolSize: 10, // Maintain up to 10 socket connections
+      minPoolSize: 5, // Maintain at least 5 socket connections
+      retryWrites: true,
+      w: 'majority',
+    };
+
+    console.log("🔄 Attempting to connect to MongoDB...");
+    console.log(`📍 Connection string: ${mongoUri.replace(/\/\/[^:]+:[^@]+@/, '//***:***@')}`); // Hide credentials in logs
+    
+    await mongoose.connect(mongoUri, options);
+    
+    console.log("✅ MongoDB connected successfully");
+    
+    // Handle connection events
+    mongoose.connection.on('error', (err) => {
+      console.error("❌ MongoDB connection error:", err);
+    });
+    
+    mongoose.connection.on('disconnected', () => {
+      console.warn("⚠️ MongoDB disconnected. Attempting to reconnect...");
+    });
+    
+    mongoose.connection.on('reconnected', () => {
+      console.log("✅ MongoDB reconnected");
+    });
+    
+  } catch (err: any) {
+    console.error("❌ MongoDB connection failed:");
+    console.error("Error:", err.message);
+    
+    if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
+      console.error("\n💡 Troubleshooting tips:");
+      console.error("1. Check if your MongoDB Atlas cluster is running (not paused)");
+      console.error("2. Verify your connection string is correct");
+      console.error("3. Check your network connection");
+      console.error("4. Ensure your IP address is whitelisted in MongoDB Atlas");
+      console.error("5. If using SRV connection string, ensure DNS resolution works");
+    } else if (err.message.includes('authentication')) {
+      console.error("\n💡 Authentication failed:");
+      console.error("1. Check your MongoDB username and password");
+      console.error("2. Ensure the database user has proper permissions");
+    } else if (err.message.includes('buffering timed out')) {
+      console.error("\n💡 Connection timeout:");
+      console.error("1. Check your internet connection");
+      console.error("2. Verify MongoDB Atlas cluster is accessible");
+      console.error("3. Check firewall settings");
+    }
+    
+    // Don't exit - let the server start but operations will fail
+    // This allows the server to run and show better error messages
+    console.error("\n⚠️ Server will continue running, but database operations will fail.");
+  }
+};
+
+connectDB();
+
+// Verify email configuration on startup (non-blocking)
+import { verifyEmailConfig } from "./config/email";
+verifyEmailConfig().catch((err) => {
+  console.warn("Email verification skipped:", err.message);
+});
 
 
 // === Feature-01: Landing Page APIs ===

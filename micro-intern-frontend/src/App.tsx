@@ -5,6 +5,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 import StudentLayout from "./pages/dashboard/student/StudentLayout";
 import OverviewPage from "./pages/dashboard/student/OverviewPage";
@@ -61,6 +63,8 @@ const App: React.FC = () => {
           {/* Auth routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           {/* Student dashboard */}
           <Route
