@@ -324,11 +324,11 @@ router.put("/:id", requireAuth, requireEmployer, async (req, res) => {
 
         // Notify student
         await createNotification(
-          updated.acceptedStudentId.toString(),
+          String(updated.acceptedStudentId),
           "task_assigned",
           "Job Updated",
           `The job "${updated.title}" has been updated by the employer. Please review the changes.`,
-          updated._id.toString(),
+          String(updated._id),
           req.user!.id
         );
 
@@ -336,13 +336,13 @@ router.put("/:id", requireAuth, requireEmployer, async (req, res) => {
         const admins = await User.find({ role: "admin" });
         for (const admin of admins) {
           await createNotification(
-            admin._id.toString(),
+            String(admin._id),
             "anomaly_detected",
             "Job Edited with Active Student",
             `Job "${updated.title}" was edited by employer while a student is working on it. Changes: ${changes.join("; ")}. Anomaly created for review.`,
-            updated._id.toString(),
+            String(updated._id),
             req.user!.id,
-            { anomalyId: anomaly._id.toString() }
+            { anomalyId: String(anomaly._id) }
           );
         }
       }

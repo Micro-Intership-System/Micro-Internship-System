@@ -196,7 +196,7 @@ router.post("/chat-attachment/:taskId", requireAuth, upload.single("file"), asyn
     const file = req.file;
     const filename = `${Date.now()}-${file.originalname}`;
 
-    const result = await uploadChatAttachment(file.buffer, task._id.toString(), filename, file.mimetype);
+    const result = await uploadChatAttachment(file.buffer, String(task._id), filename, file.mimetype);
 
     if (!result.success || !result.url) {
       return res.status(500).json({ success: false, message: result.error || "Failed to upload file" });

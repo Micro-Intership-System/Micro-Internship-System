@@ -27,9 +27,9 @@ export async function generateCourseCertificate(
 
   // Generate unique certificate ID
   const certificateData = {
-    studentId: student._id.toString(),
+    studentId: String(student._id),
     studentName: student.name,
-    courseId: course._id.toString(),
+    courseId: String(course._id),
     courseTitle: course.title,
     completedAt: completionDateISO,
   };
@@ -41,7 +41,7 @@ export async function generateCourseCertificate(
     .digest("hex")
     .substring(0, 16);
 
-  const certificateId = `CERT-${student._id.toString().substring(0, 8)}-${course._id.toString().substring(0, 8)}-${hash}`;
+  const certificateId = `CERT-${String(student._id).substring(0, 8)}-${String(course._id).substring(0, 8)}-${hash}`;
 
   // Generate PDF certificate
   const pdfBuffer = await generateCertificatePDF(

@@ -1,0 +1,123 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const user_1 = require("../models/user");
+const requireAuth_1 = require("../middleware/requireAuth");
+const router = (0, express_1.Router)();
+// require logged-in student
+async function requireStudent(req, res, next) {
+    try {
+        if (!req.user) {
+            console.error("requireStudent: No user in request");
+            return res.status(401).json({ success: false, message: "Unauthorized - No user found" });
+        }
+        const user = await user_1.User.findById(req.user.id);
+        if (!user) {
+            console.error("requireStudent: User not found in database:", req.user.id);
+            return res.status(401).json({ success: false, message: "Unauthorized - User not found" });
+        }
+        if (user.role !== "student") {
+            console.error("requireStudent: User is not a student:", { userId: req.user.id, role: user.role });
+            return res
+                .status(403)
+                .json({ success: false, message: "Student account required" });
+        }
+        req.student = user;
+        next();
+    }
+    catch (err) {
+        console.error("requireStudent error:", err);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+}
+/**
+ * GET /api/student/me
+ * Get own student profile (includes gamification fields)
+ */
+router.get("/me", requireAuth_1.requireAuth, requireStudent, (req, res) => {
+    const s = req.student;
+    res.json({
+        success: true,
+        data: {
+            id: s._id,
+            name: s.name,
+            email: s.email,
+            role: s.role,
+            institution: s.institution,
+            skills: s.skills,
+            bio: s.bio,
+            profilePicture: s.profilePicture,
+            // Gamification fields
+            gold: s.gold || 0,
+            xp: s.xp || 0,
+            starRating: s.starRating || 1,
+            totalTasksCompleted: s.totalTasksCompleted || 0,
+            averageCompletionTime: s.averageCompletionTime || 0,
+            completedCourses: s.completedCourses || [],
+            createdAt: s.createdAt,
+            updatedAt: s.updatedAt,
+        },
+    });
+});
+/**
+ * PUT /api/student/me
+ * Update own student profile fields
+ */
+router.put("/me", requireAuth_1.requireAuth, requireStudent, async (req, res) => {
+    try {
+        const allowed = ["name", "institution", "skills", "bio", "profilePicture"];
+        const updates = {};
+        for (const field of allowed) {
+            if (req.body[field] !== undefined) {
+                updates[field] = req.body[field];
+            }
+        }
+        const updated = await user_1.User.findByIdAndUpdate(req.student._id, updates, {
+            new: true,
+        });
+        res.json({ success: true, data: updated });
+    }
+    catch (err) {
+        console.error(err);
+        res.status(400).json({ success: false, message: "Invalid update data" });
+    }
+});
+/**
+ * GET /api/student/all
+ * Get all students (admin only)
+ */
+router.get("/all", requireAuth_1.requireAuth, async (req, res) => {
+    try {
+        if (req.user?.role !== "admin") {
+            return res.status(403).json({ success: false, message: "Admin only" });
+        }
+        const students = await user_1.User.find({ role: "student" })
+            .select("name email institution skills bio profilePicture gold xp starRating totalTasksCompleted averageCompletionTime createdAt")
+            .sort({ createdAt: -1 });
+        res.json({ success: true, data: students });
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: "Failed to load students" });
+    }
+});
+/**
+ * GET /api/student/:id
+ * Public student profile (for employers) - includes gamification fields
+ */
+router.get("/:id", async (req, res) => {
+    try {
+        const student = await user_1.User.findById(req.params.id).select("name email institution skills bio profilePicture role gold starRating totalTasksCompleted completedCourses createdAt");
+        if (!student || student.role !== "student") {
+            return res
+                .status(404)
+                .json({ success: false, message: "Student not found" });
+        }
+        res.json({ success: true, data: student });
+    }
+    catch (err) {
+        console.error(err);
+        res.status(400).json({ success: false, message: "Invalid student ID" });
+    }
+});
+exports.default = router;

@@ -59,7 +59,7 @@ router.post("/", requireAuth, async (req, res) => {
       "application_received",
       "New Application",
       `You received a new application for "${job.title}"`,
-      job._id.toString(),
+      String(job._id),
       req.user.id
     );
 
@@ -72,7 +72,7 @@ router.post("/", requireAuth, async (req, res) => {
             employer.name,
             student.name,
             job.title,
-            app._id.toString()
+            String(app._id)
           )
         );
       } catch (emailError) {
@@ -167,7 +167,7 @@ router.patch("/:id/accept", requireAuth, async (req: any, res) => {
       "application_accepted",
       "Application Accepted!",
       `Your application for "${task.title}" has been accepted!`,
-      task._id.toString(),
+      String(task._id),
       req.user.id
     );
 
@@ -225,7 +225,7 @@ router.patch("/:id/reject", requireAuth, async (req: any, res) => {
       "application_rejected",
       "Application Update",
       `Your application for "${task.title}" was not selected.`,
-      task._id.toString(),
+      String(task._id),
       req.user.id
     );
 
@@ -272,7 +272,7 @@ router.post("/task/:taskId/complete", requireAuth, async (req: any, res) => {
         "task_completed",
         "Task Completed",
         `Task "${task.title}" has been marked as completed by the student`,
-        task._id.toString(),
+        String(task._id),
         req.user.id
       );
     } else {
@@ -281,7 +281,7 @@ router.post("/task/:taskId/complete", requireAuth, async (req: any, res) => {
         "task_completed",
         "Task Completed",
         `Your task "${task.title}" has been marked as completed by the employer`,
-        task._id.toString(),
+        String(task._id),
         req.user.id
       );
     }

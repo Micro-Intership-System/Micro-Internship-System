@@ -61,7 +61,7 @@ router.post("/escrow", requireAuth, async (req: any, res) => {
         "payment_released",
         "Payment Escrowed",
         `Payment of ${task.gold} Gold has been escrowed for task "${task.title}"`,
-        task._id.toString(),
+        String(task._id),
         task.employerId.toString()
       );
     }
@@ -144,11 +144,11 @@ router.post("/release/:paymentId", requireAuth, async (req: any, res) => {
       await student.save();
 
       await createNotification(
-        student._id.toString(),
+        String(student._id),
         "payment_received",
         "Payment Received",
         `You received ${payment.amount} Gold, ${goldEarned} gold bonus, and ${xpEarned} XP for completing "${task.title}"`,
-        task._id.toString(),
+        String(task._id),
         payment.employerId.toString(),
         { goldEarned, xpEarned }
       );

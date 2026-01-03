@@ -36,24 +36,52 @@ const allowedOrigins = [
   process.env.FRONTEND_URL, // Production frontend URL from env
 ].filter(Boolean) as string[];
 
+// For Vercel deployments, allow all origins (both frontend and backend are on Vercel)
+const isVercel = process.env.VERCEL === "1" || process.env.VERCEL_URL;
+
+// Log CORS configuration for debugging
+console.log("🌐 CORS Configuration:");
+console.log("  - Allowed origins:", allowedOrigins);
+console.log("  - NODE_ENV:", process.env.NODE_ENV);
+console.log("  - VERCEL:", process.env.VERCEL);
+console.log("  - VERCEL_URL:", process.env.VERCEL_URL);
+console.log("  - Is Vercel deployment:", isVercel);
+
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
+      if (!origin) {
+        return callback(null, true);
+      }
+      
+      // On Vercel, allow all origins (frontend and backend are on same platform)
+      if (isVercel) {
+        return callback(null, true);
+      }
       
       // Check if origin is in allowed list
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
-      } else {
-        // In production, you might want to be more strict
-        // For now, allow all origins in development
-        if (process.env.NODE_ENV === "development") {
-          callback(null, true);
-        } else {
-          callback(new Error("Not allowed by CORS"));
-        }
+        return;
       }
+      
+      // Allow all Vercel deployments (check origin string)
+      if (origin.includes(".vercel.app") || origin.includes("vercel.app")) {
+        callback(null, true);
+        return;
+      }
+      
+      // In development, allow all origins
+      if (process.env.NODE_ENV === "development" || !process.env.NODE_ENV) {
+        callback(null, true);
+        return;
+      }
+      
+      // In production (non-Vercel), log and reject
+      console.warn(`❌ CORS: Rejected origin: ${origin}`);
+      console.warn(`   Allowed origins: ${allowedOrigins.join(", ")}`);
+      callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
   })
@@ -104,15 +132,23 @@ const connectDB = async () => {
 
     const mongoUri = process.env.MONGO_URI.trim();
     
+    // Validate connection string format
+    if (!mongoUri.startsWith('mongodb://') && !mongoUri.startsWith('mongodb+srv://')) {
+      throw new Error('Invalid MongoDB connection string format. Must start with mongodb:// or mongodb+srv://');
+    }
+    
     // Connection options for better reliability
     const options = {
-      serverSelectionTimeoutMS: 15000, // 15 seconds
+      serverSelectionTimeoutMS: 30000, // 30 seconds (increased for Vercel)
       socketTimeoutMS: 45000, // 45 seconds
-      connectTimeoutMS: 15000, // 15 seconds
+      connectTimeoutMS: 30000, // 30 seconds (increased for Vercel)
       maxPoolSize: 10, // Maintain up to 10 socket connections
-      minPoolSize: 5, // Maintain at least 5 socket connections
+      minPoolSize: 1, // Reduced for serverless (Vercel)
       retryWrites: true,
       w: 'majority' as const,
+      // For serverless environments like Vercel
+      bufferCommands: false,
+      bufferMaxEntries: 0,
     };
 
     console.log("🔄 Attempting to connect to MongoDB...");
@@ -138,6 +174,7 @@ const connectDB = async () => {
   } catch (err: any) {
     console.error("❌ MongoDB connection failed:");
     console.error("Error:", err.message);
+    console.error("Error code:", err.code);
     
     if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
       console.error("\n💡 Troubleshooting tips:");
@@ -145,31 +182,49 @@ const connectDB = async () => {
       console.error("2. Verify your connection string is correct");
       console.error("3. Check your network connection");
       console.error("4. Ensure your IP address is whitelisted in MongoDB Atlas");
+      console.error("   - For Vercel: Add 0.0.0.0/0 to allow all IPs (or specific Vercel IPs)");
       console.error("5. If using SRV connection string, ensure DNS resolution works");
-    } else if (err.message.includes('authentication')) {
+    } else if (err.message.includes('authentication') || err.code === 8000) {
       console.error("\n💡 Authentication failed:");
-      console.error("1. Check your MongoDB username and password");
+      console.error("1. Check your MongoDB username and password in connection string");
       console.error("2. Ensure the database user has proper permissions");
-    } else if (err.message.includes('buffering timed out')) {
+      console.error("3. Verify connection string format: mongodb+srv://username:password@cluster.mongodb.net/dbname");
+    } else if (err.message.includes('buffering timed out') || err.message.includes('server selection timed out')) {
       console.error("\n💡 Connection timeout:");
       console.error("1. Check your internet connection");
       console.error("2. Verify MongoDB Atlas cluster is accessible");
       console.error("3. Check firewall settings");
+      console.error("4. For Vercel: Ensure IP whitelist includes 0.0.0.0/0");
+    } else if (err.message.includes('IP')) {
+      console.error("\n💡 IP Whitelist Issue:");
+      console.error("1. Go to MongoDB Atlas → Network Access");
+      console.error("2. Add IP Address: 0.0.0.0/0 (allows all IPs)");
+      console.error("3. Wait 1-2 minutes for changes to propagate");
     }
     
     // Don't exit - let the server start but operations will fail
     // This allows the server to run and show better error messages
+    // In serverless, we'll retry on first request
     console.error("\n⚠️ Server will continue running, but database operations will fail.");
+    console.error("⚠️ Connection will be retried on first database operation.");
   }
 };
 
-connectDB();
+// Connect to MongoDB (non-blocking for serverless)
+// In serverless environments, connection is established on first request
+if (process.env.VERCEL !== "1") {
+  // Only connect immediately if not on Vercel (local development)
+  connectDB();
+} else {
+  // On Vercel, connect on first request to avoid cold start issues
+  // But still attempt connection in background
+  connectDB().catch((err) => {
+    console.warn("⚠️ Initial MongoDB connection failed, will retry on first request:", err.message);
+  });
+}
 
-// Verify email configuration on startup (non-blocking)
-import { verifyEmailConfig } from "./config/email";
-verifyEmailConfig().catch((err) => {
-  console.warn("Email verification skipped:", err.message);
-});
+// Email verification is now lazy - only verifies when first email is sent
+// This prevents connection timeouts during server startup
 
 
 // === Feature-01: Landing Page APIs ===

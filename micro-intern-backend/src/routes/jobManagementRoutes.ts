@@ -388,7 +388,7 @@ router.post("/:id/submit", requireAuth, async (req: any, res) => {
       "task_submitted",
       "Job Submission Received",
       `Student has submitted job "${task.title}" for review.${calculatedTimeTaken > 0 ? ` Time taken: ${calculatedTimeTaken} hours.` : ""}`,
-      task._id.toString(),
+      String(task._id),
       req.user.id,
       { report }
     );
@@ -454,7 +454,7 @@ router.post("/:id/cancel", requireAuth, async (req: any, res) => {
       "task_cancelled",
       "Job Cancelled",
       `Student has cancelled job "${task.title}". A new student can now be accepted.`,
-      task._id.toString(),
+      String(task._id),
       req.user.id
     );
 
@@ -561,7 +561,7 @@ router.post("/:id/confirm", requireAuth, async (req: any, res) => {
         "task_confirmed",
         "Job Confirmed!",
         `Your submission for "${task.title}" has been confirmed. You received ${task.gold} gold!`,
-        task._id.toString(),
+        String(task._id),
         req.user.id,
         { goldEarned: task.gold }
       );
@@ -630,7 +630,7 @@ router.post("/:id/reject", requireAuth, async (req: any, res) => {
       "task_rejected",
       "Job Submission Rejected",
       `Your submission for "${task.title}" was rejected. Reason: ${reason}`,
-      task._id.toString(),
+      String(task._id),
       req.user.id,
       { reason: reason.trim() }
     );
@@ -725,13 +725,13 @@ router.post("/:id/report-rejection", requireAuth, async (req: any, res) => {
     const admins = await User.find({ role: "admin" });
     for (const admin of admins) {
       await createNotification(
-        admin._id.toString(),
+        String(admin._id),
         "anomaly_detected",
         "Dispute Opened",
         `A dispute has been opened for job "${task.title}". Review required.`,
-        task._id.toString(),
+        String(task._id),
         req.user.id,
-        { anomalyId: anomaly._id.toString() }
+        { anomalyId: String(anomaly._id) }
       );
     }
 
@@ -845,7 +845,7 @@ router.post("/:id/resolve-dispute", requireAuth, async (req: any, res) => {
         "dispute_resolved",
         "Dispute Resolved - You Won!",
         `Admin resolved the dispute in your favor. You received ${totalPayment} gold (original ${task.gold} + escrow ${escrowAmount} + 50% bonus ${Math.ceil(task.gold * 0.5)}).`,
-        task._id.toString(),
+        String(task._id),
         req.user.id,
         { goldEarned: totalPayment, reason }
       );
@@ -855,7 +855,7 @@ router.post("/:id/resolve-dispute", requireAuth, async (req: any, res) => {
         "dispute_resolved",
         "Dispute Resolved - Student Won",
         `Admin resolved the dispute in favor of the student. You have a 7-day restriction where you can only post low priority jobs. Reason: ${reason || "N/A"}`,
-        task._id.toString(),
+        String(task._id),
         req.user.id,
         { reason, restrictionUntil: restrictionDate }
       );
@@ -873,7 +873,7 @@ router.post("/:id/resolve-dispute", requireAuth, async (req: any, res) => {
         "dispute_resolved",
         "Dispute Resolved - Employer Won",
         `Admin resolved the dispute in favor of the employer. ${penalty} gold (50% of payment) has been deducted from your account. Reason: ${reason || "N/A"}`,
-        task._id.toString(),
+        String(task._id),
         req.user.id,
         { goldDeducted: penalty, reason }
       );
@@ -883,7 +883,7 @@ router.post("/:id/resolve-dispute", requireAuth, async (req: any, res) => {
         "dispute_resolved",
         "Dispute Resolved - You Won!",
         `Admin resolved the dispute in your favor. Reason: ${reason || "N/A"}`,
-        task._id.toString(),
+        String(task._id),
         req.user.id,
         { reason }
       );

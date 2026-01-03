@@ -243,7 +243,7 @@ router.patch("/courses/:courseId/complete", requireAuth, async (req: any, res) =
     try {
       const certificateUrl = await generateCourseCertificate(
         req.user.id,
-        course._id.toString(),
+        String(course._id),
         completedAtDate
       );
       enrollment.certificateUrl = certificateUrl;

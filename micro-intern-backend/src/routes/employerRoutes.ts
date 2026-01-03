@@ -445,7 +445,7 @@ router.patch(
           "application_accepted",
           "Application Accepted!",
           `Your application for "${task.title}" has been accepted!`,
-          task._id.toString(),
+          String(task._id),
           req.user.id
         );
       } else {
@@ -467,7 +467,7 @@ router.patch(
           "application_rejected",
           "Application Update",
           notificationMessage,
-          task._id.toString(),
+          String(task._id),
           req.user.id
         );
       }

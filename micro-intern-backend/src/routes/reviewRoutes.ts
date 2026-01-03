@@ -52,7 +52,7 @@ router.post("/", requireAuth, async (req: any, res) => {
     let reviewType: "employer_to_student" | "student_to_employer";
 
     if (reviewer.role === "employer") {
-      if (task.employerId.toString() !== reviewer._id.toString()) {
+      if (String(task.employerId) !== String(reviewer._id)) {
         return res.status(403).json({
           success: false,
           message: "You can only review students for your own tasks",
@@ -61,7 +61,7 @@ router.post("/", requireAuth, async (req: any, res) => {
       reviewedId = task.acceptedStudentId?.toString() || "";
       reviewType = "employer_to_student";
     } else if (reviewer.role === "student") {
-      if (task.acceptedStudentId?.toString() !== reviewer._id.toString()) {
+      if (String(task.acceptedStudentId) !== String(reviewer._id)) {
         return res.status(403).json({
           success: false,
           message: "You can only review employers for tasks you completed",
@@ -118,8 +118,8 @@ router.post("/", requireAuth, async (req: any, res) => {
         "review_received",
         "New Review Received",
         `You received a ${starRating}-star review from ${reviewer.companyName || reviewer.name}`,
-        task._id.toString(),
-        reviewer._id.toString(),
+        String(task._id),
+        String(reviewer._id),
         { starRating }
       );
     }
