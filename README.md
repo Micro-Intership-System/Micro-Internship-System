@@ -19,7 +19,7 @@
 - **Styling:** TailwindCSS  
 - **Database:** MongoDB  
 - **ORM:** Mongoose  
-- **Deployment:** Vercel, Railway  
+- **Deployment:** Vercel  
 - **Version control:** GitHub  
 
 ---

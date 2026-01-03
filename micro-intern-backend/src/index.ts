@@ -234,6 +234,12 @@ app.get("/api/public/reviews", (req, res) => {
 });
 
 
-app.listen(PORT, () => {
-  console.log(`API server listening on port ${PORT}`);
-});
+// Export for Vercel serverless functions
+export default app;
+
+// Only listen if running locally (not on Vercel)
+if (process.env.VERCEL !== "1") {
+  app.listen(PORT, () => {
+    console.log(`API server listening on port ${PORT}`);
+  });
+}

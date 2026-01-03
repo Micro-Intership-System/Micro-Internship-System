@@ -1,5 +1,28 @@
 {
   "version": 2,
+  "builds": [
+    {
+      "src": "micro-intern-frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    },
+    {
+      "src": "api/index.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/index.ts"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/micro-intern-frontend/$1"
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",
@@ -7,4 +30,3 @@
     }
   ]
 }
-

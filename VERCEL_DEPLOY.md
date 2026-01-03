@@ -1,17 +1,8 @@
 # Complete Vercel Deployment Guide
 
-This guide will help you deploy the Micro-Internship System to Vercel (both frontend and backend in one deployment).
+Deploy both frontend and backend to Vercel in one go!
 
-## 📋 Prerequisites
-
-1. **GitHub Account** - Your code should be in a GitHub repository
-2. **Vercel Account** - Sign up at [vercel.com](https://vercel.com)
-3. **MongoDB Atlas** - Your database (already set up)
-4. **Supabase** - Your storage (already set up)
-
----
-
-## 🚀 Part 1: Deploy to Vercel
+## 🚀 Quick Start (10 Minutes)
 
 ### Step 1: Prepare Your Repository
 
@@ -44,7 +35,7 @@ This guide will help you deploy the Micro-Internship System to Vercel (both fron
    Click "Environment Variables" and add:
 
    **Backend Variables:**
-   ```env
+   ```
    MONGO_URI=your_mongodb_connection_string
    JWT_SECRET=your_jwt_secret
    SUPABASE_URL=your_supabase_url
@@ -52,12 +43,12 @@ This guide will help you deploy the Micro-Internship System to Vercel (both fron
    EMAIL_SERVICE=gmail
    EMAIL_USER=your_email@gmail.com
    EMAIL_PASSWORD=your_app_password
-   FRONTEND_URL=https://your-app.vercel.app
+   FRONTEND_URL=https://your-app.vercel.app (update after first deploy)
    NODE_ENV=production
    ```
 
    **Frontend Variables:**
-   ```env
+   ```
    VITE_API_URL=/api
    ```
 
@@ -85,8 +76,6 @@ This guide will help you deploy the Micro-Internship System to Vercel (both fron
 ```
 Micro-Internship-System/
 ├── vercel.json                 # Vercel configuration
-├── api/
-│   └── index.ts               # Vercel serverless function entry
 ├── micro-intern-frontend/      # Frontend React app
 │   ├── src/
 │   ├── package.json
@@ -94,6 +83,8 @@ Micro-Internship-System/
 ├── micro-intern-backend/       # Backend Express app
 │   ├── src/
 │   │   └── index.ts            # Main server file
+│   ├── api/
+│   │   └── index.ts            # Vercel serverless entry
 │   └── package.json
 └── package.json                # Root package.json (optional)
 ```
@@ -143,7 +134,7 @@ Micro-Internship-System/
 ### API Routes Return 404
 **Solution:**
 1. Verify `vercel.json` routes are correct
-2. Check that `api/index.ts` exists and exports the app
+2. Check that `micro-intern-backend/src/index.ts` exports the app
 3. Ensure backend environment variables are set
 
 ### CORS Errors
@@ -203,7 +194,6 @@ Micro-Internship-System/
 Before deploying:
 - [ ] All code committed to Git
 - [ ] `vercel.json` is in root directory
-- [ ] `api/index.ts` exists
 - [ ] Backend exports app correctly
 - [ ] Frontend API client uses `/api` path
 - [ ] All environment variables ready
@@ -253,3 +243,4 @@ Everything runs on Vercel - no need for separate backend hosting!
 - [Vercel Documentation](https://vercel.com/docs)
 - [Vercel Serverless Functions](https://vercel.com/docs/functions)
 - [Express on Vercel](https://vercel.com/guides/using-express-with-vercel)
+

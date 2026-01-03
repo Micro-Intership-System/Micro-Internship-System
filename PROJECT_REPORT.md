@@ -86,7 +86,7 @@ The Micro-Internship System addresses the growing demand for short-term, project
 
 ### Deployment
 - **Frontend:** Vercel
-- **Backend:** Render/Railway
+- **Backend:** Vercel (Serverless Functions)
 - **Version Control:** GitHub
 
 ---
