@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiPost } from "../api/client";
-import { useAuth, AuthUser } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext";
+import type { AuthUser } from "../context/AuthContext";
 import "./LoginPage.css";
 
 type Role = "student" | "employer" | "admin";
@@ -58,13 +59,14 @@ export default function LoginPage() {
       }
 
       // Ensure user has required fields for AuthUser
-      const { role, ...userRest } = data.user;
+      const userRole = data.user.role;
+      const { role: _unusedRole, ...userRest } = data.user;
       const authUser: AuthUser = {
         ...userRest,
         id: data.user.id || "",
         name: data.user.name || "",
         email: data.user.email || "",
-        role: role || data.user.role,
+        role: userRole,
       };
 
       login(data.token, authUser);
