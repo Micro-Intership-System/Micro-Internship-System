@@ -52,6 +52,25 @@ async function requireEmployer(req: any, res: any, next: any) {
 router.get("/me", requireAuth, requireEmployer, async (req: any, res) => {
   const employer = req.employer;
 
+  // Get review stats
+  const { TaskReview } = await import("../models/taskReview");
+  const reviews = await TaskReview.find({
+    reviewedId: employer._id,
+    reviewType: "student_to_employer",
+    isVisible: true,
+  });
+
+  const averageRating =
+    reviews.length > 0
+      ? Math.round((reviews.reduce((sum, r) => sum + r.starRating, 0) / reviews.length) * 10) / 10
+      : 0;
+
+  // Get completed jobs count
+  const completedJobsCount = await Internship.countDocuments({
+    employerId: employer._id,
+    status: "completed",
+  });
+
   res.json({
     success: true,
     data: {
@@ -62,8 +81,13 @@ router.get("/me", requireAuth, requireEmployer, async (req: any, res) => {
       companyWebsite: employer.companyWebsite,
       companyDescription: employer.companyDescription,
       companyLogo: employer.companyLogo,
+      averageRating,
+      totalReviews: reviews.length,
+      completedJobsCount,
       createdAt: employer.createdAt,
       updatedAt: employer.updatedAt,
+      restrictionUntil: employer.restrictionUntil,
+      canOnlyPostLowPriority: employer.canOnlyPostLowPriority,
     },
   });
 });
@@ -198,6 +222,36 @@ router.get("/jobs", requireAuth, requireEmployer, async (req: any, res) => {
 });
 
 /**
+ * GET /api/employer/applications
+ * Employer views applications across all their jobs
+ */
+router.get(
+  "/applications",
+  requireAuth,
+  requireEmployer,
+  async (req: any, res) => {
+    try {
+      // Find all job ids for this employer
+      const jobs = await Internship.find({ employerId: req.user.id }).select("_id").lean();
+      const jobIds = jobs.map((j: any) => j._id);
+
+      const apps = await Application.find({ internshipId: { $in: jobIds } })
+        .populate(
+          "studentId",
+          "name email institution skills bio profilePicture portfolio"
+        )
+        .populate("internshipId", "title")
+        .sort({ createdAt: -1 });
+
+      res.json({ success: true, data: apps });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ success: false, message: "Failed to load applications" });
+    }
+  }
+);
+
+/**
  * GET /api/employer/jobs/:jobId/applications
  * Employer views applications for a job
  */
@@ -233,21 +287,49 @@ router.get(
  */
 router.get("/all", requireAuth, async (req: any, res) => {
   try {
-    if (req.user?.role !== "admin") {
-      return res.status(403).json({ success: false, message: "Admin only" });
+    // Check if user is admin
+    const user = await User.findById(req.user.id);
+    if (!user || user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Admin access required" });
     }
 
     const employers = await User.find({ role: "employer" })
-      .select("name email companyName companyWebsite companyDescription companyLogo gold createdAt")
+      .select("name email companyName companyWebsite companyDescription companyLogo profilePicture verificationStatus gold createdAt")
       .sort({ createdAt: -1 });
 
-    // Enrich with job counts
+    // Get review stats
+    const { TaskReview } = await import("../models/taskReview");
+
+    // Enrich with job counts and review stats
     const enriched = await Promise.all(
       employers.map(async (employer) => {
         const jobCount = await Internship.countDocuments({ employerId: employer._id });
+        
+        // Get review statistics
+        const reviews = await TaskReview.find({
+          reviewedId: employer._id,
+          reviewType: "student_to_employer",
+          isVisible: true,
+        });
+        
+        const averageRating =
+          reviews.length > 0
+            ? Math.round((reviews.reduce((sum, r) => sum + r.starRating, 0) / reviews.length) * 10) / 10
+            : 0;
+        
+        // Get payment count
+        const paymentCount = await Internship.countDocuments({
+          employerId: employer._id,
+          status: "completed",
+          submissionStatus: "confirmed",
+        });
+
         return {
           ...employer.toObject(),
           totalTasksPosted: jobCount,
+          totalPaymentsMade: paymentCount,
+          averageRating,
+          totalReviews: reviews.length,
         };
       })
     );
@@ -256,6 +338,39 @@ router.get("/all", requireAuth, async (req: any, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Failed to load employers" });
+  }
+});
+
+/**
+ * GET /api/employer/:employerId
+ * Get a specific employer by ID (admin only)
+ */
+router.get("/:employerId", requireAuth, async (req: any, res) => {
+  try {
+    // Check if user is admin
+    const user = await User.findById(req.user.id);
+    if (!user || user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Admin access required" });
+    }
+
+    const employer = await User.findById(req.params.employerId);
+    if (!employer || employer.role !== "employer") {
+      return res.status(404).json({ success: false, message: "Employer not found" });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        _id: employer._id,
+        name: employer.name,
+        email: employer.email,
+        companyName: employer.companyName,
+        profilePicture: employer.profilePicture,
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Failed to load employer" });
   }
 });
 
@@ -335,15 +450,23 @@ router.patch(
         );
       } else {
         // Reject application
+        const { rejectionReason } = req.body;
         application.status = "rejected";
+        if (rejectionReason && rejectionReason.trim().length > 0) {
+          application.rejectionReason = rejectionReason.trim();
+        }
         await application.save();
 
         // Notify student
+        const notificationMessage = rejectionReason && rejectionReason.trim().length > 0
+          ? `Your application for "${task.title}" was not selected. Reason: ${rejectionReason.trim()}`
+          : `Your application for "${task.title}" was not selected.`;
+        
         await createNotification(
           application.studentId.toString(),
           "application_rejected",
           "Application Update",
-          `Your application for "${task.title}" was not selected.`,
+          notificationMessage,
           task._id.toString(),
           req.user.id
         );

@@ -1,7 +1,9 @@
 type ApiErrorBody = { message?: string };
 
 function getToken(): string | null {
-  return localStorage.getItem("mi_token");
+  const token = localStorage.getItem("mi_token");
+  // Trim whitespace if token exists
+  return token ? token.trim() : null;
 }
 
 function buildHeaders(extra?: HeadersInit): HeadersInit {

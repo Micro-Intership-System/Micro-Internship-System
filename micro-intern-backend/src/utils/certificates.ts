@@ -2,15 +2,17 @@ import { StudentCourse } from "../models/studentCourse";
 import { CourseShopItem } from "../models/courseShop";
 import { User } from "../models/user";
 import crypto from "crypto";
+import PDFDocument from "pdfkit";
+import { uploadPDF } from "./storage";
 
 /**
  * Generate a certificate URL/ID for a completed course
- * In production, this would generate an actual PDF certificate
- * For now, we'll create a unique certificate ID that can be used to verify completion
+ * Generates a PDF certificate and uploads it to Supabase Storage
  */
 export async function generateCourseCertificate(
   studentId: string,
-  courseId: string
+  courseId: string,
+  completedAt?: Date
 ): Promise<string> {
   const student = await User.findById(studentId);
   const course = await CourseShopItem.findById(courseId);
@@ -19,13 +21,17 @@ export async function generateCourseCertificate(
     throw new Error("Student or course not found");
   }
 
+  // Use provided completedAt or current date
+  const completionDate = completedAt || new Date();
+  const completionDateISO = completionDate.toISOString();
+
   // Generate unique certificate ID
   const certificateData = {
     studentId: student._id.toString(),
     studentName: student.name,
     courseId: course._id.toString(),
     courseTitle: course.title,
-    completedAt: new Date().toISOString(),
+    completedAt: completionDateISO,
   };
 
   // Create a hash for verification
@@ -37,16 +43,155 @@ export async function generateCourseCertificate(
 
   const certificateId = `CERT-${student._id.toString().substring(0, 8)}-${course._id.toString().substring(0, 8)}-${hash}`;
 
-  // In production, you would:
-  // 1. Generate a PDF certificate using a library like pdfkit or puppeteer
-  // 2. Upload it to cloud storage (S3, Supabase, etc.)
-  // 3. Return the public URL
+  // Generate PDF certificate
+  const pdfBuffer = await generateCertificatePDF(
+    student.name,
+    course.title,
+    completionDate,
+    certificateId
+  );
 
-  // For now, we'll return a URL that can be used to verify the certificate
-  const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-  const certificateUrl = `${baseUrl}/certificates/${certificateId}`;
+  // Upload to Supabase Storage
+  const filename = `${certificateId}.pdf`;
+  const uploadResult = await uploadPDF(pdfBuffer, "certificates", filename);
 
-  return certificateUrl;
+  if (!uploadResult.success || !uploadResult.url) {
+    console.error("Failed to upload certificate to Supabase:", uploadResult.error);
+    // Fallback to URL-based certificate if upload fails
+    const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    return `${baseUrl}/certificates/${certificateId}`;
+  }
+
+  return uploadResult.url;
+}
+
+/**
+ * Generate a PDF certificate using PDFKit
+ */
+async function generateCertificatePDF(
+  studentName: string,
+  courseTitle: string,
+  completedAt: Date,
+  certificateId: string
+): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({
+        size: "LETTER",
+        margin: 50,
+      });
+
+      const chunks: Buffer[] = [];
+
+      doc.on("data", (chunk) => {
+        chunks.push(chunk);
+      });
+
+      doc.on("end", () => {
+        resolve(Buffer.concat(chunks));
+      });
+
+      doc.on("error", (err) => {
+        reject(err);
+      });
+
+      // Background gradient effect (simulated with rectangles)
+      doc.rect(0, 0, doc.page.width, doc.page.height).fillColor("#667eea").fill();
+
+      // White certificate area
+      const margin = 50;
+      doc
+        .rect(margin, margin, doc.page.width - margin * 2, doc.page.height - margin * 2)
+        .fillColor("#ffffff")
+        .fill();
+
+      // Title
+      doc
+        .fontSize(48)
+        .fillColor("#667eea")
+        .font("Helvetica-Bold")
+        .text("CERTIFICATE OF COMPLETION", margin + 50, 150, {
+          align: "center",
+          width: doc.page.width - (margin + 50) * 2,
+        });
+
+      // Body text
+      doc
+        .fontSize(18)
+        .fillColor("#333333")
+        .font("Helvetica")
+        .text("This is to certify that", margin + 50, 250, {
+          align: "center",
+          width: doc.page.width - (margin + 50) * 2,
+        });
+
+      // Student name
+      doc
+        .fontSize(36)
+        .fillColor("#667eea")
+        .font("Helvetica-Bold")
+        .text(studentName, margin + 50, 300, {
+          align: "center",
+          width: doc.page.width - (margin + 50) * 2,
+        });
+
+      // Course completion text
+      doc
+        .fontSize(18)
+        .fillColor("#333333")
+        .font("Helvetica")
+        .text("has successfully completed the course", margin + 50, 380, {
+          align: "center",
+          width: doc.page.width - (margin + 50) * 2,
+        });
+
+      // Course title
+      doc
+        .fontSize(24)
+        .fillColor("#333333")
+        .font("Helvetica-Bold")
+        .text(courseTitle, margin + 50, 430, {
+          align: "center",
+          width: doc.page.width - (margin + 50) * 2,
+        });
+
+      // Date
+      const dateStr = completedAt.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+      doc
+        .fontSize(14)
+        .fillColor("#666666")
+        .font("Helvetica")
+        .text(`Completed on ${dateStr}`, margin + 50, 520, {
+          align: "center",
+          width: doc.page.width - (margin + 50) * 2,
+        });
+
+      // Certificate ID (small, at bottom)
+      doc
+        .fontSize(10)
+        .fillColor("#cccccc")
+        .font("Courier")
+        .text(`Certificate ID: ${certificateId}`, margin + 50, doc.page.height - 100, {
+          align: "center",
+          width: doc.page.width - (margin + 50) * 2,
+        });
+
+      // Signature line (optional)
+      doc
+        .fontSize(12)
+        .fillColor("#333333")
+        .font("Helvetica")
+        .text("Authorized Signature", doc.page.width - 200, doc.page.height - 150);
+
+      doc.end();
+    } catch (err) {
+      reject(err);
+    }
+  });
 }
 
 /**
@@ -67,7 +212,7 @@ export async function verifyCertificate(certificateId: string): Promise<{
 
     const [studentIdPrefix, courseIdPrefix, hash] = parts;
 
-    // Find enrollment by matching prefixes
+    // Find enrollment by matching prefixes - more efficient query
     const enrollments = await StudentCourse.find({
       completedAt: { $exists: true },
     })
@@ -78,17 +223,25 @@ export async function verifyCertificate(certificateId: string): Promise<{
       const student = enrollment.studentId as any;
       const course = enrollment.courseId as any;
 
+      if (!student || !course || !enrollment.completedAt) {
+        continue;
+      }
+
+      const studentIdStr = student._id.toString();
+      const courseIdStr = course._id.toString();
+
       if (
-        student._id.toString().startsWith(studentIdPrefix) &&
-        course._id.toString().startsWith(courseIdPrefix)
+        studentIdStr.startsWith(studentIdPrefix) &&
+        courseIdStr.startsWith(courseIdPrefix)
       ) {
-        // Verify hash
+        // Verify hash - use the exact completedAt from enrollment
+        const completedAtISO = enrollment.completedAt.toISOString();
         const certificateData = {
-          studentId: student._id.toString(),
+          studentId: studentIdStr,
           studentName: student.name,
-          courseId: course._id.toString(),
+          courseId: courseIdStr,
           courseTitle: course.title,
-          completedAt: enrollment.completedAt?.toISOString(),
+          completedAt: completedAtISO,
         };
 
         const expectedHash = crypto
@@ -132,6 +285,9 @@ export function generateCertificateHTML(
   completedAt: Date,
   certificateId: string
 ): string {
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+  const signatureUrl = `${frontendUrl}/sign.png`;
+  
   return `
 <!DOCTYPE html>
 <html>
@@ -153,6 +309,14 @@ export function generateCertificateHTML(
       text-align: center;
       max-width: 800px;
       margin: 0 auto;
+      position: relative;
+      min-height: 600px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .certificate-content {
+      flex: 1;
     }
     .certificate h1 {
       font-size: 48px;
@@ -183,10 +347,15 @@ export function generateCertificateHTML(
       color: #333;
       margin: 20px 0;
     }
-    .date {
-      font-size: 16px;
-      color: #999;
-      margin-top: 40px;
+    .signature-section {
+      margin-top: 60px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .signature-image {
+      max-width: 200px;
+      height: auto;
     }
     .certificate-id {
       font-size: 12px;
@@ -198,12 +367,16 @@ export function generateCertificateHTML(
 </head>
 <body>
   <div class="certificate">
-    <h1>CERTIFICATE OF COMPLETION</h1>
-    <p>This is to certify that</p>
-    <div class="student-name">${studentName}</div>
-    <p>has successfully completed the course</p>
-    <div class="course-title">${courseTitle}</div>
-    <p class="date">Completed on ${completedAt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+    <div class="certificate-content">
+      <h1>CERTIFICATE OF COMPLETION</h1>
+      <p>This is to certify that</p>
+      <div class="student-name">${studentName}</div>
+      <p>has successfully completed the course</p>
+      <div class="course-title">${courseTitle}</div>
+    </div>
+    <div class="signature-section">
+      <img src="${signatureUrl}" alt="Authorized Signature" class="signature-image" />
+    </div>
     <div class="certificate-id">Certificate ID: ${certificateId}</div>
   </div>
 </body>

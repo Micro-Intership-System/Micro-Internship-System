@@ -5,6 +5,8 @@ import { Internship } from "../models/internship";
 import { User } from "../models/user";
 import { createNotification } from "../utils/notifications";
 import { calculateTaskGold, calculateTaskXP, calculateStarRating } from "../utils/gamification";
+import { sendEmail } from "../utils/emailService";
+import { paymentReleasedEmail } from "../utils/emailTemplates";
 
 const router = Router();
 
@@ -48,7 +50,7 @@ router.post("/escrow", requireAuth, async (req: any, res) => {
       taskId: task._id,
       employerId: task.employerId,
       studentId: task.acceptedStudentId!,
-      amount: task.budget,
+      amount: task.gold, // Use gold instead of budget
       status: "escrowed",
       escrowedAt: new Date(),
     });
@@ -58,7 +60,7 @@ router.post("/escrow", requireAuth, async (req: any, res) => {
         task.acceptedStudentId!.toString(),
         "payment_released",
         "Payment Escrowed",
-        `Payment of ${task.budget} BDT has been escrowed for task "${task.title}"`,
+        `Payment of ${task.gold} Gold has been escrowed for task "${task.title}"`,
         task._id.toString(),
         task.employerId.toString()
       );
@@ -145,11 +147,30 @@ router.post("/release/:paymentId", requireAuth, async (req: any, res) => {
         student._id.toString(),
         "payment_received",
         "Payment Received",
-        `You received ${payment.amount} BDT, ${goldEarned} gold, and ${xpEarned} XP for completing "${task.title}"`,
+        `You received ${payment.amount} Gold, ${goldEarned} gold bonus, and ${xpEarned} XP for completing "${task.title}"`,
         task._id.toString(),
         payment.employerId.toString(),
         { goldEarned, xpEarned }
       );
+
+      // Send email to student
+      const employer = await User.findById(payment.employerId);
+      if (employer) {
+        try {
+          await sendEmail(
+            student.email,
+            paymentReleasedEmail(
+              student.name,
+              payment.amount,
+              task.title,
+              employer.companyName || employer.name
+            )
+          );
+        } catch (emailError) {
+          console.error("Failed to send payment email to student:", emailError);
+          // Don't fail the request if email fails
+        }
+      }
     }
 
     res.json({ success: true, data: payment });
@@ -186,6 +207,61 @@ router.get("/task/:taskId", requireAuth, async (req: any, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Failed to load payment" });
+  }
+});
+
+/**
+ * GET /api/payments/student/:studentId
+ * Get all successful payments for a student
+ */
+router.get("/student/:studentId", requireAuth, async (req: any, res) => {
+  try {
+    // Check access - student can only see their own, admin can see all
+    const isStudent = req.user?.role === "student" && req.params.studentId === req.user.id;
+    const isAdmin = req.user?.role === "admin";
+
+    if (!isStudent && !isAdmin) {
+      return res.status(403).json({ success: false, message: "Access denied" });
+    }
+
+    const payments = await Payment.find({
+      studentId: req.params.studentId,
+      status: "released", // Only successful payments
+    })
+      .populate("employerId", "name email companyName")
+      .populate("studentId", "name email")
+      .populate("taskId", "title")
+      .sort({ releasedAt: -1 }) // Most recent first
+      .lean();
+
+    res.json({ success: true, data: payments });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Failed to load payments" });
+  }
+});
+
+/**
+ * GET /api/payments/all
+ * Get all payments (admin only)
+ */
+router.get("/all", requireAuth, async (req: any, res) => {
+  try {
+    if (req.user?.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Admin only" });
+    }
+
+    const payments = await Payment.find({})
+      .populate("employerId", "name email companyName")
+      .populate("studentId", "name email")
+      .populate("taskId", "title")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json({ success: true, data: payments });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Failed to load payments" });
   }
 });
 

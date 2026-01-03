@@ -2,7 +2,10 @@ import { Router } from "express";
 import { requireAuth } from "../middleware/requireAuth";
 import { Application } from "../models/application";
 import { Internship } from "../models/internship";
+import { User } from "../models/user";
 import { createNotification } from "../utils/notifications";
+import { sendEmail } from "../utils/emailService";
+import { jobApplicationReceivedEmail, applicationAcceptedEmail } from "../utils/emailTemplates";
 
 const router = Router();
 
@@ -46,6 +49,10 @@ router.post("/", requireAuth, async (req, res) => {
       status: "applied",
     });
 
+    // Get employer and student details for email
+    const employer = await User.findById(job.employerId);
+    const student = await User.findById(req.user.id);
+
     // Notify employer
     await createNotification(
       job.employerId.toString(),
@@ -55,6 +62,24 @@ router.post("/", requireAuth, async (req, res) => {
       job._id.toString(),
       req.user.id
     );
+
+    // Send email to employer
+    if (employer && student) {
+      try {
+        await sendEmail(
+          employer.email,
+          jobApplicationReceivedEmail(
+            employer.name,
+            student.name,
+            job.title,
+            app._id.toString()
+          )
+        );
+      } catch (emailError) {
+        console.error("Failed to send application email to employer:", emailError);
+        // Don't fail the request if email fails
+      }
+    }
 
     res.status(201).json({ success: true, data: app });
   } catch (err) {
@@ -132,6 +157,10 @@ router.patch("/:id/accept", requireAuth, async (req: any, res) => {
     task.acceptedAt = new Date();
     await task.save();
 
+    // Get student and employer details for email
+    const student = await User.findById(application.studentId);
+    const employer = await User.findById(req.user.id);
+
     // Notify student
     await createNotification(
       application.studentId.toString(),
@@ -141,6 +170,24 @@ router.patch("/:id/accept", requireAuth, async (req: any, res) => {
       task._id.toString(),
       req.user.id
     );
+
+    // Send email to student
+    if (student && employer) {
+      try {
+        await sendEmail(
+          student.email,
+          applicationAcceptedEmail(
+            student.name,
+            task.title,
+            employer.companyName || employer.name,
+            task._id.toString()
+          )
+        );
+      } catch (emailError) {
+        console.error("Failed to send acceptance email to student:", emailError);
+        // Don't fail the request if email fails
+      }
+    }
 
     res.json({ success: true, data: application });
   } catch (err) {

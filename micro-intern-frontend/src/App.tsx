@@ -5,6 +5,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 import StudentLayout from "./pages/dashboard/student/StudentLayout";
 import OverviewPage from "./pages/dashboard/student/OverviewPage";
@@ -37,13 +39,16 @@ import EmployerNotificationsPage from "./pages/dashboard/employer/EmployerNotifi
 import EmployerMessagesPage from "./pages/dashboard/employer/EmployerMessagesPage";
 import TaskPaymentPage from "./pages/dashboard/employer/TaskPaymentPage";
 import EmployerSubmitReviewPage from "./pages/dashboard/employer/SubmitReviewPage";
+import EmployerReviewsPage from "./pages/dashboard/employer/EmployerReviewsPage";
 import JobSubmissionsPage from "./pages/dashboard/employer/JobSubmissionsPage";
+import CompanyReviewsPage from "./pages/dashboard/student/CompanyReviewsPage";
 
 import AdminLayout from "./pages/dashboard/admin/AdminLayout";
 import AdminDashboard from "./pages/dashboard/admin/AdminDashboard";
 import AnomaliesPage from "./pages/dashboard/admin/AnomaliesPage";
 import StudentsPage from "./pages/dashboard/admin/StudentsPage";
 import EmployersPage from "./pages/dashboard/admin/EmployersPage";
+import AdminEmployerReviewsPage from "./pages/dashboard/admin/EmployerReviewsPage";
 import AllChatsPage from "./pages/dashboard/admin/AllChatsPage";
 import AllTasksPage from "./pages/dashboard/admin/AllTasksPage";
 
@@ -58,6 +63,8 @@ const App: React.FC = () => {
           {/* Auth routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           {/* Student dashboard */}
           <Route
@@ -79,6 +86,7 @@ const App: React.FC = () => {
             <Route path="leaderboard" element={<LeaderboardPage />} />
             <Route path="notifications" element={<NotificationsPage />} />
             <Route path="payments" element={<PaymentsPage />} />
+            <Route path="reviews" element={<CompanyReviewsPage />} />
             <Route path="reviews/submit/:taskId" element={<SubmitReviewPage />} />
             <Route path="reviews/:studentId" element={<ViewReviewsPage />} />
             <Route path="certificates" element={<CertificatesPage />} />
@@ -114,6 +122,7 @@ const App: React.FC = () => {
             <Route path="notifications" element={<EmployerNotificationsPage />} />
             <Route path="messages" element={<EmployerMessagesPage />} />
             <Route path="jobs/:id/payment" element={<TaskPaymentPage />} />
+            <Route path="reviews" element={<EmployerReviewsPage />} />
             <Route path="reviews/submit/:taskId" element={<EmployerSubmitReviewPage />} />
 
             {/* 👇 Employer views student portfolio (read-only) */}
@@ -136,6 +145,7 @@ const App: React.FC = () => {
             <Route path="anomalies" element={<AnomaliesPage />} />
             <Route path="students" element={<StudentsPage />} />
             <Route path="employers" element={<EmployersPage />} />
+            <Route path="employers/:employerId/reviews" element={<AdminEmployerReviewsPage />} />
             <Route path="chats" element={<AllChatsPage />} />
             <Route path="tasks" element={<AllTasksPage />} />
           </Route>

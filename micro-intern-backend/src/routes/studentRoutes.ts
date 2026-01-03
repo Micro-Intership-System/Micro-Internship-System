@@ -8,11 +8,18 @@ const router = Router();
 async function requireStudent(req: any, res: any, next: any) {
   try {
     if (!req.user) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
+      console.error("requireStudent: No user in request");
+      return res.status(401).json({ success: false, message: "Unauthorized - No user found" });
     }
 
     const user = await User.findById(req.user.id);
-    if (!user || user.role !== "student") {
+    if (!user) {
+      console.error("requireStudent: User not found in database:", req.user.id);
+      return res.status(401).json({ success: false, message: "Unauthorized - User not found" });
+    }
+
+    if (user.role !== "student") {
+      console.error("requireStudent: User is not a student:", { userId: req.user.id, role: user.role });
       return res
         .status(403)
         .json({ success: false, message: "Student account required" });
@@ -21,7 +28,7 @@ async function requireStudent(req: any, res: any, next: any) {
     req.student = user;
     next();
   } catch (err) {
-    console.error(err);
+    console.error("requireStudent error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 }
@@ -30,7 +37,7 @@ async function requireStudent(req: any, res: any, next: any) {
  * GET /api/student/me
  * Get own student profile (includes gamification fields)
  */
-router.get("/me", requireStudent, (req: any, res) => {
+router.get("/me", requireAuth, requireStudent, (req: any, res) => {
   const s = req.student;
   res.json({
     success: true,
@@ -60,7 +67,7 @@ router.get("/me", requireStudent, (req: any, res) => {
  * PUT /api/student/me
  * Update own student profile fields
  */
-router.put("/me", requireStudent, async (req: any, res) => {
+router.put("/me", requireAuth, requireStudent, async (req: any, res) => {
   try {
     const allowed = ["name", "institution", "skills", "bio", "profilePicture"];
     const updates: any = {};
@@ -105,12 +112,12 @@ router.get("/all", requireAuth, async (req: any, res) => {
 
 /**
  * GET /api/student/:id
- * Public student profile (for employers)
+ * Public student profile (for employers) - includes gamification fields
  */
 router.get("/:id", async (req, res) => {
   try {
     const student = await User.findById(req.params.id).select(
-      "name email institution skills bio profilePicture role"
+      "name email institution skills bio profilePicture role gold starRating totalTasksCompleted completedCourses createdAt"
     );
 
     if (!student || student.role !== "student") {

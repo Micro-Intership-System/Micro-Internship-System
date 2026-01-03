@@ -1,0 +1,415 @@
+/* JobSubmissionsPage.css */
+
+:root {
+  --text: #111827;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --border2: #d1d5db;
+  --bg: #ffffff;
+  --soft: #f9fafb;
+
+  --btn: #111827;
+  --btnHover: #1f2937;
+
+  --danger: #991b1b;
+  --dangerHover: #7f1d1d;
+
+  --success: #065f46;
+  --successHover: #047857;
+
+  --infoBg: #dbeafe;
+  --infoText: #1e40af;
+  --infoBorder: #bfdbfe;
+
+  --successBg: #d1fae5;
+  --successText: #065f46;
+  --successBorder: #a7f3d0;
+
+  --rejectBg: #fee2e2;
+  --rejectText: #991b1b;
+  --rejectBorder: #fecaca;
+
+  --disputeBg: #f3e8ff;
+  --disputeText: #6b21a8;
+  --disputeBorder: #c4b5fd;
+  --disputeHover: #e9d5ff;
+
+  --radius: 10px;
+}
+
+/* Loading */
+.empSub__loadingWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 0;
+}
+.empSub__loadingText {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* Page */
+.empSub {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* Header */
+.empSub__header {
+  margin-bottom: 32px;
+}
+.empSub__title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 8px 0;
+}
+.empSub__subtitle {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* Error */
+.empSub__error {
+  border: 1px solid var(--rejectBorder);
+  background: var(--rejectBg);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  font-size: 14px;
+  color: var(--rejectText);
+}
+
+/* Empty */
+.empSub__empty {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  padding: 64px;
+  text-align: center;
+}
+.empSub__emptyTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 8px 0;
+}
+.empSub__emptyText {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* List spacing */
+.empSub__list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Card */
+.empSub__card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  padding: 24px;
+}
+
+.empSub__cardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+/* Left side */
+.empSub__left {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Title row */
+.empSub__titleRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+/* Icon */
+.empSub__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius);
+  background: var(--btn);
+  color: white;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Job title + submitter */
+.empSub__jobTitleWrap {
+  flex: 1;
+  min-width: 0;
+}
+.empSub__jobTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 4px 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.empSub__submitter {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* Badges */
+.empSub__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.empSub__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  background: var(--soft);
+  color: #374151;
+}
+
+.empSub__badge--info {
+  background: var(--infoBg);
+  color: var(--infoText);
+  border-color: var(--infoBorder);
+}
+
+.empSub__badge--muted {
+  background: var(--soft);
+  color: #374151;
+  border-color: var(--border);
+  font-weight: 500;
+}
+
+/* Report box */
+.empSub__report {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.empSub__reportTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 8px 0;
+}
+
+.empSub__reportBody {
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Proof link */
+.empSub__proof {
+  margin-top: 16px;
+}
+.empSub__proofLink {
+  font-size: 14px;
+  color: var(--text);
+  text-decoration: none;
+}
+.empSub__proofLink:hover {
+  text-decoration: underline;
+}
+
+/* Actions */
+.empSub__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Buttons */
+.empSub__btn,
+.empSub__btnOutline,
+.empSub__btnSuccess,
+.empSub__btnDanger,
+.empSub__btnDispute,
+.empSub__statusPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.empSub__btnSuccess {
+  background: var(--success);
+  color: #fff;
+  border: 1px solid var(--success);
+}
+.empSub__btnSuccess:hover {
+  background: var(--successHover);
+  border-color: var(--successHover);
+}
+
+.empSub__btnOutline {
+  background: #fff;
+  color: var(--text);
+  border: 1px solid var(--border2);
+}
+.empSub__btnOutline:hover {
+  background: var(--soft);
+}
+
+.empSub__btnDispute {
+  background: var(--disputeBg);
+  color: var(--disputeText);
+  border: 1px solid var(--disputeBorder);
+}
+.empSub__btnDispute:hover {
+  background: var(--disputeHover);
+}
+
+/* Status pills */
+.empSub__statusPill {
+  cursor: default;
+}
+
+.empSub__statusPill--confirmed {
+  background: var(--successBg);
+  color: var(--successText);
+  border: 1px solid var(--successBorder);
+}
+
+.empSub__statusPill--rejected {
+  background: var(--rejectBg);
+  color: var(--rejectText);
+  border: 1px solid var(--rejectBorder);
+}
+
+.empSub__btn:disabled,
+.empSub__btnOutline:disabled,
+.empSub__btnSuccess:disabled,
+.empSub__btnDanger:disabled,
+.empSub__btnDispute:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Rejection reason */
+.empSub__rejectReason {
+  font-size: 12px;
+  color: var(--rejectText);
+  max-width: 360px;
+}
+
+/* Modal overlay */
+.empSub__modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+/* Modal */
+.empSub__modal {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 24px;
+  max-width: 420px;
+  width: 100%;
+}
+
+.empSub__modalTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 16px 0;
+}
+
+.empSub__modalText {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0 0 16px 0;
+}
+
+.empSub__textarea {
+  width: 100%;
+  padding: 8px 16px;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  font-size: 14px;
+  margin-bottom: 16px;
+  outline: none;
+  resize: vertical;
+}
+
+.empSub__textarea:focus {
+  border-color: transparent;
+  box-shadow: 0 0 0 2px var(--btn);
+}
+
+/* Modal actions */
+.empSub__modalActions {
+  display: flex;
+  gap: 12px;
+}
+
+.empSub__modalBtn {
+  flex: 1;
+}
+
+/* Danger button (modal reject) */
+.empSub__btnDanger {
+  background: var(--danger);
+  color: #fff;
+  border: 1px solid var(--danger);
+}
+.empSub__btnDanger:hover {
+  background: var(--dangerHover);
+  border-color: var(--dangerHover);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .empSub__cardTop {
+    flex-direction: column;
+  }
+  .empSub__actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}

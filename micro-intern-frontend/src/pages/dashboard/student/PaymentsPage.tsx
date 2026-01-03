@@ -1,56 +1,71 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { apiGet } from "../../../api/client";
 import { useAuth } from "../../../context/AuthContext";
+import "./css/BrowsePage.css";
 
 type Payment = {
   _id: string;
+  amount: number;
+  status: string;
+  releasedAt?: string;
+  createdAt: string;
+  employerId: {
+    _id: string;
+    name: string;
+    email: string;
+    companyName?: string;
+  };
+  studentId: {
+    _id: string;
+    name: string;
+    email: string;
+  };
   taskId: {
     _id: string;
     title: string;
-    companyName: string;
   };
-  amount: number;
-  status: "pending" | "escrowed" | "released";
-  escrowedAt?: string;
-  releasedAt?: string;
 };
 
 export default function PaymentsPage() {
   const { user, refreshUser } = useAuth();
-
-  useEffect(() => {
-    // Refresh user data when page loads to get latest gold
-    refreshUser();
-  }, []);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    refreshUser();
     loadPayments();
+    
+    // Refresh payments when page becomes visible (e.g., after completing a job)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        loadPayments();
+        refreshUser();
+      }
+    };
+    
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   async function loadPayments() {
     try {
       setLoading(true);
       setError("");
-      // Get all tasks where student is accepted, then fetch payment for each
-      const appsRes = await apiGet<{ success: boolean; data: any[] }>("/applications/me");
-      if (appsRes.success) {
-        const acceptedTasks = appsRes.data
-          .filter((app: any) => app.status === "accepted" && app.internshipId)
-          .map((app: any) => app.internshipId._id || app.internshipId);
+      
+      // Load successful payments for this student
+      const userId = (user as any)?._id || (user as any)?.id;
+      if (!userId) {
+        setError("User not found");
+        return;
+      }
 
-        const paymentPromises = acceptedTasks.map((taskId: string) =>
-          apiGet<{ success: boolean; data: Payment | null }>(`/payments/task/${taskId}`)
-        );
-
-        const paymentResults = await Promise.all(paymentPromises);
-        const validPayments = paymentResults
-          .filter((res) => res.success && res.data)
-          .map((res) => res.data!);
-
-        setPayments(validPayments);
+      const paymentsRes = await apiGet<{ success: boolean; data: Payment[] }>(`/payments/student/${userId}`);
+      if (paymentsRes.success) {
+        setPayments(paymentsRes.data || []);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load payments");
@@ -59,102 +74,115 @@ export default function PaymentsPage() {
     }
   }
 
-  function getStatusColor(status: string) {
-    return status === "released"
-      ? "bg-[#d1fae5] text-[#065f46] border-[#a7f3d0]"
-      : status === "escrowed"
-      ? "bg-[#fef3c7] text-[#92400e] border-[#fde68a]"
-      : "bg-[#fee2e2] text-[#991b1b] border-[#fecaca]";
-  }
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Loading payments…</div>
+      <div className="browse-page">
+        <div className="browse-inner">
+          <div className="browse-loading">Loading payments…</div>
+        </div>
       </div>
     );
   }
 
+
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-[#111827] mb-2">My Payments</h1>
-        <p className="text-sm text-[#6b7280]">Track payments for your completed tasks</p>
-      </div>
-
-      {/* Gold & XP Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-          <div className="text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-2">Total Gold</div>
-          <div className="text-3xl font-bold text-[#111827]">{(user as any)?.gold || 0}</div>
-        </div>
-        <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-          <div className="text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-2">Total XP</div>
-          <div className="text-3xl font-bold text-[#111827]">{(user as any)?.xp || 0}</div>
-        </div>
-        <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-          <div className="text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-2">Total Earned</div>
-          <div className="text-3xl font-bold text-[#111827]">
-            ৳{payments
-              .filter((p) => p.status === "released")
-              .reduce((sum, p) => sum + p.amount, 0)
-              .toLocaleString()}
+    <div className="browse-page">
+      <div className="browse-inner">
+        {/* Header */}
+        <header className="browse-header">
+          <div className="browse-title-wrap">
+            <div className="browse-eyebrow">My Payments</div>
+            <h1 className="browse-title">Track payments for your completed tasks</h1>
+            <p className="browse-subtitle">Monitor your earnings and payment status</p>
           </div>
-        </div>
-      </div>
+          <div className="browse-actions">
+            <div className="browse-stat">
+              <div className="browse-stat-label">Total Gold</div>
+              <div className="browse-stat-value">{(user as any)?.gold || 0}</div>
+            </div>
+          </div>
+        </header>
 
-      {/* Error */}
-      {error && (
-        <div className="border border-[#fecaca] bg-[#fee2e2] rounded-lg px-4 py-3 text-sm text-[#991b1b]">
-          {error}
-        </div>
-      )}
+        {/* Error */}
+        {error && <div className="browse-alert" style={{ marginTop: "16px" }}>{error}</div>}
 
-      {/* Payments List */}
-      {payments.length === 0 ? (
-        <div className="border border-[#e5e7eb] rounded-lg bg-white p-16 text-center">
-          <h3 className="text-lg font-semibold text-[#111827] mb-2">No Payments Yet</h3>
-          <p className="text-sm text-[#6b7280]">
-            Payments will appear here once employers fund escrow for your tasks.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {payments.map((payment) => (
-            <div
-              key={payment._id}
-              className="border border-[#e5e7eb] rounded-lg bg-white p-6 hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-start justify-between gap-6">
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-semibold text-[#111827] mb-2">{payment.taskId.title}</h3>
-                  <p className="text-sm text-[#6b7280] mb-4">{payment.taskId.companyName}</p>
-                  <div className="flex items-center gap-4">
-                    <span className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${getStatusColor(payment.status)}`}>
-                      {payment.status.toUpperCase()}
-                    </span>
-                    <span className="text-sm font-semibold text-[#111827]">
-                      ৳{payment.amount.toLocaleString()}
-                    </span>
-                    {payment.escrowedAt && (
-                      <span className="text-xs text-[#6b7280]">
-                        Escrowed: {new Date(payment.escrowedAt).toLocaleDateString()}
-                      </span>
-                    )}
-                    {payment.releasedAt && (
-                      <span className="text-xs text-[#6b7280]">
-                        Released: {new Date(payment.releasedAt).toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
-                </div>
+        {/* Recent Payments Section */}
+        <section className="browse-results" style={{ marginTop: "16px" }}>
+          <div className="browse-results-head">
+            <h2 className="browse-results-title">Recent Payments</h2>
+            <div className="browse-results-count">{payments.length} payments</div>
+          </div>
+          {payments.length === 0 ? (
+            <div className="browse-empty" style={{ marginTop: "16px" }}>
+              <div className="browse-empty-title">No Payments Yet</div>
+              <div className="browse-empty-sub">
+                Successful payments from completed jobs will appear here.
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          ) : (
+            <div className="browse-cards" style={{ marginTop: "16px" }}>
+              {payments.map((payment) => (
+                <article key={payment._id} className="job-card">
+                  <div className="job-card-top">
+                    <div className="job-card-main">
+                      <div className="job-title">{payment.taskId?.title || "Unknown Job"}</div>
+                      <div className="job-sub" style={{ marginBottom: "8px" }}>
+                        <span style={{ fontWeight: "600" }}>{payment.employerId?.companyName || payment.employerId?.name}</span>
+                        {" paid "}
+                        <span className="job-loc" style={{ fontWeight: "700", color: "rgba(251,191,36,.9)" }}>
+                          {payment.amount.toLocaleString()} Gold
+                        </span>
+                        {" to "}
+                        <span style={{ fontWeight: "600" }}>{payment.studentId?.name}</span>
+                      </div>
+                      <div style={{ fontSize: "12px", color: "var(--muted)", marginTop: "8px" }}>
+                        Payment released: {payment.releasedAt 
+                          ? new Date(payment.releasedAt).toLocaleString("en-US", {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : new Date(payment.createdAt).toLocaleString("en-US", {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                      </div>
+                    </div>
+                    <div className="job-badges">
+                      <span
+                        className="badge"
+                        style={{
+                          backgroundColor: "rgba(34,197,94,.16)",
+                          borderColor: "rgba(34,197,94,.35)",
+                          color: "rgba(34,197,94,.9)",
+                        }}
+                      >
+                        Paid
+                      </span>
+                    </div>
+                  </div>
+                  <div className="job-card-bottom">
+                    <div className="job-meta">
+                      <span className="meta-dot" />
+                      {payment.employerId?.email}
+                    </div>
+                    {payment.taskId?._id && (
+                      <Link to={`/internships/${payment.taskId._id}`} className="browse-btn browse-btn--ghost">
+                        View Job →
+                      </Link>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }
-

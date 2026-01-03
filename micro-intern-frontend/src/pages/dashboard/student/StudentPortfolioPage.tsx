@@ -1,49 +1,95 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "../../../context/AuthContext";
-import { apiGet } from "../../../api/client";
+import { apiGet, apiPut } from "../../../api/client";
+import { uploadProfilePicture } from "../../../api/upload";
+import "./css/BrowsePage.css";
 
 type Props = {
   readonly?: boolean;
   studentId?: string;
 };
 
+type Certificate = {
+  certificateId: string;
+  student: {
+    name: string;
+    email: string;
+  };
+  course: {
+    title: string;
+    description?: string;
+  };
+  completedAt: string;
+  valid: boolean;
+};
+
 export default function StudentPortfolioPage({
   readonly = false,
   studentId,
 }: Props) {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [portfolioData, setPortfolioData] = useState<any>(null);
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [studentData, setStudentData] = useState<any>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const displayStudentId = studentId || user?.id;
+  const isOwnProfile = !readonly && !studentId;
 
   useEffect(() => {
     if (displayStudentId) {
       loadPortfolio();
+      loadCertificates();
     }
   }, [displayStudentId]);
 
   async function loadPortfolio() {
     try {
       setLoading(true);
-      // TODO: Replace with actual API endpoint when available
-      // const res = await apiGet(`/student/${displayStudentId}/portfolio`);
-      // setPortfolioData(res.data);
       
-      // For now, use user data
-      setPortfolioData({
-        name: user?.name || "Student",
-        email: user?.email || "",
-        institution: (user as any)?.institution || "",
-        skills: (user as any)?.skills || [],
-        bio: (user as any)?.bio || "",
-        profilePicture: (user as any)?.profilePicture || "",
-        starRating: (user as any)?.starRating || 1,
-        totalTasksCompleted: (user as any)?.totalTasksCompleted || 0,
-        gold: (user as any)?.gold || 0,
-        xp: (user as any)?.xp || 0,
-        averageCompletionTime: (user as any)?.averageCompletionTime || 0,
-      });
+      // If viewing another student's portfolio, fetch their data
+      if (studentId && studentId !== user?.id) {
+        const studentRes = await apiGet<{ success: boolean; data: any }>(`/student/${studentId}`);
+        if (studentRes.success) {
+          const student = studentRes.data;
+          setStudentData(student);
+          setPortfolioData({
+            name: student.name || "Student",
+            email: student.email || "",
+            institution: student.institution || "",
+            bio: student.bio || "",
+            profilePicture: student.profilePicture || "",
+            starRating: student.starRating || 1,
+            totalTasksCompleted: student.totalTasksCompleted || 0,
+          });
+        } else {
+          setStudentData(null);
+          setPortfolioData({
+            name: "Student",
+            email: "",
+            institution: "",
+            bio: "",
+            profilePicture: "",
+            starRating: 1,
+            totalTasksCompleted: 0,
+          });
+        }
+      } else {
+        // Use logged-in user's data
+        setStudentData(user);
+        setPortfolioData({
+          name: user?.name || "Student",
+          email: user?.email || "",
+          institution: (user as any)?.institution || "",
+          bio: (user as any)?.bio || "",
+          profilePicture: (user as any)?.profilePicture || "",
+          starRating: (user as any)?.starRating || 1,
+          totalTasksCompleted: (user as any)?.totalTasksCompleted || 0,
+        });
+      }
     } catch (err) {
       console.error("Failed to load portfolio:", err);
     } finally {
@@ -51,115 +97,391 @@ export default function StudentPortfolioPage({
     }
   }
 
+  async function loadCertificates() {
+    try {
+      // If viewing another student's portfolio, fetch their courses
+      let coursesRes;
+      if (studentId && studentId !== user?.id) {
+        coursesRes = await apiGet<{ success: boolean; data: any[] }>(`/shop/student/${studentId}/courses`);
+      } else {
+        coursesRes = await apiGet<{ success: boolean; data: any[] }>("/shop/my-courses");
+      }
+      
+      if (coursesRes.success) {
+        const completedCourses = coursesRes.data.filter(
+          (enrollment: any) => enrollment.completedAt
+        );
+
+        // Build certificates from completed enrollments (same logic as CertificatesPage)
+        const certificates: Certificate[] = completedCourses.map((enrollment: any) => {
+          const course = enrollment.courseId || {};
+          let certificateId = "";
+          
+          // Extract certificate ID from certificateUrl if it exists
+          if (enrollment.certificateUrl) {
+            // URL format: http://localhost:5173/certificates/CERT-xxx-xxx-xxx
+            // or: /certificates/CERT-xxx-xxx-xxx
+            const urlMatch = enrollment.certificateUrl.match(/certificates\/(CERT-[^\/\s]+)/);
+            if (urlMatch && urlMatch[1]) {
+              certificateId = urlMatch[1];
+            } else {
+              // Try splitting by /certificates/
+              const urlParts = enrollment.certificateUrl.split("/certificates/");
+              if (urlParts.length > 1) {
+                certificateId = urlParts[1].split("/")[0].split("?")[0]; // Remove query params and path
+              }
+            }
+          }
+          
+          // If still no certificateId, the course was completed but certificate generation might have failed
+          if (!certificateId) {
+            certificateId = `enrollment-${enrollment._id}`;
+          }
+
+          return {
+            certificateId: certificateId,
+            student: {
+              name: studentData?.name || portfolioData?.name || user?.name || "",
+              email: studentData?.email || portfolioData?.email || user?.email || "",
+            },
+            course: {
+              title: course.title || "Unknown Course",
+              description: course.description,
+            },
+            completedAt: enrollment.completedAt,
+            valid: !!enrollment.certificateUrl && certificateId.startsWith("CERT-"),
+          };
+        });
+
+        setCertificates(certificates);
+      }
+    } catch (err) {
+      console.error("Failed to load certificates:", err);
+    }
+  }
+
+  function downloadCertificate(certificateId: string) {
+    window.open(`/api/certificates/${certificateId}/html`, "_blank");
+  }
+
+  async function handleProfilePictureUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Please select an image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError("File size must be less than 5MB");
+      return;
+    }
+
+    try {
+      setUploading(true);
+      setUploadError(null);
+
+      const result = await uploadProfilePicture(file);
+      
+      if (result.success && result.data) {
+        // Update profile with new picture URL
+        await apiPut("/student/me", {
+          profilePicture: result.data.url,
+        });
+
+        // Update local state
+        setPortfolioData((prev: any) => ({
+          ...prev,
+          profilePicture: result.data!.url,
+        }));
+
+        // Refresh user data
+        if (user?.id === displayStudentId) {
+          await refreshUser();
+        }
+
+        // Reload portfolio
+        await loadPortfolio();
+      } else {
+        setUploadError(result.message || "Failed to upload profile picture");
+      }
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Failed to upload profile picture");
+    } finally {
+      setUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Loading portfolio…</div>
+      <div className="browse-page">
+        <div className="browse-inner">
+          <div className="browse-loading">Loading portfolio…</div>
+        </div>
       </div>
     );
   }
 
   if (!portfolioData) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Portfolio not found</div>
+      <div className="browse-page">
+        <div className="browse-inner">
+          <div className="browse-loading">Portfolio not found</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-[#111827] mb-2">
-          {readonly ? "Student Portfolio" : "My Portfolio"}
-        </h1>
-        <p className="text-sm text-[#6b7280]">
-          {readonly
-            ? "View student profile and achievements"
-            : "Showcase your skills, experience, and accomplishments"}
-        </p>
-      </div>
+    <div className="browse-page">
+      <div className="browse-inner">
+        {/* Header */}
+        <header className="browse-header">
+          <div className="browse-title-wrap">
+            <div className="browse-eyebrow">Student Portfolio</div>
+            <h1 className="browse-title">
+              {readonly ? "Student Portfolio" : "My Portfolio"}
+            </h1>
+            <p className="browse-subtitle">
+              {readonly
+                ? "View student profile and achievements"
+                : "Showcase your accomplishments and certificates"}
+            </p>
+          </div>
+        </header>
 
-      {/* Profile Card */}
-      <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-        <div className="flex items-start gap-6">
-          {portfolioData.profilePicture ? (
-            <img
-              src={portfolioData.profilePicture}
-              alt={portfolioData.name}
-              className="w-24 h-24 rounded-full object-cover"
-            />
-          ) : (
-            <div className="w-24 h-24 rounded-full bg-[#111827] flex items-center justify-center text-white text-2xl font-semibold flex-shrink-0">
-              {portfolioData.name.charAt(0).toUpperCase()}
-            </div>
-          )}
-
-          <div className="flex-1 space-y-4">
-            <div>
-              <h2 className="text-2xl font-semibold text-[#111827] mb-1">
-                {portfolioData.name}
-              </h2>
-              {portfolioData.institution && (
-                <p className="text-sm text-[#6b7280]">{portfolioData.institution}</p>
+        {/* Profile Card */}
+        <section className="browse-panel" style={{ marginTop: "16px" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: "20px" }}>
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              {portfolioData.profilePicture ? (
+                <img
+                  src={portfolioData.profilePicture}
+                  alt={portfolioData.name}
+                  style={{
+                    width: "80px",
+                    height: "80px",
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: "80px",
+                    height: "80px",
+                    borderRadius: "50%",
+                    background: "rgba(124,58,237,.3)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    fontSize: "28px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  {portfolioData.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              
+              {isOwnProfile && (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleProfilePictureUpload}
+                    style={{ display: "none" }}
+                    disabled={uploading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    style={{
+                      position: "absolute",
+                      bottom: 0,
+                      right: 0,
+                      width: "28px",
+                      height: "28px",
+                      borderRadius: "50%",
+                      background: "linear-gradient(135deg, var(--lav2), var(--blue))",
+                      border: "2px solid var(--bg)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: uploading ? "not-allowed" : "pointer",
+                      opacity: uploading ? 0.6 : 1,
+                      transition: "all 0.2s",
+                    }}
+                    title="Update profile picture"
+                  >
+                    {uploading ? (
+                      <div style={{ 
+                        width: "12px", 
+                        height: "12px", 
+                        border: "2px solid white", 
+                        borderTopColor: "transparent", 
+                        borderRadius: "50%", 
+                        animation: "spin 0.6s linear infinite",
+                        display: "inline-block"
+                      }} />
+                    ) : (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                      </svg>
+                    )}
+                  </button>
+                </>
               )}
             </div>
 
-            {portfolioData.bio && (
-              <p className="text-sm text-[#374151] leading-relaxed">{portfolioData.bio}</p>
-            )}
+            <div style={{ flex: 1 }}>
+              {uploadError && (
+                <div style={{ 
+                  marginBottom: "12px", 
+                  padding: "8px 12px", 
+                  background: "rgba(239,68,68,.15)", 
+                  border: "1px solid rgba(239,68,68,.3)", 
+                  borderRadius: "8px", 
+                  color: "rgba(255,255,255,.9)", 
+                  fontSize: "13px" 
+                }}>
+                  {uploadError}
+                </div>
+              )}
+              <h2 style={{ margin: "0 0 8px", fontSize: "24px", fontWeight: "900" }}>
+                {portfolioData.name}
+              </h2>
+              {portfolioData.institution && (
+                <p style={{ margin: "0 0 12px", color: "var(--muted)", fontSize: "14px" }}>
+                  {portfolioData.institution}
+                </p>
+              )}
+              {portfolioData.bio && (
+                <p style={{ margin: "0 0 16px", color: "rgba(255,255,255,.85)", fontSize: "14px", lineHeight: "1.6" }}>
+                  {portfolioData.bio}
+                </p>
+              )}
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4 border-t border-[#e5e7eb]">
-              <div>
-                <div className="text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-2">Tasks Completed</div>
-                <div className="text-lg font-bold text-[#111827]">
-                  {portfolioData.totalTasksCompleted || 0}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-2">Gold</div>
-                <div className="text-lg font-bold text-[#111827]">
-                  {portfolioData.gold || 0}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs font-medium text-[#6b7280] uppercase tracking-wide mb-2">XP</div>
-                <div className="text-lg font-bold text-[#111827]">
-                  {portfolioData.xp || 0}
+              {/* Stats */}
+              <div style={{ display: "flex", gap: "24px", paddingTop: "16px", borderTop: "1px solid rgba(255,255,255,.12)" }}>
+                <div>
+                  <div style={{ fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "4px" }}>
+                    Tasks Completed
+                  </div>
+                  <div style={{ fontSize: "20px", fontWeight: "800" }}>
+                    {portfolioData.totalTasksCompleted || 0}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* Skills */}
-      {portfolioData.skills && portfolioData.skills.length > 0 && (
-        <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-          <h3 className="text-lg font-semibold text-[#111827] mb-4">Skills</h3>
-          <div className="flex flex-wrap gap-2">
-            {portfolioData.skills.map((skill: string, index: number) => (
-              <span
-                key={index}
-                className="px-3 py-1 rounded-full bg-[#f9fafb] text-xs text-[#374151] border border-[#e5e7eb]"
-              >
-                {skill}
-              </span>
-            ))}
+        {/* Certificates Section */}
+        <section className="browse-results" style={{ marginTop: "16px" }}>
+          <div className="browse-results-head">
+            <h2 className="browse-results-title">Certificates</h2>
+            <div className="browse-results-count">{certificates.length} earned</div>
           </div>
-        </div>
-      )}
 
-      {/* Contact Info */}
-      {!readonly && (
-        <div className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-          <h3 className="text-lg font-semibold text-[#111827] mb-4">Contact</h3>
-          <p className="text-sm text-[#6b7280]">{portfolioData.email}</p>
-        </div>
-      )}
+          {certificates.length === 0 ? (
+            <div className="browse-empty">
+              <div className="browse-empty-title">No certificates yet</div>
+              <div className="browse-empty-sub">Complete courses to earn certificates.</div>
+            </div>
+          ) : (
+            <div className="browse-cards">
+              {certificates.map((cert) => (
+                <article key={cert.certificateId} className="job-card" style={{ cursor: "pointer" }} onClick={() => downloadCertificate(cert.certificateId)}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                    {/* Award Icon */}
+                    <div
+                      style={{
+                        width: "56px",
+                        height: "56px",
+                        borderRadius: "14px",
+                        background: "linear-gradient(135deg, rgba(124,58,237,.3), rgba(59,130,246,.2))",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <svg
+                        width="32"
+                        height="32"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        style={{ color: "rgba(255,255,255,.9)" }}
+                      >
+                        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+                        <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+                        <path d="M4 22h16"></path>
+                        <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+                        <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
+                        <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+                      </svg>
+                    </div>
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="job-title" style={{ marginBottom: "6px" }}>
+                        {cert.course.title}
+                      </div>
+                      {cert.course.description && (
+                        <div className="job-sub" style={{ marginBottom: "8px", lineClamp: 2, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+                          {cert.course.description}
+                        </div>
+                      )}
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "8px" }}>
+                        <span
+                          style={{
+                            fontSize: "11px",
+                            color: cert.valid ? "rgba(34,197,94,.9)" : "rgba(239,68,68,.9)",
+                            fontWeight: "600",
+                          }}
+                        >
+                          {cert.valid ? "✓ Valid" : "✗ Invalid"}
+                        </span>
+                        <span style={{ fontSize: "11px", color: "var(--muted)" }}>•</span>
+                        <span style={{ fontSize: "11px", color: "var(--muted)" }}>
+                          {new Date(cert.completedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Contact Info */}
+        {!readonly && (
+          <section className="browse-panel" style={{ marginTop: "16px" }}>
+            <div className="browse-panel-head">
+              <h2 className="browse-panel-title">Contact</h2>
+            </div>
+            <p style={{ margin: 0, color: "rgba(255,255,255,.85)", fontSize: "14px" }}>
+              {portfolioData.email}
+            </p>
+          </section>
+        )}
+      </div>
     </div>
   );
 }

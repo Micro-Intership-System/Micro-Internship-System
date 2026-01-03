@@ -7,6 +7,7 @@ import { createNotification } from "../utils/notifications";
 import { Anomaly } from "../models/anomaly";
 import { TaskChatMessage } from "../models/taskChat";
 import { Payment } from "../models/payment";
+import { TaskReview } from "../models/taskReview";
 
 const router = Router();
 
@@ -311,6 +312,7 @@ router.get("/running", requireAuth, async (req: any, res) => {
           acceptedAt: task.acceptedAt,
           submissionReport: task.submissionReport,
           submissionProofUrl: task.submissionProofUrl,
+          rejectionReason: task.rejectionReason, // Include rejection reason
         };
       });
 
@@ -522,6 +524,31 @@ router.post("/:id/confirm", requireAuth, async (req: any, res) => {
     task.completedAt = new Date();
     await task.save();
 
+    // Create or update Payment record
+    const { Payment } = await import("../models/payment");
+    let payment = await Payment.findOne({ taskId: task._id });
+    
+    if (!payment) {
+      // Create new payment record
+      payment = await Payment.create({
+        taskId: task._id,
+        employerId: task.employerId,
+        studentId: task.acceptedStudentId,
+        amount: task.gold,
+        status: "released",
+        type: "task_payment",
+        releasedAt: new Date(),
+        releasedBy: req.user.id,
+      });
+    } else {
+      // Update existing payment record
+      payment.status = "released";
+      payment.releasedAt = new Date();
+      payment.releasedBy = req.user.id;
+      payment.amount = task.gold; // Update amount in case it changed
+      await payment.save();
+    }
+
     // Award gold to student
     const currentGold = student.gold || 0;
     student.gold = currentGold + task.gold;
@@ -641,57 +668,79 @@ router.post("/:id/report-rejection", requireAuth, async (req: any, res) => {
       });
     }
 
-    // Check if rejection reason is invalid (missing or too short)
-    if (!task.rejectionReason || task.rejectionReason.trim().length < 10) {
-      // Create anomaly and dispute chat
-      const anomaly = await Anomaly.create({
-        type: "delayed_payment", // Using existing type, can add new type later
-        severity: "high",
-        taskId: task._id,
-        employerId: task.employerId,
-        studentId: task.acceptedStudentId,
-        description: `Student reported rejection of job "${task.title}" without proper cause. Rejection reason: "${task.rejectionReason || "None provided"}"`,
-        detectedAt: new Date(),
-      });
+    // Require 50% escrow payment from student
+    const student = await User.findById(req.user.id);
+    if (!student) {
+      return res.status(404).json({ success: false, message: "Student not found" });
+    }
 
-      // Create initial dispute message
-      const disputeMessage = await TaskChatMessage.create({
-        taskId: task._id,
-        senderId: req.user.id,
-        text: `DISPUTE OPENED: Student has reported this rejection as invalid. The rejection reason provided was: "${task.rejectionReason || "None provided"}". Admin review required.`,
-        status: "sent",
-      });
-
-      task.submissionStatus = "disputed";
-      task.disputeChatId = disputeMessage._id;
-      await task.save();
-
-      // Notify admin
-      const admins = await User.find({ role: "admin" });
-      for (const admin of admins) {
-        await createNotification(
-          admin._id.toString(),
-          "anomaly_detected",
-          "Dispute Opened",
-          `A dispute has been opened for job "${task.title}". Review required.`,
-          task._id.toString(),
-          req.user.id,
-          { anomalyId: anomaly._id.toString() }
-        );
-      }
-
-      res.json({
-        success: true,
-        data: task,
-        anomaly,
-        message: "Dispute opened and anomaly created",
-      });
-    } else {
+    const escrowAmount = Math.ceil(task.gold * 0.5);
+    if ((student.gold || 0) < escrowAmount) {
       return res.status(400).json({
         success: false,
-        message: "Rejection reason is valid. Cannot report as anomaly.",
+        message: `Insufficient gold. You need ${escrowAmount} gold (50% of job payment) to report this rejection as an anomaly.`,
       });
     }
+
+    // Deduct escrow from student
+    student.gold = (student.gold || 0) - escrowAmount;
+    await student.save();
+
+    // Store escrow amount in task for later resolution
+    task.disputeEscrowAmount = escrowAmount;
+
+    // Allow students to report rejections regardless of reason validity
+    // Create anomaly and dispute chat
+    const anomalyType = (!task.rejectionReason || task.rejectionReason.trim().length < 10) 
+      ? "delayed_payment" // Invalid reason - higher severity
+      : "task_stalled"; // Valid reason but student disputes - lower severity
+    
+    const severity = (!task.rejectionReason || task.rejectionReason.trim().length < 10)
+      ? "high"
+      : "medium";
+
+    const anomaly = await Anomaly.create({
+      type: anomalyType,
+      severity: severity,
+      taskId: task._id,
+      employerId: task.employerId,
+      studentId: task.acceptedStudentId,
+      description: `Student reported rejection of job "${task.title}" as disputed. Rejection reason: "${task.rejectionReason || "None provided"}". Escrow: ${escrowAmount} gold.`,
+      detectedAt: new Date(),
+    });
+
+    // Create initial dispute message
+    const disputeMessage = await TaskChatMessage.create({
+      taskId: task._id,
+      senderId: req.user.id,
+      text: `DISPUTE OPENED: Student has reported this rejection as disputed. The rejection reason provided was: "${task.rejectionReason || "None provided"}". Escrow amount: ${escrowAmount} gold. Admin review required.`,
+      status: "sent",
+    });
+
+    task.submissionStatus = "disputed";
+    task.disputeChatId = disputeMessage._id;
+    await task.save();
+
+    // Notify admin
+    const admins = await User.find({ role: "admin" });
+    for (const admin of admins) {
+      await createNotification(
+        admin._id.toString(),
+        "anomaly_detected",
+        "Dispute Opened",
+        `A dispute has been opened for job "${task.title}". Review required.`,
+        task._id.toString(),
+        req.user.id,
+        { anomalyId: anomaly._id.toString() }
+      );
+    }
+
+    res.json({
+      success: true,
+      data: task,
+      anomaly,
+      message: "Dispute opened and anomaly created",
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Failed to report rejection" });
@@ -735,31 +784,99 @@ router.post("/:id/resolve-dispute", requireAuth, async (req: any, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // Calculate payment: original gold + 50% fee
-    const payment = task.gold + Math.ceil(task.gold * 0.5);
+    const escrowAmount = task.disputeEscrowAmount || Math.ceil(task.gold * 0.5);
 
     if (winner === "student") {
-      // Student wins: gets payment
-      student.gold = (student.gold || 0) + payment;
+      // Student wins: gets 150% of original payment (original + escrow + 50% bonus)
+      const totalPayment = task.gold + escrowAmount + Math.ceil(task.gold * 0.5); // Original + escrow + 50% bonus
+      student.gold = (student.gold || 0) + totalPayment;
       await student.save();
+
+      // Apply 7-day restriction to employer (can only post low priority jobs)
+      const restrictionDate = new Date();
+      restrictionDate.setDate(restrictionDate.getDate() + 7);
+      // Ensure we're working with a fresh employer object from the database
+      const freshEmployer = await User.findById(employer._id);
+      if (freshEmployer) {
+        freshEmployer.restrictionUntil = restrictionDate;
+        freshEmployer.canOnlyPostLowPriority = true;
+        const saved = await freshEmployer.save();
+        console.log(`Restriction applied to employer ${saved._id}: until ${restrictionDate.toISOString()}, canOnlyPostLowPriority: ${saved.canOnlyPostLowPriority}`);
+      } else {
+        // Fallback to the employer object we already have
+        employer.restrictionUntil = restrictionDate;
+        employer.canOnlyPostLowPriority = true;
+        const saved = await employer.save();
+        console.log(`Restriction applied to employer ${saved._id}: until ${restrictionDate.toISOString()}, canOnlyPostLowPriority: ${saved.canOnlyPostLowPriority}`);
+      }
 
       task.submissionStatus = "confirmed";
       task.status = "completed";
       task.completedAt = new Date();
+      await task.save();
+
+      // Create Payment record for dispute resolution (student won)
+      const { Payment } = await import("../models/payment");
+      let payment = await Payment.findOne({ taskId: task._id });
+      
+      if (!payment) {
+        payment = await Payment.create({
+          taskId: task._id,
+          employerId: task.employerId,
+          studentId: task.acceptedStudentId,
+          amount: totalPayment, // Total amount including bonus
+          status: "released",
+          type: "task_payment",
+          releasedAt: new Date(),
+          releasedBy: req.user.id,
+          notes: `Dispute resolved: Student won. Original: ${task.gold}, Escrow: ${escrowAmount}, Bonus: ${Math.ceil(task.gold * 0.5)}`,
+        });
+      } else {
+        payment.status = "released";
+        payment.amount = totalPayment;
+        payment.releasedAt = new Date();
+        payment.releasedBy = req.user.id;
+        payment.notes = `Dispute resolved: Student won. Original: ${task.gold}, Escrow: ${escrowAmount}, Bonus: ${Math.ceil(task.gold * 0.5)}`;
+        await payment.save();
+      }
 
       await createNotification(
         task.acceptedStudentId!.toString(),
         "dispute_resolved",
         "Dispute Resolved - You Won!",
-        `Admin resolved the dispute in your favor. You received ${payment} gold (original ${task.gold} + 50% fee).`,
+        `Admin resolved the dispute in your favor. You received ${totalPayment} gold (original ${task.gold} + escrow ${escrowAmount} + 50% bonus ${Math.ceil(task.gold * 0.5)}).`,
         task._id.toString(),
         req.user.id,
-        { goldEarned: payment, reason }
+        { goldEarned: totalPayment, reason }
+      );
+
+      await createNotification(
+        task.employerId.toString(),
+        "dispute_resolved",
+        "Dispute Resolved - Student Won",
+        `Admin resolved the dispute in favor of the student. You have a 7-day restriction where you can only post low priority jobs. Reason: ${reason || "N/A"}`,
+        task._id.toString(),
+        req.user.id,
+        { reason, restrictionUntil: restrictionDate }
       );
     } else {
-      // Employer wins: gets refund (if they had escrowed)
+      // Employer wins: student loses 50% of payment (escrow is forfeited)
+      const penalty = escrowAmount; // The escrow amount is forfeited
+      student.gold = Math.max(0, (student.gold || 0) - penalty); // Can go negative, but we'll keep it at 0 minimum
+      await student.save();
+
       task.submissionStatus = "rejected";
       task.rejectionReason = reason || task.rejectionReason || "Dispute resolved in employer's favor";
+
+      await createNotification(
+        task.acceptedStudentId!.toString(),
+        "dispute_resolved",
+        "Dispute Resolved - Employer Won",
+        `Admin resolved the dispute in favor of the employer. ${penalty} gold (50% of payment) has been deducted from your account. Reason: ${reason || "N/A"}`,
+        task._id.toString(),
+        req.user.id,
+        { goldDeducted: penalty, reason }
+      );
 
       await createNotification(
         task.employerId.toString(),
@@ -791,11 +908,70 @@ router.post("/:id/resolve-dispute", requireAuth, async (req: any, res) => {
       success: true,
       data: task,
       winner,
-      payment: winner === "student" ? payment : 0,
+      payment: winner === "student" ? (task.gold + escrowAmount + Math.ceil(task.gold * 0.5)) : 0,
+      penalty: winner === "employer" ? escrowAmount : 0,
     });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Failed to resolve dispute" });
+  }
+});
+
+/**
+ * GET /api/jobs/completed
+ * Get completed jobs for the logged-in user (student or employer) that are eligible for review
+ */
+router.get("/completed", requireAuth, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    let completedJobs;
+    if (userRole === "student") {
+      // For students, find applications where status is accepted and internship is completed
+      const applications = await Application.find({
+        studentId: userId,
+        status: "accepted",
+      }).populate("internshipId");
+
+      completedJobs = applications
+        .filter((app: any) => app.internshipId && app.internshipId.status === "completed")
+        .map((app: any) => ({
+          _id: app.internshipId._id,
+          title: app.internshipId.title,
+          companyName: app.internshipId.companyName,
+          completionDate: app.internshipId.completionDate,
+          employerId: app.internshipId.employerId,
+        }));
+    } else if (userRole === "employer") {
+      // For employers, find internships posted by them that are completed
+      completedJobs = await Internship.find({
+        employerId: userId,
+        status: "completed",
+      }).populate("acceptedStudentId", "name email");
+    } else {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    // Check if reviews already exist for these jobs
+    const jobsWithReviewStatus = await Promise.all(
+      completedJobs.map(async (job: any) => {
+        const existingReview = await TaskReview.findOne({
+          taskId: job._id,
+          reviewerId: userId,
+          reviewedId: userRole === "student" ? job.employerId : job.acceptedStudentId._id,
+        });
+        return {
+          ...job.toObject ? job.toObject() : job,
+          reviewStatus: existingReview ? "submitted" : "pending",
+        };
+      })
+    );
+
+    res.json({ success: true, data: jobsWithReviewStatus });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Failed to load completed jobs" });
   }
 });
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiGet, apiDelete } from "../../../api/client";
+import "../student/css/BrowsePage.css";
 
 type Task = {
   _id: string;
@@ -46,10 +47,21 @@ export default function AllTasksPage() {
     }
   }
 
-  const filteredTasks = tasks.filter((task) =>
-    task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    task.companyName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredTasks = tasks.filter((task) => {
+    // Search filter
+    const matchesSearch =
+      !searchQuery ||
+      task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      task.companyName.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // Status filter (already applied on backend, but double-check for consistency)
+    const matchesStatus = !filter.status || task.status === filter.status;
+    
+    // Priority filter (already applied on backend, but double-check for consistency)
+    const matchesPriority = !filter.priority || task.priorityLevel === filter.priority;
+    
+    return matchesSearch && matchesStatus && matchesPriority;
+  });
 
   async function handleDeleteTask(taskId: string) {
     if (!confirm("Are you sure you want to delete this job? This will permanently delete the job and all related data (applications, payments, messages, etc.).")) {
@@ -66,138 +78,164 @@ export default function AllTasksPage() {
   }
 
   function getStatusColor(status: string) {
-    const colors = {
-      posted: "bg-[#dbeafe] text-[#1e40af] border-[#bfdbfe]",
-      in_progress: "bg-[#fef3c7] text-[#92400e] border-[#fde68a]",
-      completed: "bg-[#d1fae5] text-[#065f46] border-[#a7f3d0]",
-      cancelled: "bg-[#fee2e2] text-[#991b1b] border-[#fecaca]",
+    const colors: Record<string, { bg: string; border: string; color: string }> = {
+      posted: { bg: "rgba(59,130,246,.16)", border: "rgba(59,130,246,.35)", color: "rgba(59,130,246,.9)" },
+      in_progress: { bg: "rgba(251,191,36,.16)", border: "rgba(251,191,36,.35)", color: "rgba(251,191,36,.9)" },
+      completed: { bg: "rgba(34,197,94,.16)", border: "rgba(34,197,94,.35)", color: "rgba(34,197,94,.9)" },
+      cancelled: { bg: "rgba(239,68,68,.16)", border: "rgba(239,68,68,.35)", color: "rgba(239,68,68,.9)" },
     };
-    return colors[status as keyof typeof colors] || "bg-[#f3f4f6] text-[#374151] border-[#e5e7eb]";
+    return colors[status] || { bg: "var(--panel)", border: "var(--border)", color: "var(--text)" };
+  }
+
+  function getPriorityColor(priority: string) {
+    const colors: Record<string, { bg: string; border: string; color: string }> = {
+      high: { bg: "rgba(239,68,68,.16)", border: "rgba(239,68,68,.35)", color: "rgba(239,68,68,.9)" },
+      medium: { bg: "rgba(251,191,36,.16)", border: "rgba(251,191,36,.35)", color: "rgba(251,191,36,.9)" },
+      low: { bg: "rgba(59,130,246,.16)", border: "rgba(59,130,246,.35)", color: "rgba(59,130,246,.9)" },
+    };
+    return colors[priority] || { bg: "var(--panel)", border: "var(--border)", color: "var(--text)" };
   }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Loading tasks…</div>
+      <div className="browse-page">
+        <div className="browse-inner">
+          <div className="browse-loading">Loading tasks…</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="text-center mb-12">
-        <h1 className="text-3xl font-semibold text-[#111827] mb-3">All Tasks</h1>
-        <p className="text-sm text-[#6b7280] max-w-2xl mx-auto">
-          Monitor all micro-internship tasks across the platform. View status, assignments, and details.
-        </p>
-      </div>
+    <div className="browse-page">
+      <div className="browse-inner">
+        {/* Header */}
+        <header className="browse-header">
+          <div className="browse-title-wrap">
+            <div className="browse-eyebrow">Admin</div>
+            <h1 className="browse-title">All Tasks</h1>
+            <p className="browse-subtitle">Monitor all micro-internship tasks across the platform</p>
+          </div>
+        </header>
 
-      {/* Filters */}
-      <div className="flex items-center justify-between gap-4 mb-6">
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search tasks..."
-          className="flex-1 max-w-md px-4 py-2 border border-[#d1d5db] rounded-lg text-sm text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#111827] bg-white"
-        />
-        <div className="flex items-center gap-3">
-          <select
-            value={filter.status || ""}
-            onChange={(e) => setFilter({ ...filter, status: e.target.value || undefined })}
-            className="px-3 py-2 border border-[#d1d5db] rounded-lg text-sm text-[#111827] bg-white focus:outline-none focus:ring-2 focus:ring-[#111827]"
-          >
-            <option value="">All Status</option>
-            <option value="posted">Posted</option>
-            <option value="in_progress">In Progress</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-          <select
-            value={filter.priority || ""}
-            onChange={(e) => setFilter({ ...filter, priority: e.target.value || undefined })}
-            className="px-3 py-2 border border-[#d1d5db] rounded-lg text-sm text-[#111827] bg-white focus:outline-none focus:ring-2 focus:ring-[#111827]"
-          >
-            <option value="">All Priorities</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
+        {/* Filters */}
+        <section className="browse-panel" style={{ marginTop: "16px" }}>
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search tasks..."
+              className="browse-input"
+              style={{ flex: "1", minWidth: "200px" }}
+            />
+            <select
+              value={filter.status || ""}
+              onChange={(e) => setFilter({ ...filter, status: e.target.value || undefined })}
+              className="browse-input"
+              style={{ minWidth: "150px" }}
+            >
+              <option value="">All Status</option>
+              <option value="posted">Posted</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            <select
+              value={filter.priority || ""}
+              onChange={(e) => setFilter({ ...filter, priority: e.target.value || undefined })}
+              className="browse-input"
+              style={{ minWidth: "150px" }}
+            >
+              <option value="">All Priorities</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+        </section>
+
+        {/* Tasks List */}
+        {filteredTasks.length === 0 ? (
+          <section className="browse-results" style={{ marginTop: "16px" }}>
+            <div className="browse-empty">
+              <div className="browse-empty-title">No tasks found</div>
+            </div>
+          </section>
+        ) : (
+          <section className="browse-results" style={{ marginTop: "16px" }}>
+            <div className="browse-results-head">
+              <h2 className="browse-results-title">Tasks</h2>
+              <div className="browse-results-count">{filteredTasks.length} found</div>
+            </div>
+            <div className="browse-cards">
+              {filteredTasks.map((task) => {
+                const statusColors = getStatusColor(task.status);
+                const priorityColors = getPriorityColor(task.priorityLevel);
+                return (
+                  <article key={task._id} className="job-card">
+                    <div className="job-card-top">
+                      <div className="job-card-main">
+                        <div className="job-title" style={{ marginBottom: "4px" }}>
+                          {task.title}
+                        </div>
+                        <div className="job-sub" style={{ marginBottom: "12px" }}>
+                          {task.companyName} · {task.location} · {task.duration}
+                        </div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "12px" }}>
+                          <span className="badge" style={{ background: "var(--panel)", borderColor: "var(--border)", color: "var(--text)" }}>
+                            {task.gold.toLocaleString()} Gold
+                          </span>
+                          <span
+                            className="badge"
+                            style={{
+                              backgroundColor: statusColors.bg,
+                              borderColor: statusColors.border,
+                              color: statusColors.color,
+                            }}
+                          >
+                            {task.status}
+                          </span>
+                          <span
+                            className="badge"
+                            style={{
+                              backgroundColor: priorityColors.bg,
+                              borderColor: priorityColors.border,
+                              color: priorityColors.color,
+                            }}
+                          >
+                            Priority: {task.priorityLevel || "medium"}
+                          </span>
+                          {task.acceptedStudentId && (
+                            <span className="badge" style={{ background: "var(--panel)", borderColor: "var(--border)", color: "var(--text)" }}>
+                              Student: {task.acceptedStudentId.name}
+                            </span>
+                          )}
+                          <span className="badge" style={{ background: "var(--panel)", borderColor: "var(--border)", color: "var(--muted)", fontSize: "11px" }}>
+                            Created: {new Date(task.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "10px", flexShrink: 0 }}>
+                        <button
+                          onClick={() => handleDeleteTask(task._id)}
+                          className="browse-btn browse-btn--danger"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        <div style={{ textAlign: "center", marginTop: "16px", fontSize: "13px", color: "var(--muted)" }}>
+          Showing {filteredTasks.length} of {tasks.length} tasks
         </div>
-      </div>
-
-      {/* Tasks Table */}
-      <div className="border border-[#e5e7eb] rounded-lg bg-white overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-[#f9fafb] border-b border-[#e5e7eb]">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#374151] uppercase tracking-wider">Task</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#374151] uppercase tracking-wider">Company</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">Gold</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">Student</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">Created</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#e5e7eb]">
-              {filteredTasks.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-sm text-[#6b7280]">
-                    No tasks found
-                  </td>
-                </tr>
-              ) : (
-                filteredTasks.map((task) => (
-                  <tr key={task._id} className="hover:bg-[#f9fafb] transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-semibold text-[#111827]">{task.title}</div>
-                      <div className="text-xs text-[#6b7280]">{task.location} • {task.duration}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-[#111827]">{task.companyName}</div>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-sm font-semibold text-[#111827]">{task.gold.toLocaleString()} Gold</span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${getStatusColor(task.status)}`}>
-                        {task.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-sm text-[#111827]">
-                        {task.acceptedStudentId ? task.acceptedStudentId.name : "—"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-xs text-[#6b7280]">
-                        {new Date(task.createdAt).toLocaleDateString()}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <button
-                        onClick={() => handleDeleteTask(task._id)}
-                        className="px-3 py-1.5 rounded-lg bg-[#991b1b] text-white text-xs font-semibold hover:bg-[#7f1d1d] transition-colors"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div className="text-center text-sm text-[#6b7280]">
-        Showing {filteredTasks.length} of {tasks.length} tasks
       </div>
     </div>
   );
 }
-
-

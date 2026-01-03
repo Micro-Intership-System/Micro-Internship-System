@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiGet, apiPost } from "../../../api/client";
 import { useAuth } from "../../../context/AuthContext";
+import "../student/css/BrowsePage.css";
 
 type Submission = {
   _id: string;
@@ -43,9 +44,7 @@ export default function JobSubmissionsPage() {
       setLoading(true);
       setError("");
       const res = await apiGet<{ success: boolean; data: Submission[] }>("/jobs/submissions");
-      if (res.success) {
-        setSubmissions(res.data || []);
-      }
+      if (res.success) setSubmissions(res.data || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load submissions");
     } finally {
@@ -54,20 +53,23 @@ export default function JobSubmissionsPage() {
   }
 
   async function handleConfirm(jobId: string) {
-    if (!confirm("Confirm this submission and release payment to the student?")) {
-      return;
-    }
+    if (!confirm("Confirm this submission and release payment to the student?")) return;
 
     try {
       setConfirming(jobId);
-      const res = await apiPost<{ success: boolean; data: any; goldAwarded?: number; studentNewBalance?: number }>(`/jobs/${jobId}/confirm`, {});
+      const res = await apiPost<{
+        success: boolean;
+        data: any;
+        goldAwarded?: number;
+        studentNewBalance?: number;
+      }>(`/jobs/${jobId}/confirm`, {});
+
       if (res.success) {
-        const message = res.goldAwarded 
+        const message = res.goldAwarded
           ? `Submission confirmed! ${res.goldAwarded} gold released to student.`
           : "Submission confirmed! Payment released to student.";
         alert(message);
         await loadSubmissions();
-        // Refresh user data in case student is viewing their own dashboard
         await refreshUser();
       }
     } catch (err) {
@@ -99,197 +101,413 @@ export default function JobSubmissionsPage() {
     }
   }
 
+  function getStatusBadge(status: Submission["submissionStatus"]) {
+    const badges = {
+      submitted: {
+        bg: "rgba(59,130,246,.16)",
+        border: "rgba(59,130,246,.35)",
+        color: "rgba(59,130,246,.9)",
+        text: "Submitted",
+      },
+      confirmed: {
+        bg: "rgba(34,197,94,.16)",
+        border: "rgba(34,197,94,.35)",
+        color: "rgba(34,197,94,.9)",
+        text: "Confirmed",
+      },
+      rejected: {
+        bg: "rgba(239,68,68,.16)",
+        border: "rgba(239,68,68,.35)",
+        color: "rgba(239,68,68,.9)",
+        text: "Rejected",
+      },
+      disputed: {
+        bg: "rgba(251,191,36,.16)",
+        border: "rgba(251,191,36,.35)",
+        color: "rgba(251,191,36,.9)",
+        text: "Disputed",
+      },
+    };
+    return badges[status];
+  }
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Loading submissions…</div>
+      <div className="browse-page">
+        <div className="browse-inner">
+          <div className="browse-loading">Loading submissions…</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-[#111827] mb-2">Job Submissions</h1>
-        <p className="text-sm text-[#6b7280]">Review and confirm or reject student submissions</p>
-      </div>
+    <div className="browse-page">
+      <div className="browse-inner">
+        {/* Header */}
+        <header className="browse-header">
+          <div className="browse-title-wrap">
+            <div className="browse-eyebrow">Job Submissions</div>
+            <h1 className="browse-title">Review Submissions</h1>
+            <p className="browse-subtitle">Review and confirm or reject student submissions</p>
+          </div>
+        </header>
 
-      {/* Error */}
-      {error && (
-        <div className="border border-[#fecaca] bg-[#fee2e2] rounded-lg px-4 py-3 text-sm text-[#991b1b]">
-          {error}
-        </div>
-      )}
+        {/* Error */}
+        {error && (
+          <section className="browse-panel" style={{ marginTop: "16px", borderColor: "rgba(239,68,68,.5)", background: "rgba(239,68,68,.1)" }}>
+            <div style={{ color: "rgba(239,68,68,.9)", fontSize: "14px" }}>{error}</div>
+          </section>
+        )}
 
-      {/* Submissions List */}
-      {submissions.length === 0 ? (
-        <div className="border border-[#e5e7eb] rounded-lg bg-white p-16 text-center">
-          <h3 className="text-lg font-semibold text-[#111827] mb-2">No Submissions</h3>
-          <p className="text-sm text-[#6b7280] mb-6">
-            No jobs have been submitted for review yet.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {submissions.map((sub) => (
-            <div key={sub._id} className="border border-[#e5e7eb] rounded-lg bg-white p-6">
-              <div className="flex items-start justify-between gap-6">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-lg bg-[#111827] flex items-center justify-center text-white font-bold flex-shrink-0">
-                      {sub.title.charAt(0)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-[#111827] mb-1 truncate">
-                        {sub.title}
-                      </h3>
-                      {sub.acceptedStudentId && (
-                        <p className="text-sm text-[#6b7280]">
-                          Submitted by: {sub.acceptedStudentId.name} ({sub.acceptedStudentId.email})
-                        </p>
-                      )}
-                    </div>
-                  </div>
+        {/* Submissions List */}
+        {submissions.length === 0 ? (
+          <section className="browse-results" style={{ marginTop: "16px" }}>
+            <div className="browse-empty">
+              <div className="browse-empty-title">No Submissions</div>
+              <div className="browse-empty-sub">No jobs have been submitted for review yet.</div>
+            </div>
+          </section>
+        ) : (
+          <section className="browse-results" style={{ marginTop: "16px" }}>
+            <div className="browse-results-head">
+              <h2 className="browse-results-title">Submissions</h2>
+              <div className="browse-results-count">{submissions.length} found</div>
+            </div>
+            <div className="browse-cards">
+              {submissions.map((sub) => {
+                const badge = getStatusBadge(sub.submissionStatus);
+                return (
+                  <article key={sub._id} className="job-card">
+                    <div className="job-card-top">
+                      <div className="job-card-main" style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+                          <div
+                            style={{
+                              width: "48px",
+                              height: "48px",
+                              borderRadius: "50%",
+                              background: "linear-gradient(135deg, rgba(124,58,237,.5), rgba(59,130,246,.4))",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              color: "white",
+                              fontSize: "18px",
+                              fontWeight: "bold",
+                              flexShrink: 0,
+                            }}
+                          >
+                            {sub.title.charAt(0).toUpperCase()}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div className="job-title" style={{ marginBottom: "4px" }}>
+                              {sub.title}
+                            </div>
+                            {sub.acceptedStudentId && (
+                              <div className="job-sub">
+                                Submitted by: {sub.acceptedStudentId.name} ({sub.acceptedStudentId.email})
+                              </div>
+                            )}
+                          </div>
+                        </div>
 
-                  <div className="flex flex-wrap gap-3 mb-4">
-                    <span className="px-3 py-1.5 rounded-lg bg-[#f9fafb] text-[#374151] text-xs font-semibold border border-[#e5e7eb]">
-                      {sub.gold} Gold
-                    </span>
-                    <span className="px-3 py-1.5 rounded-lg bg-[#dbeafe] text-[#1e40af] text-xs font-semibold border border-[#bfdbfe]">
-                      Submitted
-                    </span>
-                    {sub.submissionReport?.submittedAt && (
-                      <span className="px-3 py-1.5 rounded-lg bg-[#f9fafb] text-[#374151] text-xs border border-[#e5e7eb]">
-                        Submitted: {new Date(sub.submissionReport.submittedAt).toLocaleString()}
-                      </span>
-                    )}
-                  </div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "12px" }}>
+                          <span
+                            className="badge"
+                            style={{
+                              background: "rgba(255,255,255,.1)",
+                              borderColor: "rgba(255,255,255,.2)",
+                              color: "var(--text)",
+                            }}
+                          >
+                            {sub.gold} Gold
+                          </span>
+                          <span
+                            className="badge"
+                            style={{
+                              background: badge.bg,
+                              borderColor: badge.border,
+                              color: badge.color,
+                            }}
+                          >
+                            {badge.text}
+                          </span>
+                          {sub.submissionReport?.submittedAt && (
+                            <span
+                              className="badge"
+                              style={{
+                                background: "rgba(255,255,255,.06)",
+                                borderColor: "rgba(255,255,255,.12)",
+                                color: "var(--muted)",
+                                fontSize: "11px",
+                              }}
+                            >
+                              Submitted: {new Date(sub.submissionReport.submittedAt).toLocaleString()}
+                            </span>
+                          )}
+                        </div>
 
-                  {/* Submission Report */}
-                  {sub.submissionReport && (
-                    <div className="mt-4 p-4 bg-[#f9fafb] border border-[#e5e7eb] rounded-lg">
-                      <div className="text-sm font-semibold text-[#111827] mb-2">Completion Report</div>
-                      <div className="text-xs text-[#6b7280] space-y-1">
-                        {sub.submissionReport.timeTaken && (
-                          <div>Time Taken: {sub.submissionReport.timeTaken} hours</div>
+                        {/* Submission Report */}
+                        {sub.submissionReport && (
+                          <div
+                            style={{
+                              marginTop: "12px",
+                              padding: "12px",
+                              background: "rgba(255,255,255,.04)",
+                              border: "1px solid rgba(255,255,255,.08)",
+                              borderRadius: "12px",
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: "12px",
+                                fontWeight: "600",
+                                color: "var(--muted)",
+                                marginBottom: "8px",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.05em",
+                              }}
+                            >
+                              Completion Report
+                            </div>
+                            <div style={{ fontSize: "13px", color: "var(--text)", lineHeight: "1.6" }}>
+                              {sub.submissionReport.timeTaken && (
+                                <div style={{ marginBottom: "6px" }}>
+                                  <strong>Time Taken:</strong> {sub.submissionReport.timeTaken} hours
+                                </div>
+                              )}
+                              {sub.submissionReport.completionNotes && (
+                                <div>
+                                  <strong>Notes:</strong> {sub.submissionReport.completionNotes}
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         )}
-                        {sub.submissionReport.completionNotes && (
-                          <div>Notes: {sub.submissionReport.completionNotes}</div>
+
+                        {/* Proof URL */}
+                        {sub.submissionProofUrl && (
+                          <div style={{ marginTop: "12px" }}>
+                            <a
+                              href={sub.submissionProofUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="browse-link"
+                              style={{ fontSize: "13px" }}
+                            >
+                              View Proof Document →
+                            </a>
+                          </div>
+                        )}
+
+                        {/* Rejection Reason */}
+                        {sub.submissionStatus === "rejected" && sub.rejectionReason && (
+                          <div
+                            style={{
+                              marginTop: "12px",
+                              padding: "12px",
+                              background: "rgba(239,68,68,.1)",
+                              border: "1px solid rgba(239,68,68,.3)",
+                              borderRadius: "12px",
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: "12px",
+                                fontWeight: "600",
+                                color: "rgba(239,68,68,.9)",
+                                marginBottom: "6px",
+                              }}
+                            >
+                              Rejection Reason
+                            </div>
+                            <div style={{ fontSize: "13px", color: "rgba(239,68,68,.9)" }}>
+                              {sub.rejectionReason}
+                            </div>
+                          </div>
                         )}
                       </div>
+                      <div className="job-badges">
+                        <span
+                          className="badge"
+                          style={{
+                            background: badge.bg,
+                            borderColor: badge.border,
+                            color: badge.color,
+                          }}
+                        >
+                          {badge.text}
+                        </span>
+                      </div>
                     </div>
-                  )}
+                    <div className="job-card-bottom">
+                      <div className="job-meta">
+                        <span className="meta-dot" />
+                        {sub.submissionStatus === "submitted" ? "Awaiting review" : sub.submissionStatus}
+                      </div>
+                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                        {sub.submissionStatus === "submitted" && (
+                          <>
+                            <button
+                              onClick={() => handleConfirm(sub._id)}
+                              disabled={confirming === sub._id}
+                              className="browse-btn browse-btn--primary"
+                              style={{
+                                background: "rgba(34,197,94,.2)",
+                                borderColor: "rgba(34,197,94,.5)",
+                                color: "rgba(34,197,94,.9)",
+                                minWidth: "140px",
+                              }}
+                            >
+                              {confirming === sub._id ? "Confirming..." : "Confirm & Pay"}
+                            </button>
+                            <button
+                              onClick={() => setShowRejectModal(sub._id)}
+                              disabled={rejecting === sub._id}
+                              className="browse-btn browse-btn--ghost"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                        {sub.submissionStatus === "confirmed" && (
+                          <span
+                            className="badge"
+                            style={{
+                              background: badge.bg,
+                              borderColor: badge.border,
+                              color: badge.color,
+                              padding: "8px 16px",
+                            }}
+                          >
+                            Confirmed ✓
+                          </span>
+                        )}
+                        {sub.submissionStatus === "disputed" && (
+                          <Link
+                            to={`/dashboard/employer/messages?taskId=${sub._id}`}
+                            className="browse-btn browse-btn--primary"
+                          >
+                            View Dispute →
+                          </Link>
+                        )}
+                        <Link
+                          to={`/dashboard/employer/messages?taskId=${sub._id}`}
+                          className="browse-btn browse-btn--ghost"
+                        >
+                          Messages →
+                        </Link>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
-                  {/* Proof URL */}
-                  {sub.submissionProofUrl && (
-                    <div className="mt-4">
-                      <a
-                        href={sub.submissionProofUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-[#111827] hover:underline"
-                      >
-                        View Proof Document →
-                      </a>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-2 flex-shrink-0">
-                  {sub.submissionStatus === "submitted" && (
-                    <>
-                      <button
-                        onClick={() => handleConfirm(sub._id)}
-                        disabled={confirming === sub._id}
-                        className="px-6 py-2.5 rounded-lg bg-[#065f46] text-white text-sm font-semibold hover:bg-[#047857] transition-colors whitespace-nowrap disabled:opacity-50"
-                      >
-                        {confirming === sub._id ? "Confirming..." : "Confirm & Pay"}
-                      </button>
-                      <button
-                        onClick={() => setShowRejectModal(sub._id)}
-                        disabled={rejecting === sub._id}
-                        className="px-6 py-2.5 rounded-lg border border-[#d1d5db] text-[#111827] text-sm font-semibold hover:bg-[#f9fafb] transition-colors whitespace-nowrap disabled:opacity-50"
-                      >
-                        Reject
-                      </button>
-                    </>
-                  )}
-                  {sub.submissionStatus === "confirmed" && (
-                    <span className="px-6 py-2.5 rounded-lg bg-[#d1fae5] text-[#065f46] text-sm font-semibold border border-[#a7f3d0] whitespace-nowrap text-center">
-                      Confirmed ✓
-                    </span>
-                  )}
-                  {sub.submissionStatus === "rejected" && (
-                    <div className="space-y-2">
-                      <span className="px-6 py-2.5 rounded-lg bg-[#fee2e2] text-[#991b1b] text-sm font-semibold border border-[#fecaca] whitespace-nowrap text-center block">
-                        Rejected
-                      </span>
-                      {sub.rejectionReason && (
-                        <div className="text-xs text-[#991b1b] max-w-xs">
-                          Reason: {sub.rejectionReason}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {sub.submissionStatus === "disputed" && (
-                    <Link
-                      to={`/dashboard/employer/messages?taskId=${sub._id}`}
-                      className="px-6 py-2.5 rounded-lg bg-[#f3e8ff] text-[#6b21a8] text-sm font-semibold border border-[#c4b5fd] whitespace-nowrap text-center hover:bg-[#e9d5ff] transition-colors"
-                    >
-                      View Dispute
-                    </Link>
-                  )}
-                  <Link
-                    to={`/dashboard/employer/messages?taskId=${sub._id}`}
-                    className="px-6 py-2.5 rounded-lg border border-[#d1d5db] text-[#111827] text-sm font-semibold hover:bg-[#f9fafb] transition-colors whitespace-nowrap text-center"
-                  >
-                    Messages
-                  </Link>
-                </div>
+        {/* Reject Modal */}
+        {showRejectModal && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(0,0,0,.75)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1000,
+              padding: "20px",
+            }}
+            onClick={() => {
+              setShowRejectModal(null);
+              setRejectReason("");
+            }}
+          >
+            <div
+              className="browse-panel"
+              style={{
+                maxWidth: "500px",
+                width: "100%",
+                background: "var(--panel)",
+                border: "1px solid var(--border)",
+                borderRadius: "var(--r-lg)",
+                padding: "24px",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2
+                style={{
+                  margin: "0 0 12px",
+                  fontSize: "20px",
+                  fontWeight: "700",
+                  color: "var(--text)",
+                }}
+              >
+                Reject Submission
+              </h2>
+              <p
+                style={{
+                  margin: "0 0 16px",
+                  fontSize: "13px",
+                  color: "var(--muted)",
+                  lineHeight: "1.5",
+                }}
+              >
+                Please provide a detailed reason for rejection (minimum 10 characters). This reason will be sent to the student.
+              </p>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                style={{
+                  width: "100%",
+                  minHeight: "120px",
+                  padding: "12px",
+                  background: "rgba(255,255,255,.05)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--r-md)",
+                  color: "var(--text)",
+                  fontSize: "14px",
+                  fontFamily: "inherit",
+                  resize: "vertical",
+                  marginBottom: "16px",
+                }}
+                rows={4}
+                placeholder="Enter rejection reason..."
+              />
+              <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+                <button
+                  onClick={() => {
+                    setShowRejectModal(null);
+                    setRejectReason("");
+                  }}
+                  className="browse-btn browse-btn--ghost"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleReject(showRejectModal)}
+                  disabled={
+                    rejecting === showRejectModal || !rejectReason.trim() || rejectReason.trim().length < 10
+                  }
+                  className="browse-btn"
+                  style={{
+                    background: "rgba(239,68,68,.2)",
+                    borderColor: "rgba(239,68,68,.5)",
+                    color: "rgba(239,68,68,.9)",
+                    opacity: rejecting === showRejectModal || !rejectReason.trim() || rejectReason.trim().length < 10 ? 0.5 : 1,
+                  }}
+                >
+                  {rejecting === showRejectModal ? "Rejecting..." : "Reject"}
+                </button>
               </div>
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Reject Modal */}
-      {showRejectModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h2 className="text-lg font-semibold text-[#111827] mb-4">Reject Submission</h2>
-            <p className="text-sm text-[#6b7280] mb-4">
-              Please provide a detailed reason for rejection (minimum 10 characters). This reason will be sent to the student.
-            </p>
-            <textarea
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              className="w-full px-4 py-2 border border-[#d1d5db] rounded-lg text-sm mb-4"
-              rows={4}
-              placeholder="Enter rejection reason..."
-            />
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowRejectModal(null);
-                  setRejectReason("");
-                }}
-                className="flex-1 px-4 py-2 rounded-lg border border-[#d1d5db] text-[#111827] text-sm font-semibold hover:bg-[#f9fafb] transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleReject(showRejectModal)}
-                disabled={rejecting === showRejectModal || !rejectReason.trim() || rejectReason.trim().length < 10}
-                className="flex-1 px-4 py-2 rounded-lg bg-[#991b1b] text-white text-sm font-semibold hover:bg-[#7f1d1d] transition-colors disabled:opacity-50"
-              >
-                {rejecting === showRejectModal ? "Rejecting..." : "Reject"}
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
-

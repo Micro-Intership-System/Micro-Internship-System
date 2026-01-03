@@ -57,9 +57,66 @@ router.post("/courses/:courseId/enroll", requireAuth, async (req: any, res) => {
       return res.status(404).json({ success: false, message: "Student not found" });
     }
 
-    const course = await CourseShopItem.findById(req.params.courseId);
+    // Check if courseId is a MongoDB ObjectId (24 hex characters)
+    const isMongoId = /^[0-9a-fA-F]{24}$/.test(req.params.courseId);
+    let course = null;
+    
+    if (isMongoId) {
+      // Try to find by MongoDB ID first
+      course = await CourseShopItem.findById(req.params.courseId);
+    }
+    
+    // If course not found, check if it's a predefined course
+    if (!course) {
+      const { courseData } = req.body;
+      
+      if (courseData && courseData._id === req.params.courseId) {
+        try {
+          // Check if a course with the same title and category already exists (to avoid duplicates)
+          const existingCourse = await CourseShopItem.findOne({ 
+            title: courseData.title.trim(),
+            category: courseData.category 
+          });
+          if (existingCourse) {
+            course = existingCourse;
+          } else {
+            // Create the predefined course in the database
+            course = await CourseShopItem.create({
+              title: courseData.title,
+              description: courseData.description,
+              cost: courseData.cost,
+              category: courseData.category,
+              duration: courseData.duration,
+              instructor: courseData.instructor,
+              thumbnailUrl: courseData.thumbnailUrl,
+              learningOutcomes: courseData.learningOutcomes || [],
+              prerequisites: courseData.prerequisites || [],
+              isActive: true,
+            });
+          }
+        } catch (createErr) {
+          console.error("Error creating predefined course:", createErr);
+          return res.status(500).json({ 
+            success: false, 
+            message: `Failed to create course: ${createErr instanceof Error ? createErr.message : "Unknown error"}` 
+          });
+        }
+      } else if (!isMongoId) {
+        // If it's not a MongoDB ID and no courseData provided, it's likely a predefined course
+        return res.status(404).json({ 
+          success: false, 
+          message: `Course not found. Please provide course data for predefined courses. CourseId: ${req.params.courseId}` 
+        });
+      } else {
+        return res.status(404).json({ 
+          success: false, 
+          message: `Course not found with ID: ${req.params.courseId}` 
+        });
+      }
+    }
+    
     if (!course || !course.isActive) {
-      return res.status(404).json({ success: false, message: "Course not found" });
+      return res.status(404).json({ success: false, message: "Course not found or inactive" });
     }
 
     // Check if already enrolled
@@ -98,8 +155,12 @@ router.post("/courses/:courseId/enroll", requireAuth, async (req: any, res) => {
       data: { enrollment, course },
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Failed to enroll in course" });
+    console.error("Enrollment error:", err);
+    const errorMessage = err instanceof Error ? err.message : "Unknown error";
+    res.status(500).json({ 
+      success: false, 
+      message: `Failed to enroll in course: ${errorMessage}` 
+    });
   }
 });
 
@@ -121,6 +182,28 @@ router.get("/my-courses", requireAuth, async (req: any, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Failed to load courses" });
+  }
+});
+
+/**
+ * GET /api/shop/student/:studentId/courses
+ * Get a specific student's enrolled courses (for employers viewing student portfolio)
+ */
+router.get("/student/:studentId/courses", requireAuth, async (req: any, res) => {
+  try {
+    // Allow employers and admins to view student courses
+    if (req.user?.role !== "employer" && req.user?.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Employers and admins only" });
+    }
+
+    const enrollments = await StudentCourse.find({ studentId: req.params.studentId })
+      .populate("courseId")
+      .sort({ enrolledAt: -1 });
+
+    res.json({ success: true, data: enrollments });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Failed to load student courses" });
   }
 });
 
@@ -153,13 +236,15 @@ router.patch("/courses/:courseId/complete", requireAuth, async (req: any, res) =
     const course = enrollment.courseId as any;
     
     enrollment.progress = 100;
-    enrollment.completedAt = new Date();
+    const completedAtDate = new Date();
+    enrollment.completedAt = completedAtDate;
     
-    // Generate certificate
+    // Generate certificate using the same completedAt date
     try {
       const certificateUrl = await generateCourseCertificate(
         req.user.id,
-        course._id.toString()
+        course._id.toString(),
+        completedAtDate
       );
       enrollment.certificateUrl = certificateUrl;
     } catch (err) {

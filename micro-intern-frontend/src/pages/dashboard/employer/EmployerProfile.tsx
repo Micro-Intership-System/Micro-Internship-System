@@ -1,6 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { apiGet, apiPut } from "../../../api/client";
+import { uploadCompanyLogo } from "../../../api/upload";
+import EmployerReviewsDisplay from "../../../components/EmployerReviewsDisplay";
+import "./css/EmployerProfile.css";
 
 export default function EmployerProfile() {
   const { user } = useAuth();
@@ -18,9 +21,13 @@ export default function EmployerProfile() {
   const [companyNameChangeCount, setCompanyNameChangeCount] = useState(0);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [logoUploadError, setLogoUploadError] = useState<string | null>(null);
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function loadProfile() {
@@ -28,30 +35,45 @@ export default function EmployerProfile() {
       setLoading(true);
       setError("");
       setSuccess("");
+
       const res = await apiGet<{ success: boolean; data: any }>("/employer/me");
+
       if (res.success) {
         setProfile(res.data);
+
         const companyName = res.data.companyName || "";
         setOriginalCompanyName(companyName);
+
         setFormData({
           name: res.data.name || user?.name || "",
-          companyName: companyName,
+          companyName,
           companyWebsite: res.data.companyWebsite || "",
           companyDescription: res.data.companyDescription || "",
           companyLogo: res.data.companyLogo || "",
         });
-        // Clear any previous errors on successful load
+
         setError("");
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to load profile";
-      // Don't show "log in again" - just show the actual error or allow editing with empty profile
-      if (errorMessage.includes("Access denied") || errorMessage.includes("employer account required")) {
-        setError("Your account role may need to be updated. Please contact admin or try logging out and back in.");
-      } else if (errorMessage && !errorMessage.includes("Failed to load profile") && !errorMessage.includes("Unauthorized")) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load profile";
+
+      if (
+        errorMessage.includes("Access denied") ||
+        errorMessage.includes("employer account required")
+      ) {
+        setError(
+          "Your account role may need to be updated. Please contact admin or try logging out and back in."
+        );
+      } else if (
+        errorMessage &&
+        !errorMessage.includes("Failed to load profile") &&
+        !errorMessage.includes("Unauthorized")
+      ) {
         setError(errorMessage);
       }
-      // Even if API fails, allow editing with user context data
+
+      // Fallback so form still shows
       if (!profile && user) {
         const fallbackProfile = {
           name: user.name || "",
@@ -61,7 +83,9 @@ export default function EmployerProfile() {
           companyDescription: "",
           companyLogo: "",
         };
+
         setProfile(fallbackProfile);
+
         setFormData({
           name: user.name || "",
           companyName: "",
@@ -69,7 +93,8 @@ export default function EmployerProfile() {
           companyDescription: "",
           companyLogo: "",
         });
-        setError(""); // Clear error so form can be shown
+
+        setError("");
       }
     } finally {
       setLoading(false);
@@ -80,19 +105,25 @@ export default function EmployerProfile() {
     try {
       setError("");
       setSuccess("");
-      
+
       // Track company name changes
       if (formData.companyName !== originalCompanyName && originalCompanyName) {
-        setCompanyNameChangeCount(prev => prev + 1);
+        setCompanyNameChangeCount((prev) => prev + 1);
       }
-      
+
       await apiPut("/employer/me", formData);
+
       setSuccess("Profile updated successfully");
       setEditing(false);
       await loadProfile();
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to update profile";
-      if (errorMessage.includes("Access denied") || errorMessage.includes("employer account required")) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to update profile";
+
+      if (
+        errorMessage.includes("Access denied") ||
+        errorMessage.includes("employer account required")
+      ) {
         setError("Your account role may need to be updated. Please contact admin.");
       } else {
         setError(errorMessage);
@@ -100,28 +131,84 @@ export default function EmployerProfile() {
     }
   }
 
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      setLogoUploadError("Please select an image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setLogoUploadError("File size must be less than 5MB");
+      return;
+    }
+
+    try {
+      setUploadingLogo(true);
+      setLogoUploadError(null);
+
+      const result = await uploadCompanyLogo(file);
+      
+      if (result.success && result.data) {
+        // Update form data with new logo URL
+        setFormData((prev) => ({
+          ...prev,
+          companyLogo: result.data!.url,
+        }));
+
+        // Auto-save the logo URL
+        await apiPut("/employer/me", {
+          ...formData,
+          companyLogo: result.data.url,
+        });
+
+        setSuccess("Company logo uploaded successfully");
+        await loadProfile();
+      } else {
+        setLogoUploadError(result.message || "Failed to upload logo");
+      }
+    } catch (err) {
+      setLogoUploadError(err instanceof Error ? err.message : "Failed to upload logo");
+    } finally {
+      setUploadingLogo(false);
+      // Reset file input
+      if (logoFileInputRef.current) {
+        logoFileInputRef.current.value = "";
+      }
+    }
+  }
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Loading profile…</div>
+      <div className="employer-profile">
+        <div className="loading">
+          <div className="text">Loading profile…</div>
+        </div>
       </div>
     );
   }
 
-  // Always show the profile form if user is logged in - use fallback profile if API failed
-  const displayProfile = profile || (user ? {
-    name: user.name || "",
-    email: user.email || "",
-    companyName: "",
-    companyWebsite: "",
-    companyDescription: "",
-    companyLogo: "",
-  } : null);
+  const displayProfile =
+    profile ||
+    (user
+      ? {
+          name: user.name || "",
+          email: user.email || "",
+          companyName: "",
+          companyWebsite: "",
+          companyDescription: "",
+          companyLogo: "",
+        }
+      : null);
 
   if (!displayProfile) {
     return (
-      <div className="space-y-8">
-        <div className="border border-[#fecaca] bg-[#fee2e2] rounded-lg px-4 py-3 text-sm text-[#991b1b]">
+      <div className="employer-profile">
+        <div className="alert error">
           Unable to load profile. Please try refreshing the page.
         </div>
       </div>
@@ -129,18 +216,19 @@ export default function EmployerProfile() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="employer-profile space-y-8">
       {/* Page Header */}
-      <div className="flex items-start justify-between gap-4 mb-8">
+      <div className="page-header">
         <div>
-          <h1 className="text-2xl font-semibold text-[#111827] mb-2">Company Profile</h1>
-          <p className="text-sm text-[#6b7280]">Manage your company information and branding</p>
+          <h1>Company Profile</h1>
+          <p className="subtitle">Manage your company information and branding</p>
         </div>
+
         {!editing && (
           <button
+            type="button"
             onClick={() => {
               setEditing(true);
-              // If profile failed to load, ensure formData has user info
               if (!profile && user) {
                 setFormData({
                   name: user.name || "",
@@ -151,7 +239,7 @@ export default function EmployerProfile() {
                 });
               }
             }}
-            className="px-6 py-2.5 rounded-lg bg-[#111827] text-white text-sm font-semibold hover:bg-[#1f2937] transition-colors whitespace-nowrap"
+            className="btn btn-primary"
           >
             Edit Profile
           </button>
@@ -159,64 +247,103 @@ export default function EmployerProfile() {
       </div>
 
       {/* Success/Error */}
-      {success && (
-        <div className="border border-[#a7f3d0] bg-[#d1fae5] rounded-lg px-4 py-3 text-sm text-[#065f46]">
-          {success}
-        </div>
-      )}
-      {error && error.trim() && (
-        <div className="border border-[#fecaca] bg-[#fee2e2] rounded-lg px-4 py-3 text-sm text-[#991b1b]">
-          {error}
-        </div>
-      )}
+      {success && <div className="alert success">{success}</div>}
+
+      {error && error.trim() && <div className="alert error">{error}</div>}
 
       {/* Anomaly Warning */}
       {companyNameChangeCount > 1 && (
-        <div className="border border-[#fde68a] bg-[#fef3c7] rounded-lg px-4 py-3 text-sm text-[#92400e]">
-          <div className="font-semibold mb-1">⚠️ Company Name Change Alert</div>
-          <div>You have updated your company name more than once. This will be reported as an anomaly to the admin for review.</div>
+        <div className="alert warning">
+          <div className="title">⚠️ Company Name Change Alert</div>
+          <div>
+            You have updated your company name more than once. This will be
+            reported as an anomaly to the admin for review.
+          </div>
+        </div>
+      )}
+
+      {/* Reviews Section */}
+      {user?.id && !editing && (
+        <div className="card" style={{ marginBottom: "24px" }}>
+          <EmployerReviewsDisplay employerId={user.id} />
         </div>
       )}
 
       {/* Profile Form */}
-      <div className="border border-[#e5e7eb] rounded-lg bg-white p-6 space-y-6">
+      <div className="card">
         {/* Company Logo */}
-        <div>
-          <label className="block text-xs font-medium text-[#374151] mb-2 uppercase tracking-wide">
-            Company Logo URL <span className="text-[#9ca3af] font-normal">(Optional)</span>
+        <div className="section">
+          <label>
+            Company Logo <span className="muted">(Optional)</span>
           </label>
+
           {editing ? (
-            <input
-              type="text"
-              value={formData.companyLogo}
-              onChange={(e) =>
-                setFormData({ ...formData, companyLogo: e.target.value })
-              }
-              className="w-full px-4 py-2.5 border border-[#d1d5db] rounded-lg text-sm text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent bg-white"
-              placeholder="https://example.com/logo.png"
-            />
+            <div>
+              <div style={{ display: "flex", gap: "12px", alignItems: "flex-start", marginBottom: "12px" }}>
+                <input
+                  ref={logoFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  style={{ display: "none" }}
+                  disabled={uploadingLogo}
+                />
+                <button
+                  type="button"
+                  onClick={() => logoFileInputRef.current?.click()}
+                  disabled={uploadingLogo}
+                  className="btn btn-secondary"
+                  style={{ whiteSpace: "nowrap" }}
+                >
+                  {uploadingLogo ? "Uploading..." : "Upload Logo"}
+                </button>
+                <div style={{ flex: 1 }}>
+                  <input
+                    type="text"
+                    value={formData.companyLogo}
+                    onChange={(e) =>
+                      setFormData({ ...formData, companyLogo: e.target.value })
+                    }
+                    placeholder="Or enter logo URL: https://example.com/logo.png"
+                    style={{ width: "100%" }}
+                  />
+                </div>
+              </div>
+              {logoUploadError && (
+                <div className="alert error" style={{ marginTop: "8px" }}>
+                  {logoUploadError}
+                </div>
+              )}
+              {formData.companyLogo && (
+                <div className="logo-row" style={{ marginTop: "12px" }}>
+                  <img
+                    src={formData.companyLogo}
+                    alt="Company logo preview"
+                    className="logo-img"
+                    style={{ maxWidth: "200px", maxHeight: "200px", objectFit: "contain" }}
+                  />
+                </div>
+              )}
+            </div>
           ) : (
-            <div className="flex items-center gap-4">
+            <div className="logo-row">
               {formData.companyLogo ? (
                 <img
                   src={formData.companyLogo}
                   alt="Company logo"
-                  className="w-20 h-20 rounded-lg object-cover border border-[#e5e7eb]"
+                  className="logo-img"
                 />
               ) : (
-                <div className="w-20 h-20 rounded-lg bg-[#f3f4f6] border border-[#e5e7eb] flex items-center justify-center text-[#9ca3af] text-xs">
-                  No logo
-                </div>
+                <div className="logo-placeholder">No logo</div>
               )}
             </div>
           )}
         </div>
 
         {/* Company Name */}
-        <div>
-          <label className="block text-xs font-medium text-[#374151] mb-2 uppercase tracking-wide">
-            Company Name *
-          </label>
+        <div className="section">
+          <label>Company Name *</label>
+
           {editing ? (
             <input
               type="text"
@@ -224,38 +351,34 @@ export default function EmployerProfile() {
               onChange={(e) =>
                 setFormData({ ...formData, companyName: e.target.value })
               }
-              className="w-full px-4 py-2.5 border border-[#d1d5db] rounded-lg text-sm text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent bg-white"
               required
             />
           ) : (
-            <p className="text-sm text-[#111827]">{formData.companyName || "—"}</p>
+            <p className="value">{formData.companyName || "—"}</p>
           )}
         </div>
 
         {/* Contact Name */}
-        <div>
-          <label className="block text-xs font-medium text-[#374151] mb-2 uppercase tracking-wide">
-            Contact Name
-          </label>
+        <div className="section">
+          <label>Contact Name</label>
+
           {editing ? (
             <input
               type="text"
               value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              className="w-full px-4 py-2.5 border border-[#d1d5db] rounded-lg text-sm text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent bg-white"
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             />
           ) : (
-            <p className="text-sm text-[#111827]">{formData.name || "—"}</p>
+            <p className="value">{formData.name || "—"}</p>
           )}
         </div>
 
         {/* Website */}
-        <div>
-          <label className="block text-xs font-medium text-[#374151] mb-2 uppercase tracking-wide">
-            Company Website <span className="text-[#9ca3af] font-normal">(Optional)</span>
+        <div className="section">
+          <label>
+            Company Website <span className="muted">(Optional)</span>
           </label>
+
           {editing ? (
             <input
               type="url"
@@ -263,17 +386,15 @@ export default function EmployerProfile() {
               onChange={(e) =>
                 setFormData({ ...formData, companyWebsite: e.target.value })
               }
-              className="w-full px-4 py-2.5 border border-[#d1d5db] rounded-lg text-sm text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent bg-white"
               placeholder="https://example.com"
             />
           ) : (
-            <p className="text-sm text-[#111827]">
+            <p className="value">
               {formData.companyWebsite ? (
                 <a
                   href={formData.companyWebsite}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[#111827] hover:underline"
                 >
                   {formData.companyWebsite}
                 </a>
@@ -285,10 +406,9 @@ export default function EmployerProfile() {
         </div>
 
         {/* Description */}
-        <div>
-          <label className="block text-xs font-medium text-[#374151] mb-2 uppercase tracking-wide">
-            Company Description
-          </label>
+        <div className="section">
+          <label>Company Description</label>
+
           {editing ? (
             <textarea
               value={formData.companyDescription}
@@ -296,31 +416,27 @@ export default function EmployerProfile() {
                 setFormData({ ...formData, companyDescription: e.target.value })
               }
               rows={4}
-              className="w-full px-4 py-2.5 border border-[#d1d5db] rounded-lg text-sm text-[#111827] placeholder-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#111827] focus:border-transparent bg-white resize-none"
               placeholder="Tell us about your company..."
             />
           ) : (
-            <p className="text-sm text-[#374151] whitespace-pre-wrap leading-relaxed">
-              {formData.companyDescription || "—"}
-            </p>
+            <p className="description">{formData.companyDescription || "—"}</p>
           )}
         </div>
 
         {/* Action Buttons */}
         {editing && (
-          <div className="flex gap-3 pt-4 border-t border-[#e5e7eb]">
-            <button
-              onClick={handleSave}
-              className="px-6 py-2.5 rounded-lg bg-[#111827] text-white text-sm font-semibold hover:bg-[#1f2937] transition-colors"
-            >
+          <div className="actions">
+            <button type="button" onClick={handleSave} className="btn btn-primary">
               Save Changes
             </button>
+
             <button
+              type="button"
               onClick={() => {
                 setEditing(false);
                 loadProfile();
               }}
-              className="px-6 py-2.5 rounded-lg border border-[#d1d5db] text-[#111827] text-sm font-semibold hover:bg-[#f9fafb] transition-colors"
+              className="btn btn-secondary"
             >
               Cancel
             </button>

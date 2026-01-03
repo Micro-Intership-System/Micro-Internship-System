@@ -1,4 +1,3 @@
-<<<<<<< Updated upstream
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -140,7 +139,6 @@ app.get("/api/public/reviews", (req, res) => {
 app.listen(PORT, () => {
   console.log(`API server listening on port ${PORT}`);
 });
-=======
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -172,32 +170,9 @@ dotenv.config();
 
 const app = express();
 
-// CORS configuration - allow both localhost and production URLs
-const allowedOrigins = [
-  "http://localhost:5173", // Local development
-  "http://localhost:3000", // Alternative local port
-  process.env.FRONTEND_URL, // Production frontend URL from env
-].filter(Boolean) as string[];
-
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-      
-      // Check if origin is in allowed list
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        // In production, you might want to be more strict
-        // For now, allow all origins in development
-        if (process.env.NODE_ENV === "development") {
-          callback(null, true);
-        } else {
-          callback(new Error("Not allowed by CORS"));
-        }
-      }
-    },
+    origin: "http://localhost:5173", // Vite frontend
     credentials: true,
   })
 );
@@ -380,4 +355,4 @@ app.get("/api/public/reviews", (req, res) => {
 app.listen(PORT, () => {
   console.log(`API server listening on port ${PORT}`);
 });
->>>>>>> Stashed changes
+

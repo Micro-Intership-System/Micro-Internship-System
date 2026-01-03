@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiGet } from "../../../api/client";
 import { useAuth } from "../../../context/AuthContext";
+import "./css/EmployerJobsPage.css";
 
 type ApiResponse<T> = { success: boolean; data: T; message?: string };
 
@@ -15,7 +16,8 @@ type InternshipJob = {
   skills?: string[];
   tags?: string[];
   companyName: string;
-  status?: string;
+  status?: "completed" | "in_progress" | "open" | string;
+  submissionStatus?: "submitted" | "pending" | "none" | string; // ✅ add this (you use it below)
   updatedAt?: string;
   createdAt?: string;
   applicantsCount?: number;
@@ -42,13 +44,19 @@ function timeAgo(iso?: string): string {
   return `${diffDay}d ago`;
 }
 
+function statusClass(status?: string) {
+  if (status === "completed") return "empJobs__status empJobs__status--completed";
+  if (status === "in_progress") return "empJobs__status empJobs__status--inprogress";
+  return "empJobs__status empJobs__status--default";
+}
+
 export default function EmployerJobsPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [jobs, setJobs] = useState<InternshipJob[]>([]);
 
-  const count = useMemo(() => jobs.length, [jobs.length]);
+  const count = jobs.length;
 
   useEffect(() => {
     let mounted = true;
@@ -76,107 +84,82 @@ export default function EmployerJobsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Loading your jobs…</div>
+      <div className="empJobs__loadingWrap">
+        <div className="empJobs__loadingText">Loading your jobs…</div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="empJobs">
       {/* Page Header */}
-      <div className="flex items-start justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-semibold text-[#111827] mb-2">Your Posted Jobs</h1>
-          <p className="text-sm text-[#6b7280]">Manage listings and edit details anytime</p>
+      <div className="empJobs__header">
+        <div className="empJobs__headerLeft">
+          <h1 className="empJobs__title">Your Posted Jobs</h1>
+          <p className="empJobs__subtitle">Manage listings and edit details anytime</p>
         </div>
 
-        <Link
-          to="/dashboard/employer/post"
-          className="px-6 py-2.5 rounded-lg bg-[#111827] text-white text-sm font-semibold hover:bg-[#1f2937] transition-colors whitespace-nowrap"
-        >
+        <Link to="/dashboard/employer/post" className="empJobs__btnPrimary">
           Post Internship
         </Link>
       </div>
 
       {/* Error */}
-      {error && (
-        <div className="border border-[#fecaca] bg-[#fee2e2] rounded-lg px-4 py-3 text-sm text-[#991b1b]">
-          {error}
-        </div>
-      )}
+      {error && <div className="empJobs__error">{error}</div>}
 
       {/* Jobs List */}
-      <div className="border border-[#e5e7eb] rounded-lg bg-white overflow-hidden">
-        <div className="p-6 border-b border-[#e5e7eb]">
-          <div className="text-sm text-[#6b7280]">
-            Total: <span className="font-semibold text-[#111827]">{count}</span>
+      <div className="empJobs__card">
+        <div className="empJobs__cardHeader">
+          <div className="empJobs__total">
+            Total: <strong>{count}</strong>
           </div>
         </div>
 
-        <div className="divide-y divide-[#e5e7eb]">
+        <div className="empJobs__list">
           {jobs.length === 0 ? (
-            <div className="p-12 text-center">
-              <p className="text-sm text-[#6b7280] mb-6">
+            <div className="empJobs__empty">
+              <p className="empJobs__emptyText">
                 You haven't posted anything yet. Click "Post Internship" to get started.
               </p>
-              <Link
-                to="/dashboard/employer/post"
-                className="inline-block px-6 py-3 rounded-lg bg-[#111827] text-white text-sm font-semibold hover:bg-[#1f2937] transition-colors"
-              >
+              <Link to="/dashboard/employer/post" className="empJobs__btnPrimary">
                 Post Internship
               </Link>
             </div>
           ) : (
             jobs.map((j) => (
-              <div
-                key={j._id}
-                className="p-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between hover:bg-[#f9fafb] transition-colors"
-              >
+              <div key={j._id} className="empJobs__row">
                 {/* Job info */}
-                <div className="flex-1 min-w-0 space-y-3">
-                  <div className="text-lg font-semibold text-[#111827] truncate">
-                    {j.title}
+                <div className="empJobs__info">
+                  <div className="empJobs__jobTitle">{j.title}</div>
+
+                  <div className="empJobs__meta">
+                    {j.companyName} • Posted by {user?.name || "Employer"} • {j.location} •{" "}
+                    {j.duration}
                   </div>
 
-                  <div className="text-sm text-[#6b7280]">
-                    {j.companyName} • Posted by {user?.name || "Employer"} • {j.location} • {j.duration}
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 text-xs">
-                    <span className="px-3 py-1 rounded-full bg-[#f9fafb] text-[#374151] border border-[#e5e7eb]">
-                      Gold: {j.gold.toLocaleString()}
-                    </span>
-
-                    <span className="px-3 py-1 rounded-full bg-[#f9fafb] text-[#374151] border border-[#e5e7eb]">
+                  <div className="empJobs__tags">
+                    <span className="empJobs__pill">Gold: {j.gold.toLocaleString()}</span>
+                    <span className="empJobs__pill">
                       Priority: {j.priorityLevel ?? "medium"}
                     </span>
 
-                    {j.status && (
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
-                        j.status === "completed" ? "bg-[#d1fae5] text-[#065f46] border-[#a7f3d0]" :
-                        j.status === "in_progress" ? "bg-[#fef3c7] text-[#92400e] border-[#fde68a]" :
-                        "bg-[#dbeafe] text-[#1e40af] border-[#bfdbfe]"
-                      }`}>
-                        {j.status}
-                      </span>
-                    )}
+                    {j.status && <span className={statusClass(j.status)}>{j.status}</span>}
 
-                    <span className="text-[#6b7280]">
-                      Last updated: {j.updatedAt ? new Date(j.updatedAt).toLocaleString() : "Never"}
+                    <span className="empJobs__mutedInline">
+                      Last updated: {timeAgo(j.updatedAt)}
                     </span>
 
-                    <span className="text-[#6b7280]">
+                    <span className="empJobs__mutedInline">
                       Applicants: {j.applicantsCount ?? 0}
                     </span>
                   </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-2 flex-shrink-0 flex-wrap">
+                <div className="empJobs__actions">
                   <Link
                     to={`/dashboard/employer/jobs/${j._id}/applications`}
-                    className="px-4 py-2 rounded-lg border border-[#d1d5db] text-[#111827] text-sm font-semibold hover:bg-[#f9fafb] transition-colors whitespace-nowrap"
+                    className="empJobs__btnOutline"
                   >
                     Applications
                   </Link>
@@ -184,24 +167,15 @@ export default function EmployerJobsPage() {
                   {j.submissionStatus === "submitted" && (
                     <Link
                       to="/dashboard/employer/submissions"
-                      className="px-4 py-2 rounded-lg bg-[#065f46] text-white text-sm font-semibold hover:bg-[#047857] transition-colors whitespace-nowrap"
+                      className="empJobs__btnSuccess"
                     >
                       Review Submission
                     </Link>
                   )}
 
-                  {j.status === "completed" && (
-                    <Link
-                      to={`/dashboard/employer/reviews/submit/${j._id}`}
-                      className="px-4 py-2 rounded-lg border border-[#d1d5db] text-[#111827] text-sm font-semibold hover:bg-[#f9fafb] transition-colors whitespace-nowrap"
-                    >
-                      Review
-                    </Link>
-                  )}
-
                   <Link
                     to={`/dashboard/employer/jobs/${j._id}/edit`}
-                    className="px-4 py-2 rounded-lg bg-[#111827] text-white text-sm font-semibold hover:bg-[#1f2937] transition-colors whitespace-nowrap"
+                    className="empJobs__btnPrimary"
                   >
                     Edit
                   </Link>
@@ -214,4 +188,3 @@ export default function EmployerJobsPage() {
     </div>
   );
 }
-

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiGet } from "../../../api/client";
+import "./css/BrowsePage.css";
 
 type LeaderboardEntry = {
   position: number;
@@ -40,19 +41,19 @@ export default function LeaderboardPage() {
 
   function renderStars(rating: number) {
     return (
-      <div className="flex items-center gap-0.5">
+      <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
         {[1, 2, 3, 4, 5].map((star) => (
           <svg
             key={star}
-            className={`w-3 h-3 ${
-              star <= rating ? "text-yellow-400 fill-current" : "text-[#e5e7eb] fill-current"
-            }`}
+            width="12"
+            height="12"
             viewBox="0 0 20 20"
+            style={{ color: star <= rating ? "#fbbf24" : "rgba(255,255,255,.3)", fill: "currentColor" }}
           >
             <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
           </svg>
         ))}
-        <span className="ml-1 text-sm font-medium text-[#374151]">
+        <span style={{ marginLeft: "4px", fontSize: "12px", fontWeight: "600", color: "var(--text)" }}>
           {rating.toFixed(1)}
         </span>
       </div>
@@ -61,153 +62,174 @@ export default function LeaderboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-[#6b7280]">Loading leaderboard…</div>
+      <div className="browse-page">
+        <div className="browse-inner">
+          <div className="browse-loading">Loading leaderboard…</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-[#111827] mb-2">Leaderboard</h1>
-        <p className="text-sm text-[#6b7280]">
-          Top performers ranked by their achievements and performance metrics.
-        </p>
-      </div>
+    <div className="browse-page">
+      <div className="browse-inner">
+        {/* Header */}
+        <header className="browse-header">
+          <div className="browse-title-wrap">
+            <div className="browse-eyebrow">Leaderboard</div>
+            <h1 className="browse-title">Top performers ranked by achievements</h1>
+            <p className="browse-subtitle">See how you compare with other students</p>
+          </div>
+        </header>
 
-      {/* Sort Options */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => setSortBy("starRating")}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-            sortBy === "starRating"
-              ? "bg-[#111827] text-white"
-              : "bg-[#f9fafb] text-[#374151] border border-[#e5e7eb] hover:bg-[#f3f4f6]"
-          }`}
-        >
-          Stars
-        </button>
-        <button
-          onClick={() => setSortBy("totalTasksCompleted")}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-            sortBy === "totalTasksCompleted"
-              ? "bg-[#111827] text-white"
-              : "bg-[#f9fafb] text-[#374151] border border-[#e5e7eb] hover:bg-[#f3f4f6]"
-          }`}
-        >
-          Jobs Completed
-        </button>
-        <button
-          onClick={() => setSortBy("averageCompletionTime")}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-            sortBy === "averageCompletionTime"
-              ? "bg-[#111827] text-white"
-              : "bg-[#f9fafb] text-[#374151] border border-[#e5e7eb] hover:bg-[#f3f4f6]"
-          }`}
-        >
-          Avg. Time
-        </button>
-      </div>
+        {/* Sort Options */}
+        <section className="browse-panel" style={{ marginTop: "16px" }}>
+          <div className="browse-panel-head">
+            <h2 className="browse-panel-title">Sort By</h2>
+          </div>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            <button
+              onClick={() => setSortBy("starRating")}
+              className={`browse-chip ${sortBy === "starRating" ? "is-active" : ""}`}
+            >
+              Stars
+            </button>
+            <button
+              onClick={() => setSortBy("totalTasksCompleted")}
+              className={`browse-chip ${sortBy === "totalTasksCompleted" ? "is-active" : ""}`}
+            >
+              Jobs Completed
+            </button>
+            <button
+              onClick={() => setSortBy("averageCompletionTime")}
+              className={`browse-chip ${sortBy === "averageCompletionTime" ? "is-active" : ""}`}
+            >
+              Avg. Time
+            </button>
+          </div>
+        </section>
 
-      {/* Leaderboard Table */}
-      <div className="border border-[#e5e7eb] rounded-lg bg-white overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-[#f9fafb] border-b border-[#e5e7eb]">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#374151] uppercase tracking-wider">
-                  Rank
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-[#374151] uppercase tracking-wider">
-                  Student
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">
-                  Rating
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">
-                  Jobs
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">
-                  Avg. Time
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-[#374151] uppercase tracking-wider">
-                  XP
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#e5e7eb]">
-              {entries.length === 0 ? (
+        {/* Leaderboard Table */}
+        <section className="browse-panel" style={{ marginTop: "16px", padding: 0, overflow: "hidden" }}>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead style={{ background: "rgba(255,255,255,.05)", borderBottom: "1px solid var(--border)" }}>
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-sm text-[#6b7280]">
-                    No students found.
-                  </td>
+                  <th style={{ padding: "12px 16px", textAlign: "left", fontSize: "11px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--muted)" }}>
+                    Rank
+                  </th>
+                  <th style={{ padding: "12px 16px", textAlign: "left", fontSize: "11px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--muted)" }}>
+                    Student
+                  </th>
+                  <th style={{ padding: "12px 16px", textAlign: "center", fontSize: "11px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--muted)" }}>
+                    Rating
+                  </th>
+                  <th style={{ padding: "12px 16px", textAlign: "center", fontSize: "11px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--muted)" }}>
+                    Jobs
+                  </th>
+                  <th style={{ padding: "12px 16px", textAlign: "center", fontSize: "11px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--muted)" }}>
+                    Avg. Time
+                  </th>
+                  <th style={{ padding: "12px 16px", textAlign: "center", fontSize: "11px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--muted)" }}>
+                    XP
+                  </th>
                 </tr>
-              ) : (
-                entries.map((entry) => (
-                  <tr
-                    key={entry._id}
-                    className={`hover:bg-[#f9fafb] transition-colors ${
-                      entry.position <= 3 ? "bg-yellow-50" : ""
-                    }`}
-                  >
-                    <td className="px-6 py-4">
-                      <span className="text-sm font-semibold text-[#111827]">
-                        #{entry.position}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        {entry.profilePicture ? (
-                          <img
-                            src={entry.profilePicture}
-                            alt={entry.name}
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-[#111827] flex items-center justify-center text-white font-semibold text-sm">
-                            {entry.name.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                        <div>
-                          <div className="text-sm font-semibold text-[#111827]">
-                            {entry.name}
-                          </div>
-                          {entry.institution && (
-                            <div className="text-xs text-[#6b7280]">
-                              {entry.institution}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      {renderStars(entry.starRating || 1)}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-sm font-semibold text-[#111827]">
-                        {entry.totalTasksCompleted || 0}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-sm font-semibold text-[#111827]">
-                        {entry.averageCompletionTime
-                          ? `${entry.averageCompletionTime.toFixed(1)}d`
-                          : "—"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-sm font-semibold text-[#111827]">
-                        {entry.xp || 0}
-                      </span>
+              </thead>
+              <tbody>
+                {entries.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ padding: "48px 16px", textAlign: "center", fontSize: "13px", color: "var(--muted)" }}>
+                      No students found.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : (
+                  entries.map((entry) => (
+                    <tr
+                      key={entry._id}
+                      style={{
+                        borderBottom: "1px solid var(--border)",
+                        background: entry.position <= 3 ? "rgba(251,191,36,.08)" : "transparent",
+                        transition: "background 160ms ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (entry.position > 3) {
+                          e.currentTarget.style.background = "rgba(255,255,255,.04)";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (entry.position > 3) {
+                          e.currentTarget.style.background = "transparent";
+                        }
+                      }}
+                    >
+                      <td style={{ padding: "16px" }}>
+                        <span style={{ fontSize: "14px", fontWeight: "800", color: "var(--text)" }}>
+                          #{entry.position}
+                        </span>
+                      </td>
+                      <td style={{ padding: "16px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                          {entry.profilePicture ? (
+                            <img
+                              src={entry.profilePicture}
+                              alt={entry.name}
+                              style={{ width: "40px", height: "40px", borderRadius: "50%", objectFit: "cover" }}
+                            />
+                          ) : (
+                            <div style={{
+                              width: "40px",
+                              height: "40px",
+                              borderRadius: "50%",
+                              background: "rgba(124,58,237,.3)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              color: "white",
+                              fontSize: "14px",
+                              fontWeight: "700",
+                            }}>
+                              {entry.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div>
+                            <div style={{ fontSize: "14px", fontWeight: "700", color: "var(--text)" }}>
+                              {entry.name}
+                            </div>
+                            {entry.institution && (
+                              <div style={{ fontSize: "12px", color: "var(--muted)" }}>
+                                {entry.institution}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: "16px", textAlign: "center" }}>
+                        {renderStars(entry.starRating || 1)}
+                      </td>
+                      <td style={{ padding: "16px", textAlign: "center" }}>
+                        <span style={{ fontSize: "14px", fontWeight: "800", color: "var(--text)" }}>
+                          {entry.totalTasksCompleted || 0}
+                        </span>
+                      </td>
+                      <td style={{ padding: "16px", textAlign: "center" }}>
+                        <span style={{ fontSize: "14px", fontWeight: "800", color: "var(--text)" }}>
+                          {entry.averageCompletionTime
+                            ? `${entry.averageCompletionTime.toFixed(1)}d`
+                            : "—"}
+                        </span>
+                      </td>
+                      <td style={{ padding: "16px", textAlign: "center" }}>
+                        <span style={{ fontSize: "14px", fontWeight: "800", color: "var(--text)" }}>
+                          {entry.xp || 0}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
     </div>
   );

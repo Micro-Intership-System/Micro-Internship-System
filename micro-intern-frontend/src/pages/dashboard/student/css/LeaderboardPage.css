@@ -1,0 +1,166 @@
+/* LeaderboardPage.css (Lavender Theme) */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+:root{
+  --lav:#a78bfa;        /* lavender */
+  --lav2:#7c3aed;       /* deep lavender */
+  --blue:#4f46e5;
+
+  --ink:#111827;
+  --muted:#6b7280;
+
+  --panel: rgba(255,255,255,.88);
+  --panel2: rgba(255,255,255,.96);
+  --border: rgba(17,24,39,.10);
+
+  --shadow: 0 18px 45px rgba(17,24,39,.10);
+  --shadow2: 0 12px 28px rgba(124,58,237,.14);
+
+  --r-lg: 18px;
+  --r-md: 14px;
+}
+
+/* page wrapper */
+.space-y-8{
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  position: relative;
+  padding: 8px 2px;
+}
+
+/* soft lavender background behind content */
+.space-y-8::before{
+  content:"";
+  position:absolute;
+  inset:-22px;
+  z-index:-1;
+  border-radius: 24px;
+  background:
+    radial-gradient(650px 420px at 16% 18%, rgba(167,139,250,.18), transparent 60%),
+    radial-gradient(720px 480px at 84% 22%, rgba(79,70,229,.10), transparent 60%),
+    linear-gradient(180deg, rgba(249,250,251,.55), rgba(255,255,255,0));
+  pointer-events:none;
+}
+
+/* header */
+h1.text-2xl{
+  letter-spacing: -0.02em;
+}
+
+/* subtitle */
+p.text-sm.text-\[\#6b7280\]{
+  color: rgba(17,24,39,.62) !important;
+}
+
+/* sort buttons row */
+.flex.gap-2 > button.rounded-lg{
+  border-radius: 999px !important;
+  padding: 10px 14px !important;
+  transition: transform 160ms ease, filter 160ms ease, background 160ms ease, border-color 160ms ease;
+}
+
+/* inactive buttons */
+.flex.gap-2 > button.bg-\[\#f9fafb\]{
+  background: rgba(255,255,255,.80) !important;
+  border-color: rgba(124,58,237,.18) !important;
+  box-shadow: 0 10px 22px rgba(17,24,39,.06);
+}
+
+.flex.gap-2 > button.bg-\[\#f9fafb\]:hover{
+  transform: translateY(-1px);
+  background: rgba(167,139,250,.10) !important;
+  border-color: rgba(124,58,237,.28) !important;
+}
+
+/* active button (your TSX uses bg-[#111827] text-white) */
+.flex.gap-2 > button.bg-\[\#111827\]{
+  background: linear-gradient(135deg, var(--lav2), var(--blue)) !important;
+  box-shadow: var(--shadow2);
+}
+
+/* main table card */
+.border.border-\[\#e5e7eb\].rounded-lg.bg-white.overflow-hidden{
+  border-radius: 22px !important;
+  border-color: rgba(17,24,39,.10) !important;
+  background: rgba(255,255,255,.90) !important;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+/* table head */
+thead.bg-\[\#f9fafb\].border-b{
+  background: linear-gradient(135deg, rgba(167,139,250,.12), rgba(79,70,229,.06)) !important;
+  border-bottom-color: rgba(17,24,39,.10) !important;
+}
+
+thead th{
+  letter-spacing: .08em;
+}
+
+/* rows */
+tbody tr{
+  transition: background 160ms ease;
+}
+
+/* hover */
+tbody tr.hover\:bg-\[\#f9fafb\]:hover{
+  background: rgba(167,139,250,.08) !important;
+}
+
+/* top 3 highlight (your TSX uses bg-yellow-50) */
+tbody tr.bg-yellow-50{
+  background: linear-gradient(
+    135deg,
+    rgba(233,213,255,.40),
+    rgba(251,250,255,.65)
+  ) !important;
+}
+
+/* rank text */
+tbody td span.text-sm.font-semibold.text-\[\#111827\]{
+  color: var(--ink) !important;
+}
+
+/* student avatar fallback */
+.w-10.h-10.rounded-full.bg-\[\#111827\]{
+  background: linear-gradient(135deg, var(--lav2), var(--blue)) !important;
+  box-shadow: 0 10px 22px rgba(124,58,237,.18);
+}
+
+/* student name */
+.text-sm.font-semibold.text-\[\#111827\]{
+  color: var(--ink) !important;
+}
+
+/* institution */
+.text-xs.text-\[\#6b7280\]{
+  color: rgba(17,24,39,.60) !important;
+}
+
+/* rating number (inside renderStars span uses text-[#374151]) */
+.text-\[\#374151\]{
+  color: rgba(17,24,39,.74) !important;
+  font-weight: 800;
+}
+
+/* star colors tweak (keep yellow, but slightly softer) */
+svg.text-yellow-400{
+  filter: drop-shadow(0 4px 10px rgba(245,158,11,.25));
+}
+
+/* table cell spacing a bit nicer */
+td.px-6.py-4{
+  padding-top: 14px !important;
+  padding-bottom: 14px !important;
+}
+
+/* responsive: make buttons wrap nicely */
+@media (max-width: 520px){
+  .flex.gap-2{
+    flex-wrap: wrap;
+  }
+  .flex.gap-2 > button{
+    flex: 1;
+    min-width: 120px;
+    justify-content: center;
+  }
+}
