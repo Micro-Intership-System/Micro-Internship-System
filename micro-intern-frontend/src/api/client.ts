@@ -25,7 +25,8 @@ async function parseJsonSafe<T>(res: Response): Promise<T> {
   }
 }
 
-const BASE = "/api";
+// Use environment variable if set, otherwise use relative path (for Vercel proxy)
+const BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : "/api";
 
 export async function apiGet<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`, { headers: buildHeaders() });
