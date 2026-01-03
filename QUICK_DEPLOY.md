@@ -9,7 +9,9 @@
 3. **Select your repository**
 4. **Configure:**
    - Root Directory: `micro-intern-backend`
-   - Start Command: `npm start` (or `npm run dev` for development)
+   - Railway will auto-detect build/start from `Procfile` and `package.json`
+   - Build Command: `npm run build` (auto-detected)
+   - Start Command: `npm start` (auto-detected from Procfile)
 5. **Add Environment Variables** (Settings → Variables):
    ```
    MONGO_URI=your_mongodb_connection_string
