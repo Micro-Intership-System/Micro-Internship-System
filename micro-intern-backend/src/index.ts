@@ -119,7 +119,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/upload", uploadRoutes);
 
 
-const PORT = process.env.PORT || 1547;
+const PORT = parseInt(process.env.PORT || "1547", 10);
 
 // MongoDB connection with improved error handling
 const connectDB = async () => {
@@ -292,9 +292,13 @@ app.get("/api/public/reviews", (req, res) => {
 // Export for Vercel serverless functions
 export default app;
 
-// Only listen if running locally (not on Vercel)
+// Listen on the port (Render sets PORT automatically, Vercel uses serverless functions)
+// Only skip listening if explicitly on Vercel
 if (process.env.VERCEL !== "1") {
-  app.listen(PORT, () => {
+  app.listen(PORT, "0.0.0.0", () => {
     console.log(`API server listening on port ${PORT}`);
   });
+} else {
+  // On Vercel, serverless functions handle requests
+  console.log("Running on Vercel - serverless mode");
 }
