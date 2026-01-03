@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../../context/AuthContext";
-import { apiGet, apiPatch } from "../../../api/client";
+import { apiPut } from "../../../api/client";
 
 const ProfilePage: React.FC = () => {
   const { user } = useAuth();
@@ -51,7 +51,7 @@ const ProfilePage: React.FC = () => {
   }
 
   function removeSkill(skill: string) {
-    setForm({ ...form, skills: form.skills.filter((s) => s !== skill) });
+    setForm({ ...form, skills: form.skills.filter((s: string) => s !== skill) });
   }
 
   return (
@@ -140,7 +140,7 @@ const ProfilePage: React.FC = () => {
           <h2 className="text-lg font-semibold text-[#111827] mb-6">Skills</h2>
           
           <div className="flex flex-wrap gap-2 mb-4">
-            {form.skills.map((skill, index) => (
+            {form.skills.map((skill: string, index: number) => (
               <span
                 key={index}
                 className="px-3 py-1 rounded-full bg-[#f9fafb] text-xs text-[#374151] border border-[#e5e7eb] flex items-center gap-2"

@@ -1,5 +1,3 @@
-type ApiErrorBody = { message?: string };
-
 function getToken(): string | null {
   return localStorage.getItem("mi_token");
 }

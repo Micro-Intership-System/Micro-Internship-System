@@ -70,7 +70,7 @@ export default function TaskPaymentPage() {
     try {
       setActionLoading(true);
       setError("");
-      await apiPost(`/payments/release/${payment._id}`);
+      await apiPost(`/payments/release/${payment._id}`, {});
       await loadPayment();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to release payment");

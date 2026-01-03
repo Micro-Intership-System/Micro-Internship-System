@@ -86,7 +86,7 @@ export default function AdminDashboard() {
       // Count payments by status
       const successfulPayments = payments.filter((p: any) => p.status === "released").length;
       const pendingEscrowedPayments = payments.filter((p: any) => p.status === "pending" || p.status === "escrowed").length;
-      const totalAllPayments = payments.length;
+      // const totalAllPayments = payments.length; // Unused variable
 
       setStats({
         totalStudents: students.length,

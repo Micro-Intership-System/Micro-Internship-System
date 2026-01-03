@@ -93,31 +93,32 @@ export default function InternshipDetailsPage() {
     );
   }
 
-  function getGoldRange(g: number): string {
-    if (g < 500) return "<500";
-    if (g < 1000) return "500-1000";
-    if (g < 2000) return "1000-2000";
-    if (g < 5000) return "2000-5000";
-    return "5000+";
-  }
+  // Unused functions - commented out for now
+  // function getGoldRange(g: number): string {
+  //   if (g < 500) return "<500";
+  //   if (g < 1000) return "500-1000";
+  //   if (g < 2000) return "1000-2000";
+  //   if (g < 5000) return "2000-5000";
+  //   return "5000+";
+  // }
 
-  function getDurationRange(d: string): string {
-    const lower = d.toLowerCase();
-    if (lower.includes("week") || /\d/.test(lower)) {
-      const weeks = parseInt(lower.match(/\d+/)?.[0] || "0", 10);
-      if (weeks <= 1) return "1 week";
-      if (weeks <= 2) return "2 weeks";
-      if (weeks <= 4) return "3-4 weeks";
-      return "1+ month";
-    }
-    if (lower.includes("month")) {
-      const months = parseInt(lower.match(/\d+/)?.[0] || "0", 10);
-      if (months <= 1) return "1 month";
-      if (months <= 3) return "2-3 months";
-      return "3+ months";
-    }
-    return d;
-  }
+  // function getDurationRange(d: string): string {
+  //   const lower = d.toLowerCase();
+  //   if (lower.includes("week") || /\d/.test(lower)) {
+  //     const weeks = parseInt(lower.match(/\d+/)?.[0] || "0", 10);
+  //     if (weeks <= 1) return "1 week";
+  //     if (weeks <= 2) return "2 weeks";
+  //     if (weeks <= 4) return "3-4 weeks";
+  //     return "1+ month";
+  //   }
+  //   if (lower.includes("month")) {
+  //     const months = parseInt(lower.match(/\d+/)?.[0] || "0", 10);
+  //     if (months <= 1) return "1 month";
+  //     if (months <= 3) return "2-3 months";
+  //     return "3+ months";
+  //   }
+  //   return d;
+  // }
 
   return (
     <div className="browse-page">

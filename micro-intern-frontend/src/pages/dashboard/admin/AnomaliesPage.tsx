@@ -76,7 +76,7 @@ export default function AnomaliesPage() {
   const [resolveReason, setResolveReason] = useState("");
   const [resolving, setResolving] = useState(false);
 
-  async function resolveDispute(taskId: string, anomalyId: string, winner: "student" | "employer", reason: string) {
+  async function resolveDispute(taskId: string, _anomalyId: string, winner: "student" | "employer", reason: string) {
     try {
       setResolving(true);
       await apiPost(`/jobs/${taskId}/resolve-dispute`, { winner, reason });

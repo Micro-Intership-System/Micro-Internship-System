@@ -57,7 +57,16 @@ export default function LoginPage() {
         throw new Error("Invalid login response from server");
       }
 
-      login(data.token, data.user);
+      // Ensure user has required fields for AuthUser
+      const authUser = {
+        id: data.user.id || "",
+        name: data.user.name || "",
+        email: data.user.email || "",
+        role: data.user.role,
+        ...data.user,
+      };
+
+      login(data.token, authUser);
 
       // Backend is source of truth; fallback to selected role if backend doesn't send role
       const serverRole = data.user.role;

@@ -19,17 +19,17 @@ type CompletedJob = {
   hasReview?: boolean;
 };
 
-type ApplicationsResponse = {
-  success: boolean;
-  data: Array<{
-    _id: string;
-    status: string;
-    internshipId: CompletedJob;
-  }>;
-};
+// type ApplicationsResponse = {
+//   success: boolean;
+//   data: Array<{
+//     _id: string;
+//     status: string;
+//     internshipId: CompletedJob;
+//   }>;
+// };
 
 export default function CompanyReviewsPage() {
-  const { user } = useAuth();
+  // const { user } = useAuth(); // Unused
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [jobs, setJobs] = useState<CompletedJob[]>([]);
