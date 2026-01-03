@@ -6,11 +6,7 @@
     "install:frontend": "cd micro-intern-frontend && npm install",
     "install:backend": "cd micro-intern-backend && npm install",
     "install:all": "npm run install:frontend && npm run install:backend",
-    "dev:frontend": "cd micro-intern-frontend && npm run dev",
-    "dev:backend": "cd micro-intern-backend && npm run dev",
-    "build:frontend": "cd micro-intern-frontend && npm run build",
-    "build:backend": "cd micro-intern-backend && npm run build"
+    "build:frontend": "cd micro-intern-frontend && npm run build"
   },
   "private": true
 }
-

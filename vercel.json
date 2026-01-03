@@ -1,4 +1,7 @@
 {
+  "installCommand": "cd micro-intern-frontend && npm install",
+  "buildCommand": "cd micro-intern-frontend && npm run build",
+  "outputDirectory": "micro-intern-frontend/dist",
   "rewrites": [
     {
       "source": "/api/(.*)",
