@@ -718,7 +718,7 @@ router.post("/:id/report-rejection", requireAuth, async (req: any, res) => {
     });
 
     task.submissionStatus = "disputed";
-    task.disputeChatId = disputeMessage._id;
+    task.disputeChatId = disputeMessage._id as any;
     await task.save();
 
     // Notify admin

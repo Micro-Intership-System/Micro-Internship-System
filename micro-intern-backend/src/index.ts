@@ -112,7 +112,7 @@ const connectDB = async () => {
       maxPoolSize: 10, // Maintain up to 10 socket connections
       minPoolSize: 5, // Maintain at least 5 socket connections
       retryWrites: true,
-      w: 'majority',
+      w: 'majority' as const,
     };
 
     console.log("🔄 Attempting to connect to MongoDB...");

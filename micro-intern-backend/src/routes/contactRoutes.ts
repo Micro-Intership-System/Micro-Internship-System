@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { ContactRequest } from "../models/contactRequest";
+import { ContactRequest } from "../models/ContactRequest";
 import { User } from "../models/user";
 
 const router = Router();

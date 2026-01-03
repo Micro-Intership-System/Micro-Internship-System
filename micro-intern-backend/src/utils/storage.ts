@@ -77,7 +77,6 @@ export async function uploadFile(options: UploadFileOptions): Promise<UploadResu
     if (error) {
       console.error("Supabase upload error:", {
         message: error.message,
-        statusCode: error.statusCode,
         error: error,
       });
       return {
